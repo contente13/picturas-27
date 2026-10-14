@@ -15,7 +15,7 @@
 | Campo | Valor |
 |---|---|
 | Funcionalidade | Juntar vários vídeos (video concatenation): o utilizador seleciona dois ou mais vídeos de um projeto, define a ordem dos segmentos e gera um único vídeo resultante da concatenação. |
-| Perfil(s) de utilizador abrangido(s) | Registado e Premium. O utilizador registado pode utilizar a funcionalidade dentro dos limites definidos para o plano gratuito; o utilizador Premium beneficia de limites superiores e/ou ausência de limite diário. O perfil anónimo não utiliza esta funcionalidade no MVP, devido ao custo de armazenamento e processamento associado a múltiplos vídeos. |
+| Perfil(s) de utilizador abrangido(s) | Registado e Premium. O utilizador registado pode utilizar a funcionalidade dentro dos limites definidos para o plano gratuito; o utilizador Premium beneficia de limites superiores e ausência de limite diário. O perfil anónimo não utiliza esta funcionalidade no MVP, devido ao custo de armazenamento e processamento associado a múltiplos vídeos. |
 | Justificação no contexto do MVP | A concatenação de vídeos introduz uma operação típica de edição de vídeo que não existe no processamento atual de imagens e permite validar o tratamento de múltiplos ficheiros numa única operação. A funcionalidade testa seleção, ordenação, validação de compatibilidade, processamento assíncrono e produção de um novo vídeo sem alterar os originais. Além disso, é adequada ao MVP porque entrega valor claro ao utilizador sem exigir um editor de vídeo completo: permite construir rapidamente um único vídeo a partir de vários clips. |
 
 ## 2.3 Caso de Uso 03 — Juntar vários vídeos
@@ -33,7 +33,7 @@
 | Âmbito | PictuRAS — gestão de projetos e processamento de vídeo, incluindo seleção de vídeos, ordenação dos clips, validação de compatibilidade, processamento assíncrono, armazenamento do resultado e exportação. |
 | Ator Principal | Utilizador autenticado: Registado ou Premium. |
 | Stakeholders e Interesses | - Utilizador Registado: combinar vários clips de forma simples dentro dos limites do seu plano.<br>- Utilizador Premium: combinar vídeos maiores ou em maior quantidade, com menos restrições.<br>- Proprietário do sistema: controlar utilização de CPU, memória e armazenamento, diferenciando os planos.<br>- Equipa DevOps/Desenvolvimento: garantir que o processamento de múltiplos vídeos não bloqueia os restantes serviços.<br>- Administrador do sistema: assegurar proteção dos vídeos e resultados durante armazenamento e processamento. |
-| Pré-condições | - O utilizador encontra-se autenticado.<br>- O projeto contém pelo menos dois vídeos carregados com sucesso.<br>- Os vídeos selecionados encontram-se disponíveis no armazenamento.<br>- O serviço de processamento de vídeo está operacional. |
+| Pré-condições | - O utilizador encontra-se autenticado.<br>- O projeto contém pelo menos dois vídeos disponíveis, carregados com sucesso ou gerados por operações anteriores concluídas.<br>- Os vídeos selecionados encontram-se disponíveis no armazenamento.<br>- O serviço de processamento de vídeo está operacional. |
 | Trigger | O utilizador seleciona um ou mais vídeos do projeto e tenta acionar a opção Juntar vídeos. |
 
 ### 2.3.2 Fluxo Principal
@@ -45,7 +45,7 @@
 | 3 | Define a ordem dos vídeos por drag and drop ou pelos controlos de ordenação. | Atualiza imediatamente a sequência e calcula a duração total estimada do vídeo final. |
 | 4 | Confirma a sequência escolhida. | Valida o número de vídeos, a duração total, o tamanho total e a compatibilidade técnica entre os ficheiros. |
 | 5 | — | Se necessário, determina os ajustes técnicos necessários para uniformizar os vídeos antes da concatenação. |
-| 6 | Aciona Gerar vídeo. | Verifica a quota e a existência de outra operação sobre os mesmos vídeos; se tudo for válido, reserva 1 operação da quota do utilizador Registado e cria uma tarefa assíncrona em fila, devolvendo o identificador da tarefa. |
+| 6 | Aciona Gerar vídeo. | Verifica que não existe outra operação de processamento de vídeo Em Fila ou Em Processamento no mesmo projeto, independentemente da ferramenta. Para Registados, verifica a quota diária partilhada e reserva atomicamente 1 operação, considerando consumidas e reservadas (RN16). Se tudo for válido, cria uma tarefa assíncrona Em Fila e devolve o identificador em ≤ 2 s. A verificação da concorrência e a criação/reserva da execução impedem duas tarefas simultâneas no mesmo projeto. |
 | 7 | Pode aguardar ou continuar a utilizar a aplicação. | Mostra o progresso da operação e disponibiliza a opção Cancelar processamento, com atualização em ≤ 5 s. |
 | 8 | — | Normaliza os vídeos quando necessário e concatena-os pela ordem definida pelo utilizador. |
 | 9 | — | Valida o ficheiro produzido e guarda o resultado como um novo vídeo no projeto, sem alterar os originais. |
@@ -62,7 +62,7 @@
 | FA5 — Vídeos com taxas de fotogramas diferentes | O sistema deteta taxas de fotogramas distintas e normaliza todos os clips para a menor taxa de fotogramas existente na seleção antes da concatenação, informando o utilizador. |
 | FA6 — Vídeos com formatos/codecs diferentes | Se os formatos forem suportados mas incompatíveis entre si, o sistema converte temporariamente os clips para um formato intermédio comum antes de os concatenar. |
 | FA7 — Clip sem áudio | Se alguns vídeos não tiverem áudio, o sistema permite continuar e mantém silêncio durante esses segmentos. |
-| FA8 — Cancelamento do processamento | Durante os passos 7 ou 8, o utilizador escolhe Cancelar processamento. O sistema interrompe a tarefa, elimina resultados parciais, liberta a operação reservada e mantém os vídeos originais e a sequência definida. |
+| FA8 — Cancelamento do processamento | Durante os passos 7 ou 8, o utilizador escolhe Cancelar processamento. O sistema solicita a interrupção, marca a tarefa como Cancelada, elimina resultados parciais e temporários, liberta a operação reservada (perfil Registado) e mantém os vídeos originais e a sequência definida. A interface regressa a um estado utilizável. Resultados tardios dessa tarefa não são consolidados. |
 | FA9 — Abandono da página | Se o utilizador sair da página durante o processamento, a tarefa continua no servidor. Quando regressar, o estado da execução e o resultado são recuperados. |
 | FA10 — Nova concatenação com os mesmos vídeos | Depois de concluir, o utilizador pode alterar a ordem ou remover/adicionar clips e iniciar uma nova concatenação sem ter de voltar a carregar os vídeos. |
 
@@ -79,14 +79,15 @@
 | E7 — Falha durante a conversão intermédia | O sistema termina a execução, elimina os ficheiros temporários e mantém os originais intactos. |
 | E8 — Falha durante a concatenação | O resultado parcial é descartado, os vídeos originais permanecem inalterados e o utilizador pode repetir a operação. |
 | E9 — Falta de espaço de armazenamento | O sistema interrompe a operação antes de consolidar o resultado e informa que não existe espaço disponível suficiente. |
-| E10 — Processamento concorrente incompatível | O sistema impede uma nova execução sobre os mesmos vídeos e informa que já existe uma operação em curso. |
+| E10 — Processamento concorrente incompatível | Se existir outra operação de processamento de vídeo Em Fila ou Em Processamento no mesmo projeto, independentemente da ferramenta e dos vídeos selecionados, impede a criação de nova tarefa e informa que deve aguardar a conclusão ou cancelar a operação anterior. |
+| E11 — Quota diária esgotada (passo 6) | Se as 5 operações diárias do Registado estiverem consumidas ou reservadas, rejeita o pedido, informa quando a quota será reposta e não cria tarefa nem reserva operação adicional. |
 
 ### 2.3.5 Pós-condições
 
 | Tipo | Resultado |
 |---|---|
 | Garantia de Sucesso | Existe um novo vídeo no projeto contendo os vídeos selecionados pela ordem definida pelo utilizador. Os vídeos originais permanecem inalterados. O resultado encontra-se disponível para reprodução e exportação. |
-| Garantia Mínima | Se ocorrer uma falha ou cancelamento, todos os vídeos originais permanecem intactos e utilizáveis. Qualquer resultado parcial ou ficheiro temporário é eliminado e o utilizador recebe uma mensagem explicativa. |
+| Garantia Mínima | Se ocorrer uma falha ou cancelamento, todos os vídeos originais permanecem intactos e utilizáveis. Qualquer resultado parcial ou ficheiro temporário é eliminado. A reserva de quota do Registado é libertada sem consumo; a tarefa criada fica Falhada ou Cancelada. O utilizador recebe uma mensagem explicativa e pode tentar novamente. |
 
 ### 2.3.6 Regras de Negócio e Restrições
 
@@ -107,16 +108,19 @@
 | RN13 | Ficheiros intermédios criados para normalização ou concatenação devem ser eliminados após conclusão, cancelamento ou falha. |
 | RN14 | Um processamento falhado ou cancelado não deve produzir um vídeo final parcialmente válido. |
 | RN15 | O resultado é armazenado como um novo vídeo do projeto e nunca substitui automaticamente os ficheiros utilizados como entrada. |
-| RN16 | Cada concatenação submetida pelo utilizador reserva 1 operação da quota no momento em que o pedido é aceite; a operação só é consumida quando a tarefa termina com sucesso. Em qualquer cancelamento, falha de criação, falha de processamento, rejeição por validação ou outro desfecho sem conclusão, a reserva é libertada imediatamente e não é consumida. |
+| RN16 | Cada concatenação conta como 1 operação, independentemente das normalizações internas. Para Registados, a quota é de 5 operações diárias partilhadas entre todas as ferramentas do PictuRAS, reposta à meia-noite (Europe/Lisbon). A verificação considera consumidas e reservadas e reserva atomicamente 1 operação ao aceitar o pedido; o consumo ocorre apenas no sucesso. A reserva é libertada imediatamente em falha de criação, processamento, cancelamento ou outro desfecho sem sucesso. Pedidos rejeitados antes da reserva não consomem quota. Premium não tem limite diário. |
+| RN17 | Entrada aceite: MP4 (H.264/AAC) e WebM (VP8/Vorbis), incluindo seleções mistas e clips sem áudio (RN11). O sistema normaliza quando necessário e produz o resultado em MP4 (H.264/AAC). |
+| RN18 | Cada projeto pode ter no máximo uma operação de processamento de vídeo Em Fila ou Em Processamento, independentemente da ferramenta utilizada, em conformidade com UC-VID-001 — RN8 e UC-VID-002 — RN5. Resultados tardios de tarefas canceladas ou falhadas não são consolidados. |
+| RN19 | Os vídeos de entrada e o resultado são acessíveis ao proprietário do projeto ou a quem tenha um link de partilha válido, com encriptação em trânsito e em repouso. O acesso por link não dispensa a autenticação e o perfil exigidos para executar a ferramenta. |
 
 ### 2.3.7 Assunções
 
 | ID | Assunção |
 |---|---|
-| A1 | O carregamento de vídeos já faz parte do suporte base a vídeo do PictuRAS e este caso de uso começa com os vídeos já disponíveis no projeto. |
+| A1 | O carregamento de vídeos já faz parte do suporte base a vídeo do PictuRAS e este caso de uso começa com os vídeos já disponíveis no projeto, carregados ou gerados por operações anteriores. Os limites de carregamento externo não são reaplicados aos vídeos gerados; os limites agregados de RN3 e RN4 continuam a aplicar-se à concatenação. |
 | A2 | O sistema terá um mecanismo de processamento assíncrono para operações de vídeo, semelhante ao utilizado atualmente nas ferramentas pesadas de imagem. |
 | A3 | O MVP poderá normalizar automaticamente resolução, codec e taxa de fotogramas antes de concatenar os clips. |
-| A4 | O formato de saída inicial será MP4, ficando outros formatos para evolução posterior. |
+| A4 | O formato de saída inicial será MP4 (H.264/AAC), conforme RN17, ficando outros formatos para evolução posterior. |
 | A5 | A funcionalidade não inclui transições entre clips no MVP; a passagem de um vídeo para o seguinte é direta. |
 | A6 | A concatenação não permite, neste caso de uso, recortar cada clip internamente; essa responsabilidade pertence ao caso de uso de recorte de vídeo. |
 | A7 | O áudio original de cada clip é preservado, salvo quando for necessária conversão técnica para compatibilidade. |
@@ -125,7 +129,13 @@
 
 ### 2.3.8 Questões em Aberto
 
-Não existem questões em aberto nesta versão do caso de uso.
+| ID | Questão em aberto |
+|---|---|
+| Q1 | Confirmam-se para o MVP os limites propostos de RN3 (10/30 vídeos) e RN4 (10 min/500 MB e 60 min/2 GB)? |
+| Q2 | Confirmam-se as decisões do MVP: saída MP4 (RN17), menor resolução sem upscale (RN6), proporção preservada com barras (RN7), menor FPS (RN8), sem transições (A5) e apenas vídeos do mesmo projeto (RN2)? |
+| Q3 | Confirmam-se o acesso Registado/Premium e a contabilização de uma única operação por concatenação, independentemente das conversões internas (RN16)? |
+| Q4 | Como tratar legendas editáveis associadas aos clips na concatenação: copiá-las e deslocar os tempos ou exigir nova geração? O PDF não define esta interação. Legendas já incorporadas na imagem fazem parte do vídeo. |
+| Q5 | Qual o tempo máximo de processamento e o prazo de interrupção efetiva de uma concatenação? O PDF não os fixa; os tempos de A9 referem-se à aceitação e à apresentação do progresso. |
 
 ---
 
@@ -151,10 +161,14 @@ Não existem questões em aberto nesta versão do caso de uso.
 | REQ-VID-CONCAT-014 | O sistema deve disponibilizar o vídeo resultante para pré-visualização e exportação/download. | F | Deve ter | Novo | UC-VID-003 — Passo 10; Garantia de Sucesso | Dado um vídeo resultante, quando o utilizador abre a pré-visualização, então consegue reproduzir e exportar o ficheiro. |
 | REQ-VID-CONCAT-015 | O sistema deve permitir que o processamento continue quando o utilizador abandonar a página e recuperar posteriormente o estado ou resultado da execução. | F | Deveria ter | Novo | UC-VID-003 — FA9 | Dado um processamento em curso, quando o utilizador abandona a página, então ao regressar vê o estado ou o resultado recuperado. |
 | REQ-VID-CONCAT-016 | Em caso de falha ou cancelamento, o sistema deve eliminar resultados parciais e ficheiros temporários, preservando todos os vídeos originais. | NF (Integridade) | Deve ter | Alterado | UC-VID-003 — E7–E9; Garantia Mínima; RN13; RN14 | Dado uma operação cancelada ou falhada, quando a execução termina, então não existem ficheiros temporários nem vídeo parcial e os originais permanecem intactos. |
-| REQ-VID-CONCAT-017 | Cada concatenação aceita pelo sistema reserva 1 operação da quota do utilizador Registado; a operação apenas é consumida quando a geração termina com sucesso. Em cancelamento, falha de criação, falha de processamento, rejeição por validação ou outro desfecho sem conclusão, a reserva é libertada imediatamente e não é consumida. | F | Deve ter | Alterado | UC-VID-003 — RN16 | Dada uma operação concluída com sucesso, quando termina, então a quota diminui 1; dada uma operação cancelada ou falhada, então o saldo volta ao valor anterior. |
-| REQ-VID-CONCAT-018 | O sistema deve impedir o início de uma nova concatenação quando exista uma operação incompatível em curso sobre os mesmos vídeos. | F | Deve ter | Novo | UC-VID-003 — E10 | Dada uma tarefa de concatenação em processamento sobre um conjunto de vídeos, quando o utilizador submete um segundo pedido que envolva qualquer um desses mesmos vídeos, então o novo pedido é rejeitado e o utilizador é informado da existência de uma operação em curso. |
+| REQ-VID-CONCAT-017 | Cada concatenação aceite para Registados deve reservar atomicamente 1 operação da quota partilhada de 5 operações/dia, considerando consumidas e reservadas, com reposição à meia-noite (Europe/Lisbon). O consumo ocorre apenas no sucesso, independentemente das normalizações internas; qualquer desfecho sem sucesso liberta a reserva. Premium não tem limite diário. | F | Deve ter | Alterado | UC-VID-003 — Passo 6; RN16; E11 | Com 4 operações consumidas, aceitar uma concatenação e reservar a quinta; outro pedido noutro projeto é rejeitado. Dois pedidos simultâneos com uma operação disponível aceitam no máximo um. Sucesso consome 1; falha/cancelamento liberta. Premium pode continuar sem limite diário. |
+| REQ-VID-CONCAT-018 | O sistema deve impedir uma nova concatenação quando existir outra operação de processamento de vídeo Em Fila ou Em Processamento no mesmo projeto, independentemente da ferramenta ou dos clips envolvidos. | F | Deve ter | Alterado | UC-VID-003 — Passo 6; E10; RN18 | Dado um recorte, transcrição, incorporação ou concatenação ativo, quando se pede concatenação no mesmo projeto sobre outros clips, então o pedido é rejeitado. Dois pedidos simultâneos no mesmo projeto nunca criam duas tarefas ativas. |
 | REQ-VID-CONCAT-019 | O sistema deve apresentar os vídeos selecionados numa lista ordenada, mostrando para cada clip a miniatura, nome, duração, resolução, formato e informação de áudio. | F | Deve ter | Novo | UC-VID-003 — Passo 2 | Dado vários vídeos selecionados, quando a lista é mostrada, então todos os metadados são apresentados corretamente. |
 | REQ-VID-CONCAT-020 | O sistema deve devolver a confirmação de aceitação da operação em ≤ 2 s e apresentar atualizações de progresso em ≤ 5 s, independentemente do tamanho da seleção. | NF (Desempenho) | Deve ter | Novo | A9, Passo 6, Passo 7 | Dado uma seleção válida, quando o utilizador confirma, então a resposta é devolvida em ≤ 2 s; durante a execução, as notificações de progresso chegam em ≤ 5 s. |
+| REQ-VID-CONCAT-021 | O sistema deve aceitar MP4 (H.264/AAC), WebM (VP8/Vorbis) e seleções mistas, normalizando-os quando necessário para produzir MP4 (H.264/AAC), com silêncio nos clips sem áudio. | F | Deve ter | NOVO | RN17, RN5, RN11, E2 | Concatenar um MP4 e um WebM, incluindo um clip sem áudio; verificar MP4 H.264/AAC final. Rejeitar codecs não suportados antes de criar a tarefa. |
+| REQ-VID-CONCAT-022 | O sistema deve rejeitar um pedido de concatenação do Registado quando as 5 operações diárias partilhadas estiverem consumidas ou reservadas, informando a reposição da quota sem criar tarefa ou reserva adicional. | F | Deve ter | NOVO | Passo 6, E11, RN16 | Com 4 operações consumidas e 1 reservada noutra ferramenta, o pedido é rejeitado e indica reposição à meia-noite (Europe/Lisbon). |
+| REQ-VID-CONCAT-023 | O sistema deve ignorar resultados tardios de tarefas canceladas ou falhadas, validando o resultado contra o identificador/token da execução ativa antes da consolidação. | F | Deve ter | ALT | FA8, RN14, RN18 | Após cancelar uma tarefa e iniciar outra, entregar o resultado da anterior; não cria vídeo, não consome quota e não altera a nova execução. |
+| REQ-VID-CONCAT-024 | O sistema deve permitir acesso aos vídeos de entrada e ao resultado da concatenação ao proprietário ou através de um link de partilha válido, protegendo-os com encriptação em trânsito e em repouso. | NF (Segurança) | Deve ter | ALT | RN19 | O proprietário e quem apresenta um link válido conseguem aceder; outro utilizador sem autorização e quem apresenta link inválido, expirado ou revogado são recusados. A transferência e o armazenamento são cifrados. |
 
 ### 4.2 Impacto no sistema existente
 
@@ -162,14 +176,15 @@ Não existem questões em aberto nesta versão do caso de uso.
 |---|---|---|---|
 | Frontend / interface de projetos | Estender | Adicionar seleção múltipla de vídeos, ordenação dos clips, apresentação de metadados, duração total, progresso, cancelamento, pré-visualização e download do resultado. | REQ-VID-CONCAT-001, REQ-VID-CONCAT-002, REQ-VID-CONCAT-004, REQ-VID-CONCAT-005, REQ-VID-CONCAT-012, REQ-VID-CONCAT-014, REQ-VID-CONCAT-015, REQ-VID-CONCAT-019 |
 | Serviço de gestão de projetos | Estender | Permitir associar vários vídeos a uma mesma operação, validar que pertencem ao mesmo projeto e registar o vídeo resultante como novo elemento do projeto. | REQ-VID-CONCAT-001, REQ-VID-CONCAT-006, REQ-VID-CONCAT-013 |
-| Serviço de processamento de vídeo | Estender | Implementar concatenação de múltiplos vídeos, incluindo normalização de formatos, codecs, áudio, resolução e FPS. | REQ-VID-CONCAT-008, REQ-VID-CONCAT-009, REQ-VID-CONCAT-010, REQ-VID-CONCAT-011, REQ-VID-CONCAT-013 |
+| Serviço de processamento de vídeo | Estender | Implementar concatenação de múltiplos vídeos, incluindo normalização de formatos, codecs, áudio, resolução e FPS. | REQ-VID-CONCAT-008, REQ-VID-CONCAT-009, REQ-VID-CONCAT-010, REQ-VID-CONCAT-011, REQ-VID-CONCAT-013, REQ-VID-CONCAT-021 |
 | Sistema de filas / processamento assíncrono | Estender | Suportar tarefas de concatenação assíncronas, progresso, cancelamento e continuação do processamento quando o utilizador abandona a página. | REQ-VID-CONCAT-012, REQ-VID-CONCAT-015, REQ-VID-CONCAT-020 |
 | Armazenamento de ficheiros | Estender | Armazenar o novo vídeo resultante e gerir/eliminar ficheiros temporários e intermédios usados durante a normalização e concatenação. | REQ-VID-CONCAT-013, REQ-VID-CONCAT-016 |
-| Sistema de quotas e perfis | Estender | Aplicar limites diferentes por perfil quanto ao número de vídeos, duração total e tamanho agregado, e contabilizar cada concatenação bem-sucedida como uma operação. | REQ-VID-CONCAT-003, REQ-VID-CONCAT-007, REQ-VID-CONCAT-017 |
+| Sistema de quotas e perfis | Estender | Aplicar limites diferentes por perfil quanto ao número de vídeos, duração total e tamanho agregado, e contabilizar cada concatenação bem-sucedida como uma operação. | REQ-VID-CONCAT-003, REQ-VID-CONCAT-007, REQ-VID-CONCAT-017, REQ-VID-CONCAT-022 |
 | Mecanismo de validação de vídeo | Estender | Validar compatibilidade dos clips, formatos/codecs suportados, resolução, FPS, duração, tamanho e número de vídeos antes do processamento. | REQ-VID-CONCAT-006, REQ-VID-CONCAT-008, REQ-VID-CONCAT-009, REQ-VID-CONCAT-010 |
-| Controlo de concorrência de operações | Estender | Impedir operações incompatíveis simultâneas sobre os mesmos vídeos. | REQ-VID-CONCAT-018 |
+| Controlo de concorrência de operações | Estender | Impedir operações de vídeo simultâneas no mesmo projeto, independentemente da ferramenta ou dos clips; ignorar resultados tardios de tarefas canceladas ou falhadas. | REQ-VID-CONCAT-018, REQ-VID-CONCAT-023 |
 | Mecanismos de recuperação e limpeza | Estender | Garantir que falhas e cancelamentos não deixam ficheiros parciais e não alteram os vídeos originais. | REQ-VID-CONCAT-016 |
 | Funcionalidades existentes de autenticação/perfis | Manter | Reutilizar o mecanismo atual de autenticação e distinção entre Registado e Premium. | REQ-VID-CONCAT-003, REQ-VID-CONCAT-007, REQ-VID-CONCAT-017 |
+| Segurança e partilha | Estender | Aplicar acesso pelo proprietário ou por link de partilha válido e encriptação aos vídeos de entrada e ao resultado. | REQ-VID-CONCAT-024 |
 
 ### 4.3 Matriz de Rastreabilidade
 
@@ -178,9 +193,9 @@ Não existem questões em aberto nesta versão do caso de uso.
 | Trigger | Selecionar vídeos e validar quantidade mínima | REQ-VID-CONCAT-001, REQ-VID-CONCAT-002 |
 | Passo 2 | Apresentar lista ordenada e metadados dos vídeos | REQ-VID-CONCAT-019 |
 | Passo 3 | Definir ordem e calcular duração total | REQ-VID-CONCAT-004, REQ-VID-CONCAT-005 |
-| Passo 4 | Validar quantidade, duração, tamanho e compatibilidade | REQ-VID-CONCAT-003, REQ-VID-CONCAT-006, REQ-VID-CONCAT-007 |
+| Passo 4 | Validar quantidade, duração, tamanho e compatibilidade | REQ-VID-CONCAT-003, REQ-VID-CONCAT-006, REQ-VID-CONCAT-007, REQ-VID-CONCAT-021 |
 | Passo 5 | Determinar normalizações técnicas necessárias | REQ-VID-CONCAT-008, REQ-VID-CONCAT-009, REQ-VID-CONCAT-010 |
-| Passo 6 | Criar tarefa assíncrona de concatenação e reservar quota | REQ-VID-CONCAT-012, REQ-VID-CONCAT-017, REQ-VID-CONCAT-020 |
+| Passo 6 | Criar tarefa assíncrona de concatenação e reservar quota | REQ-VID-CONCAT-012, REQ-VID-CONCAT-017, REQ-VID-CONCAT-018, REQ-VID-CONCAT-020, REQ-VID-CONCAT-022 |
 | Passo 7 | Apresentar progresso e permitir cancelamento | REQ-VID-CONCAT-012, REQ-VID-CONCAT-020 |
 | Passo 8 | Normalizar e concatenar segundo a ordem definida | REQ-VID-CONCAT-008, REQ-VID-CONCAT-009, REQ-VID-CONCAT-010, REQ-VID-CONCAT-011, REQ-VID-CONCAT-013 |
 | Passo 9 | Guardar resultado como novo vídeo sem alterar os originais | REQ-VID-CONCAT-013, REQ-VID-CONCAT-016 |
@@ -192,7 +207,7 @@ Não existem questões em aberto nesta versão do caso de uso.
 | FA5 | Normalizar para a menor taxa de fotogramas | REQ-VID-CONCAT-010 |
 | FA6 | Efetuar conversão técnica intermédia quando necessário | REQ-VID-CONCAT-008 |
 | FA7 | Manter silêncio durante clips sem áudio | REQ-VID-CONCAT-011 |
-| FA8 | Interromper processamento e eliminar resultados parciais | REQ-VID-CONCAT-012, REQ-VID-CONCAT-016, REQ-VID-CONCAT-017 |
+| FA8 | Interromper processamento e eliminar resultados parciais | REQ-VID-CONCAT-012, REQ-VID-CONCAT-016, REQ-VID-CONCAT-017, REQ-VID-CONCAT-023 |
 | FA9 | Continuar tarefa e recuperar estado posteriormente | REQ-VID-CONCAT-015 |
 | FA10 | Reutilizar vídeos do projeto numa nova operação | REQ-VID-CONCAT-004, REQ-VID-CONCAT-017 |
 | E1 | Impedir operação com seleção insuficiente | REQ-VID-CONCAT-002 |
@@ -204,7 +219,8 @@ Não existem questões em aberto nesta versão do caso de uso.
 | E7 | Terminar tarefa e eliminar temporários | REQ-VID-CONCAT-016, REQ-VID-CONCAT-017 |
 | E8 | Descartar resultado parcial e preservar originais | REQ-VID-CONCAT-016, REQ-VID-CONCAT-017 |
 | E9 | Interromper sem produzir resultado parcial válido | REQ-VID-CONCAT-016, REQ-VID-CONCAT-017 |
-| E10 | Impedir operação incompatível sobre os mesmos vídeos | REQ-VID-CONCAT-018 |
+| E10 | Impedir outra operação de vídeo ativa no mesmo projeto | REQ-VID-CONCAT-018 |
+| E11 | Rejeitar quota diária esgotada | REQ-VID-CONCAT-017, REQ-VID-CONCAT-022 |
 | RN1 | Requer pelo menos 2 vídeos | REQ-VID-CONCAT-001, REQ-VID-CONCAT-002 |
 | RN2 | Vídeos do mesmo projeto | REQ-VID-CONCAT-001 |
 | RN3 | Limites por número de vídeos | REQ-VID-CONCAT-003 |
@@ -223,3 +239,6 @@ Não existem questões em aberto nesta versão do caso de uso.
 | RN16 | Reserva atómica e libertação imediata da quota | REQ-VID-CONCAT-017 |
 | Garantia de Sucesso | Novo vídeo criado, originais intactos e resultado disponível | REQ-VID-CONCAT-013, REQ-VID-CONCAT-014, REQ-VID-CONCAT-017 |
 | Garantia Mínima | Preservar originais e limpar ficheiros parciais em falha/cancelamento | REQ-VID-CONCAT-016, REQ-VID-CONCAT-017 |
+| RN17 | Formatos de entrada e saída explícitos | REQ-VID-CONCAT-008, REQ-VID-CONCAT-021 |
+| RN18 | Uma operação ativa por projeto e proteção contra resultados tardios | REQ-VID-CONCAT-018, REQ-VID-CONCAT-023 |
+| RN19 | Acesso pelo proprietário ou por link de partilha válido e encriptação | REQ-VID-CONCAT-024 |
