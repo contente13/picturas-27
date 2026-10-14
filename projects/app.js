@@ -6,6 +6,8 @@ var logger = require("morgan");
 const mongoose = require("mongoose");
 
 const { router: projectsRouter, process_msg } = require("./routes/projects");
+const videoRouter = require("./routes/video");
+const { recoverPendingReservations, recoverTasks } = require("./controllers/videoTrim");
 
 // Run Docker
 const mongoDB = "mongodb://projects_mongoDB:27018/project";
@@ -17,6 +19,11 @@ const db = mongoose.connection;
 db.on("error", console.error.bind(console, "Error connecting to Mongodb"));
 db.once("open", () => {
   console.log("Mongodb connection successful");
+  recoverTasks().catch((error) => console.error("Could not recover video trim tasks:", error));
+  const reservationRecovery = setInterval(() => {
+    recoverPendingReservations().catch((error) => console.error("Could not settle video trim quotas:", error));
+  }, 30_000);
+  reservationRecovery.unref?.();
 });
 
 var app = express();
@@ -31,6 +38,7 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, "public")));
 
+app.use("/", videoRouter);
 app.use("/", projectsRouter);
 
 // Start the message processing

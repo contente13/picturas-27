@@ -11,6 +11,9 @@ const fs = require("fs");
 const fs_extra = require("fs-extra");
 const path = require("path");
 const mime = require("mime-types");
+const os = require("os");
+const { createReadStream } = require("fs");
+const { hashFile, inspectVideo, isSupportedVideoName, validateVideoCodecs } = require("../utils/video");
 
 const JSZip = require("jszip");
 
@@ -52,8 +55,13 @@ const {
 
 const { requireProjectVersion } = require("../middleware/projectVersion");
 
-const storage = multer.memoryStorage();
-var upload = multer({ storage: storage });
+const storage = multer.diskStorage({
+  destination: os.tmpdir(),
+  filename: (_req, file, callback) => {
+    callback(null, `picturas-project-upload-${uuidv4()}${path.extname(file.originalname)}`);
+  },
+});
+var upload = multer({ storage, limits: { fileSize: 2 * 1024 * 1024 * 1024 } });
 
 const key = fs.readFileSync(__dirname + "/../certs/selfsigned.key");
 const cert = fs.readFileSync(__dirname + "/../certs/selfsigned.crt");
@@ -698,6 +706,7 @@ router.get("/share/:shareId/project", requireAuth,async (req, res) => {
             _id: img._id,
             name: path.basename(img.og_uri),
             url,
+            mediaMetadata: img.mediaMetadata || null,
           });
         } catch (err) {
           console.error("Error getting image url for shared project:", err);
@@ -832,6 +841,7 @@ router.get("/:user/:project", checkSharePermission, async (req, res, next) => {
             _id: img._id,
             name: path.basename(img.og_uri),
             url: url,
+            mediaMetadata: img.mediaMetadata || null,
           });
         } catch (_) {
           res.status(404).jsonp(`Error acquiring image's url`);
@@ -860,6 +870,7 @@ router.get("/:user/:project/img/:img", checkSharePermission, async (req, res, ne
           _id: img._id,
           name: path.basename(img.og_uri),
           url: resp.data.url,
+          mediaMetadata: img.mediaMetadata || null,
         });
       } catch (_) {
         res.status(404).jsonp("No image with such id.");
@@ -889,6 +900,7 @@ router.get("/:user/:project/imgs", checkSharePermission, async (req, res, next) 
               _id: img._id,
               name: path.basename(img.og_uri),
               url: url,
+              mediaMetadata: img.mediaMetadata || null,
             });
           } catch (_) {
             res.status(404).jsonp(`Error acquiring image's url`);
@@ -1173,80 +1185,77 @@ router.post(
   async (req, res) => {
     console.log("PROJECTS-MS /:user/:project/img HIT, file =", !!req.file);
     if (!req.file) {
-      res.status(400).jsonp("No file found");
-      return;
+      return res.status(400).jsonp("No file found");
     }
+    try {
+      const project = await Project.getOne(req.params.user, req.params.project);
+      if (!project) return res.status(404).jsonp("Project not found");
 
-    Project.getOne(req.params.user, req.params.project)
-      .then(async (project) => {
-        const same_name_img = project.imgs.filter(
-          (i) => path.basename(i.og_uri) == req.file.originalname
-        );
+      if (project.imgs.some((img) => path.basename(img.og_uri) === req.file.originalname)) {
+        return res.status(400).jsonp("This project already has a file with that name.");
+      }
 
-        if (same_name_img.length > 0) {
-          res
-            .status(400)
-            .jsonp("This project already has an image with that name.");
-          return;
+      const extension = path.extname(req.file.originalname).toLowerCase();
+      const isVideo = isSupportedVideoName(req.file.originalname);
+      let mediaMetadata = null;
+      if (isVideo) {
+        const userResponse = await axios.get(`${users_ms}${req.params.user}/type/`, { httpsAgent });
+        const userType = userResponse.data?.type;
+        if (!["free", "premium"].includes(userType)) {
+          return res.status(403).jsonp("O carregamento e processamento de vídeo requer uma conta Registada ou Premium.");
         }
 
-        try {
-          const data = new FormData();
-          data.append("file", req.file.buffer, {
-            filename: req.file.originalname,
-            contentType: req.file.mimetype,
-          });
-          const resp = await post_image(
-            req.params.user,
-            req.params.project,
-            "src",
-            data
-          );
-
-          const og_key_tmp = resp.data.data.imageKey.split("/");
-          const og_key = og_key_tmp[og_key_tmp.length - 1];
-
-          try {
-            const og_uri = `./images/users/${req.params.user}/projects/${req.params.project}/src/${req.file.originalname}`;
-            const new_uri = `./images/users/${req.params.user}/projects/${req.params.project}/out/${req.file.originalname}`;
-
-            const crypto = require("crypto");
-            const sha = crypto.createHash("sha256").update(req.file.buffer).digest("hex");
-
-            // Insert new image
-            project["imgs"].push({
-              og_uri: og_uri,
-              new_uri: new_uri,
-              og_img_key: og_key,
-              og_sha256: sha,
-            });
-
-            const updated = await Project.updateIfVersion(
-              req.params.user,
-              req.params.project,
-              project,
-              req.expectedVersion
-            );
-
-            if (!updated) {
-              const fresh = await Project.getOne(req.params.user, req.params.project);
-              return res.status(409).jsonp({
-                message: "Project version conflict",
-                serverVersion: fresh?.version ?? null,
-              });
-            }
-
-            res.set("X-Project-Version", String(updated.version));
-            return res.sendStatus(204);
-
-          } catch (_) {
-            res.status(501).jsonp(`Updating project information`);
-          }
-        } catch (_) {
-          res.status(501).jsonp(`Error storing image`);
+        const maxSize = userType === "premium" ? 2 * 1024 * 1024 * 1024 : 200 * 1024 * 1024;
+        const maxDuration = userType === "premium" ? 60 * 60 : 10 * 60;
+        if (req.file.size > maxSize) {
+          return res.status(413).jsonp(`O vídeo excede o limite de ${userType === "premium" ? "2 GB" : "200 MB"} do teu perfil.`);
         }
-      })
-      .catch((_) => res.status(501).jsonp(`Error acquiring user's project`));
+
+        mediaMetadata = await inspectVideo(req.file.path);
+        validateVideoCodecs(req.file.originalname, mediaMetadata);
+        if (mediaMetadata.duration > maxDuration) {
+          return res.status(413).jsonp(`A duração do vídeo excede o limite de ${userType === "premium" ? "60 minutos" : "10 minutos"} do teu perfil.`);
+        }
+        mediaMetadata = { ...mediaMetadata, sizeBytes: req.file.size, format: extension.slice(1) };
+      }
+
+      const contentType = mime.lookup(req.file.originalname) || req.file.mimetype || "application/octet-stream";
+      const data = new FormData();
+      data.append("file", createReadStream(req.file.path), {
+        filename: req.file.originalname,
+        contentType,
+        knownLength: req.file.size,
+      });
+      const resp = await post_image(req.params.user, req.params.project, "src", data);
+      const og_key = resp.data.data.imageKey.split("/").pop();
+      const item = {
+        og_uri: `./images/users/${req.params.user}/projects/${req.params.project}/src/${req.file.originalname}`,
+        new_uri: `./images/users/${req.params.user}/projects/${req.params.project}/out/${req.file.originalname}`,
+        og_img_key: og_key,
+        og_sha256: await hashFile(req.file.path),
+        mediaMetadata,
+      };
+      const updated = await Project.updateIfVersion(
+        req.params.user,
+        req.params.project,
+        { ...project.toObject(), imgs: [...project.imgs, item] },
+        req.expectedVersion,
+      );
+
+      if (!updated) {
+        await delete_image(req.params.user, req.params.project, "src", og_key).catch(() => {});
+        const fresh = await Project.getOne(req.params.user, req.params.project);
+        return res.status(409).jsonp({ message: "Project version conflict", serverVersion: fresh?.version ?? null });
+      }
+
+      res.set("X-Project-Version", String(updated.version));
+      return res.sendStatus(204);
+    } catch (error) {
+      console.error("Project media upload failed:", error);
+      return res.status(error.response?.status || 500).jsonp(error.response?.data || error.message || "Error uploading media");
+    } finally {
+      require("fs").promises.unlink(req.file.path).catch(() => {});
+    }
   }
 );
 

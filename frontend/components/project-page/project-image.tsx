@@ -23,15 +23,15 @@ import {
   useDeleteProjectImages,
   useDownloadProjectImage,
 } from "@/lib/mutations/projects";
-import { useProjectInfo } from "@/providers/project-provider";
+import { useCurrentImage, useProjectInfo, useVideoTrim } from "@/providers/project-provider";
 import { useSession } from "@/providers/session-provider";
 import { useToast } from "@/hooks/use-toast";
-import type { ProjectImage } from "@/lib/projects";
+import type { ProjectImage as ProjectImageType } from "@/lib/projects";
 import { useSearchParams } from "next/navigation";
 import { getErrorMessage } from "@/lib/error-messages";
 
 interface ImageItemProps {
-  image: ProjectImage;
+  image: ProjectImageType;
   animation?: boolean;
 }
 
@@ -42,12 +42,16 @@ export function ProjectImage({ image, animation = true }: ImageItemProps) {
   const [loaded, setLoaded] = useState<boolean>(false);
   const [open, setOpen] = useState<boolean>(false);
 
-  const { _id: pid, version } = useProjectInfo();
+  const isVideo = /\.(mp4|webm|mov|quicktime|m4v)$/i.test(image.name || image.url);
+
+  const projectInfo = useProjectInfo();
+  const currentImage = useCurrentImage();
+  const { videoPlayerRef, videoSourceOverride } = useVideoTrim();
+  const { _id: pid, version } = projectInfo;
   const session = useSession();
   const ownerId = searchParams.get("owner") ?? session.user._id;
   const shareId = searchParams.get("share") ?? undefined;
 
-  const projectInfo = useProjectInfo(); // para ter version também
   const deleteImage = useDeleteProjectImages(
     session.user._id,
     pid as string,
@@ -58,39 +62,75 @@ export function ProjectImage({ image, animation = true }: ImageItemProps) {
   const downloadImage = useDownloadProjectImage(mode === "results");
   const { toast } = useToast();
 
+  if (!animation && isVideo) {
+    const isActiveVideo = currentImage?._id === image._id;
+    const sourceUrl = videoSourceOverride?.imageId === image._id
+      ? videoSourceOverride.url
+      : image.url;
+
+    return (
+      <div className="size-full flex flex-col items-center justify-center bg-black/95 rounded-xl p-4">
+        <video
+          ref={isActiveVideo ? videoPlayerRef : undefined}
+          src={sourceUrl}
+          controls
+          playsInline
+          className="min-h-0 max-h-full w-full max-w-4xl flex-1 object-contain rounded-lg shadow-2xl"
+        />
+        <div className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
+          <span className="bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded font-bold uppercase">VIDEO</span>
+          <span>{videoSourceOverride?.imageId === image._id ? videoSourceOverride.name ?? image.name : image.name}</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <ContextMenu>
         <ContextMenuTrigger>
           <Card className="group relative overflow-hidden size-full">
-            {/* Image */}
-            <div className="size-full relative grid z-0 grid-cols-1 grid-rows-1">
-              <Image
-                src={image.url}
-                unoptimized
-                height={500}
-                width={500}
-                alt={image.name}
-                className={cn(
-                  "size-full object-contain row-start-1 col-start-1 z-30",
-                  animation && "transition-all group-hover:scale-105",
-                )}
-                priority
-                onLoad={() => setLoaded(true)}
-              />
-              <Image
-                src={image.url}
-                unoptimized
-                width={500}
-                height={500}
-                className="object-cover row-start-1 col-start-1 size-full z-10"
-                alt={image.name + " blurred"}
-              />
-              <div className="row-start-1 col-start-1 backdrop-blur-sm size-full bg-black/30 z-20" />
-              {!loaded && (
+            {/* Image or Video Thumbnail */}
+            <div className="size-full relative grid z-0 grid-cols-1 grid-rows-1 items-center justify-center bg-black/60">
+              {isVideo ? (
+                <div className="flex flex-col items-center justify-center size-full z-30 p-2 text-center">
+                  <span className="bg-primary/90 text-primary-foreground text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider mb-1">
+                    [VIDEO]
+                  </span>
+                  <span className="text-xs text-white truncate max-w-full">
+                    {image.name}
+                  </span>
+                </div>
+              ) : (
                 <>
-                  <div className="row-start-1 col-start-1 z-40 bg-background size-full" />
-                  <Skeleton className="size-full row-start-1 col-start-1 z-50" />
+                  <Image
+                    src={image.url}
+                    unoptimized
+                    height={500}
+                    width={500}
+                    alt={image.name}
+                    className={cn(
+                      "size-full object-contain row-start-1 col-start-1 z-30",
+                      animation && "transition-all group-hover:scale-105",
+                    )}
+                    priority
+                    onLoad={() => setLoaded(true)}
+                  />
+                  <Image
+                    src={image.url}
+                    unoptimized
+                    width={500}
+                    height={500}
+                    className="object-cover row-start-1 col-start-1 size-full z-10"
+                    alt={image.name + " blurred"}
+                  />
+                  <div className="row-start-1 col-start-1 backdrop-blur-sm size-full bg-black/30 z-20" />
+                  {!loaded && (
+                    <>
+                      <div className="row-start-1 col-start-1 z-40 bg-background size-full" />
+                      <Skeleton className="size-full row-start-1 col-start-1 z-50" />
+                    </>
+                  )}
                 </>
               )}
             </div>

@@ -36,10 +36,7 @@ export function AddImagesDialog() {
   );
 
   function onDrop(files: File[]) {
-    files.map(async (file) => {
-      const url = await createBlobUrlFromFile(file);
-      setImages((prevImages) => [...prevImages, url]);
-    });
+    Promise.all(files.map((file) => createBlobUrlFromFile(file))).then(setImages);
     setImageFiles(files);
   }
 
@@ -54,6 +51,8 @@ export function AddImagesDialog() {
           toast({
             title: "Images added successfully.",
           });
+          setImages([]);
+          setImageFiles([]);
           setOpen(false);
         },
         onError: (error) => {
@@ -72,14 +71,14 @@ export function AddImagesDialog() {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button className="inline-flex" variant="outline">
-          <Plus /> Add Images
+          <Plus /> Add Media
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Add Images</DialogTitle>
+          <DialogTitle>Add Media</DialogTitle>
           <DialogDescription>
-            Add more images to your project.
+            Add images or videos to your project.
           </DialogDescription>
         </DialogHeader>
         <ImageSubmissionArea onDrop={onDrop} />

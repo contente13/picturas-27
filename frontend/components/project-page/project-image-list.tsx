@@ -10,7 +10,7 @@ import {
   type CarouselApi,
 } from "@/components/ui/carousel";
 import { useGetSocket } from "@/lib/queries/projects";
-import { useProjectInfo } from "@/providers/project-provider";
+import { useCanEditProject, useCurrentImage, useProjectInfo, useVideoTrim } from "@/providers/project-provider";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "@/providers/session-provider";
 import {
@@ -24,6 +24,7 @@ import Image from "next/image";
 import { useToast } from "@/hooks/use-toast";
 import * as ProjectTypes from "@/lib/projects";
 import { ProjectImage } from "./project-image";
+import { VideoTrimPanel } from "@/components/toolbar/video-trim-tool";
 import { useQueryClient } from "@tanstack/react-query";
 import ProjectText from "./project-text";
 import { getAiErrorMessage } from "@/lib/error-messages"; 
@@ -55,12 +56,23 @@ export function ProjectImageList({
   const [previewText, setPreviewText] = useState<string[] | null>(null);
 
   const project = useProjectInfo();
+  const currentImage = useCurrentImage();
+  const canEdit = useCanEditProject();
+  const { videoTrimOpen } = useVideoTrim();
   const session = useSession();
   const { toast } = useToast();
   const preview = usePreview();
 
   const qc = useQueryClient();
   const socket = useGetSocket(session.token);
+
+  const showVideoTrim = Boolean(
+    view === "carousel" &&
+      mode === "edit" &&
+      videoTrimOpen &&
+      currentImage?.url &&
+      /\.(mp4|webm)$/i.test(currentImage.name || currentImage.url),
+  );
 
 
 useEffect(() => {
@@ -175,7 +187,7 @@ useEffect(() => {
         setPreviewImage(null);
       }}
     >
-      <div className="size-full">
+      <div className={showVideoTrim ? "h-full min-h-0 w-full overflow-y-auto flex flex-col" : "size-full"}>
         {view === "grid" || project.imgs.length <= 0 ? (
           // Grid view
           <div className="size-full flex flex-col items-center">
@@ -255,38 +267,44 @@ useEffect(() => {
           </div>
         ) : (
           // Carousel view
-          <div className="size-full px-2 sm:px-16 py-2">
-            <Carousel setApi={setApi}>
-              <CarouselContent className="aspect-auto h-[calc(100vh-99px-0.5rem-36px)] xl:h-[calc(100vh-55px-0.5rem-36px)]">
-                {mode === "edit" &&
-                  project.imgs.length > 0 &&
-                  project.imgs.map((image) => (
-                    <CarouselItem key={image._id}>
-                      <ProjectImage image={image} animation={false} />
-                    </CarouselItem>
-                  ))}
-                {mode === "results" &&
-                  results.imgs.length > 0 &&
-                  results.imgs.map((image) => (
-                    <CarouselItem key={image._id}>
-                      <ProjectImage image={image} animation={false} />
-                    </CarouselItem>
-                  ))}
-                {mode === "results" &&
-                  results.texts.length > 0 &&
-                  results.texts.map((text) => (
-                    <CarouselItem key={text.name}>
-                      <ProjectText text={text.text} />
-                    </CarouselItem>
-                  ))}
-              </CarouselContent>
-              <CarouselPrevious className="hidden sm:flex" />
-              <CarouselNext className="hidden sm:flex" />
-            </Carousel>
-            <div className="py-2 text-center text-sm text-muted-foreground">
-              {current} / {count}
+          <>
+            <div className={showVideoTrim ? "w-full shrink-0 px-2 sm:px-10 py-2" : "size-full px-2 sm:px-16 py-2"}>
+              <Carousel setApi={setApi}>
+                <CarouselContent
+                  className="aspect-auto h-[calc(100vh-99px-0.5rem-36px)] xl:h-[calc(100vh-55px-0.5rem-36px)]"
+                  style={showVideoTrim ? { height: "min(52vh, 560px)" } : undefined}
+                >
+                  {mode === "edit" &&
+                    project.imgs.length > 0 &&
+                    project.imgs.map((image) => (
+                      <CarouselItem key={image._id}>
+                        <ProjectImage image={image} animation={false} />
+                      </CarouselItem>
+                    ))}
+                  {mode === "results" &&
+                    results.imgs.length > 0 &&
+                    results.imgs.map((image) => (
+                      <CarouselItem key={image._id}>
+                        <ProjectImage image={image} animation={false} />
+                      </CarouselItem>
+                    ))}
+                  {mode === "results" &&
+                    results.texts.length > 0 &&
+                    results.texts.map((text) => (
+                      <CarouselItem key={text.name}>
+                        <ProjectText text={text.text} />
+                      </CarouselItem>
+                    ))}
+                </CarouselContent>
+                <CarouselPrevious className="hidden sm:flex" />
+                <CarouselNext className="hidden sm:flex" />
+              </Carousel>
+              <div className="py-2 text-center text-sm text-muted-foreground">
+                {current} / {count}
+              </div>
             </div>
-          </div>
+            {showVideoTrim && <VideoTrimPanel disabled={!canEdit} />}
+          </>
         )}
       </div>
       <DialogContent className="max-w-[80%] mt-4 overflow-y-scroll overflow-x-hidden">

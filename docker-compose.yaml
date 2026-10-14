@@ -62,7 +62,7 @@ services:
       -master.volumeSizeLimitMB=1024
     ports:
       - "9000:9000"
-      - "9090:8888"
+      - "9092:8888"
     environment:
       # Admin credentials. SeaweedFS reads these when no -s3.config file is given.
       AWS_ACCESS_KEY_ID: ${S3_ACCESS_KEY:-admin}
@@ -140,6 +140,26 @@ services:
       RABBITMQ_PORT: 5672
       RABBITMQ_USER: user
       RABBITMQ_PASS: password
+      RABBITMQ_URL: amqp://user:password@rabbitmq:5672
+    networks:
+      - elk
+    volumes:
+      - image_data:/app/images
+
+  video_trim_worker:
+    build: ./projects
+    command: ["node", "workers/videoTrimWorker.js"]
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      projects_mongoDB:
+        condition: service_started
+      img_storage:
+        condition: service_started
+    restart: on-failure
+    environment:
+      RABBITMQ_URL: amqp://user:password@rabbitmq:5672
+      MONGO_URL: mongodb://projects_mongoDB:27018/project
     networks:
       - elk
     volumes:

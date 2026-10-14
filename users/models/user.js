@@ -6,6 +6,12 @@ const daySchema = new mongoose.Schema({
   processed: { type: Number, default: 0, required: true },
 });
 
+const operationReservationSchema = new mongoose.Schema({
+  id: { type: String, required: true },
+  day: { type: Date, required: true },
+  amount: { type: Number, required: true },
+}, { _id: false });
+
 const userSchema = new mongoose.Schema({
   name: { type: String, required: false },
   
@@ -34,6 +40,7 @@ const userSchema = new mongoose.Schema({
     required: true,
   },
   operations: { type: [daySchema], required: true, default: [] },
+  operationReservations: { type: [operationReservationSchema], default: [] },
 });
 
 // Virtual "email" para aceder ao valor desencriptado
@@ -62,6 +69,7 @@ userSchema.set("toJSON", {
     delete ret.email_encrypted;
     delete ret.email_hash;
     delete ret.password_hash;
+    delete ret.operationReservations;
     return ret;
   },
 });

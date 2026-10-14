@@ -38,6 +38,16 @@ export interface ProjectImage {
   _id: string;
   name: string;
   url: string;
+  mediaMetadata?: {
+    duration?: number;
+    width?: number;
+    height?: number;
+    videoCodec?: string;
+    audioCodec?: string | null;
+    frameRate?: string;
+    format?: string;
+    sizeBytes?: number;
+  } | null;
 }
 
 export interface ProjectImageText {
@@ -334,6 +344,7 @@ export const getProjectImages = async (
     _id: img._id,
     name: img.name,
     url: img.url,
+    mediaMetadata: img.mediaMetadata,
   })) as ProjectImage[];
 };
 

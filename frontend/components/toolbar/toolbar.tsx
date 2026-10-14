@@ -14,9 +14,10 @@ import ObjectAITool from "./object-ai-tool";
 import PeopleAITool from "./people-ai-tool";
 import TextAITool from "./text-ai-tool";
 import UpgradeAITool from "./upgrade-ai-tool";
+import VideoTrimTool from "./video-trim-tool";
 import { useClearProjectTools } from "@/lib/mutations/projects";
 import { useSession } from "@/providers/session-provider";
-import { useProjectInfo } from "@/providers/project-provider";
+import { useProjectInfo, useCurrentImage } from "@/providers/project-provider";
 import { Button } from "../ui/button";
 import { AppliedToolsList } from "./applied-tools-list";
 import {
@@ -41,7 +42,10 @@ export function Toolbar() {
   const disabled = view === "grid" || mode === "results";
 
   const project = useProjectInfo();
+  const currentImage = useCurrentImage();
   const session = useSession();
+
+  const isVideo = currentImage && /\.(mp4|webm)$/i.test(currentImage.name || currentImage.url);
 
   const [open, setOpen] = useState<boolean>(false);
   const ownerParam = searchParams.get("owner") ?? session.user._id;
@@ -58,24 +62,30 @@ export function Toolbar() {
   return (
     <div className="flex h-full w-24 flex-col justify-between items-stretch border-r bg-background p-2">
       <div className="flex flex-col gap-2 items-center">
-        <span className="text-sm text-gray-500">Tools</span>
-        <BrightnessTool disabled={disabled} />
-        <ContrastTool disabled={disabled} />
-        <SaturationTool disabled={disabled} />
-        <BinarizationTool disabled={disabled} />
-        <RotateTool disabled={disabled} />
-        <CropTool disabled={disabled} />
-        <ResizeTool disabled={disabled} />
-        <BorderTool disabled={disabled} />
-        <WatermarkTool disabled={disabled} />
-        <BgRemovalAITool disabled={disabled} />
-        <CropAITool disabled={disabled} />
-        <ObjectAITool disabled={disabled} />
-        <PeopleAITool disabled={disabled} />
-        <TextAITool disabled={disabled} />
-        <ExpandAITool disabled={disabled} />
-        <UpgradeAITool disabled={disabled} />
-        <AppliedToolsList />
+        <span className="text-sm text-gray-500">{isVideo ? "Video Tools" : "Tools"}</span>
+        {isVideo ? (
+          <VideoTrimTool disabled={disabled} />
+        ) : (
+          <>
+            <BrightnessTool disabled={disabled} />
+            <ContrastTool disabled={disabled} />
+            <SaturationTool disabled={disabled} />
+            <BinarizationTool disabled={disabled} />
+            <RotateTool disabled={disabled} />
+            <CropTool disabled={disabled} />
+            <ResizeTool disabled={disabled} />
+            <BorderTool disabled={disabled} />
+            <WatermarkTool disabled={disabled} />
+            <BgRemovalAITool disabled={disabled} />
+            <CropAITool disabled={disabled} />
+            <ObjectAITool disabled={disabled} />
+            <PeopleAITool disabled={disabled} />
+            <TextAITool disabled={disabled} />
+            <ExpandAITool disabled={disabled} />
+            <UpgradeAITool disabled={disabled} />
+            <AppliedToolsList />
+          </>
+        )}
       </div>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogTrigger asChild>

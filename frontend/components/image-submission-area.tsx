@@ -23,6 +23,8 @@ export default function ImageSubmissionArea({
       "image/jpeg",
       "image/jpg",
       "application/zip",
+      "video/mp4",
+      "video/webm",
     ];
 
     // Extract images from zip files and filter out incompatible files
@@ -31,7 +33,10 @@ export default function ImageSubmissionArea({
       if (file.type === "application/zip") {
         const extractedFiles = await extractZipImages(file);
         compatibleFiles.push(...extractedFiles);
-      } else if (compatibleFileTypes.includes(file.type)) {
+      } else if (
+        compatibleFileTypes.includes(file.type) ||
+        /\.(mp4|webm)$/i.test(file.name)
+      ) {
         compatibleFiles.push(file);
       }
     }
@@ -52,8 +57,9 @@ export default function ImageSubmissionArea({
       return file;
     });
 
-    setFiles((prevFiles) => [...prevFiles, ...uniqueFiles]);
-    onDrop(uniqueFiles);
+    const nextFiles = [...files, ...uniqueFiles];
+    setFiles(nextFiles);
+    onDrop(nextFiles);
   };
 
   useEffect(() => {
@@ -72,7 +78,7 @@ export default function ImageSubmissionArea({
             <div className="flex flex-col gap-4 items-center justify-center max-w-[20rem]">
               <ImagePlus size={64} />
               <p className="font-medium text-lg">
-                Drag and drop images or a .zip
+                Drag and drop images, videos or a .zip
               </p>
             </div>
           </AppDropzone>

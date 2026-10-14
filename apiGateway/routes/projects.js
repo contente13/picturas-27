@@ -8,6 +8,8 @@ const fs = require("fs");
 
 const multer = require("multer");
 const FormData = require("form-data");
+const os = require("os");
+const path = require("path");
 
 const auth = require("../auth/auth");
 
@@ -20,8 +22,16 @@ const httpsAgent = new https.Agent({
   key: key,
 });
 
-const storage = multer.memoryStorage();
-const upload = multer({ storage: storage });
+const storage = multer.diskStorage({
+  destination: os.tmpdir(),
+  filename: (_req, file, callback) => {
+    callback(null, `picturas-upload-${Date.now()}-${Math.random().toString(16).slice(2)}${path.extname(file.originalname)}`);
+  },
+});
+const upload = multer({
+  storage,
+  limits: { fileSize: 2 * 1024 * 1024 * 1024 },
+});
 
 const projectsURL = "https://projects:9001/";
 
@@ -146,6 +156,65 @@ router.get("/share/:shareId/project", auth.checkToken, (req, res) => {
     })
     .then((resp) => res.status(200).jsonp(resp.data))
     .catch((err) => forwardAxiosError(res, err, "Error getting shared project"));
+});
+
+// Video trim task API (authenticated and scoped to the project owner/share).
+router.post("/:user/:project/video/:imageId/trim", auth.checkToken, (req, res) => {
+  const callerId = req.authUserId || req.params.user;
+  axios.post(
+    projectsURL + `${req.params.user}/${req.params.project}/video/${req.params.imageId}/trim`,
+    req.body,
+    {
+      httpsAgent,
+      params: req.query.share ? { share: req.query.share } : undefined,
+      headers: { Authorization: req.headers.authorization, "X-Caller-Id": callerId },
+    },
+  )
+    .then((resp) => res.status(resp.status).jsonp(resp.data))
+    .catch((err) => forwardAxiosError(res, err, "Não foi possível criar a tarefa de recorte."));
+});
+
+router.get("/:user/:project/video/tasks/latest", auth.checkToken, (req, res) => {
+  const callerId = req.authUserId || req.params.user;
+  axios.get(
+    projectsURL + `${req.params.user}/${req.params.project}/video/tasks/latest`,
+    {
+      httpsAgent,
+      params: req.query.share ? { share: req.query.share } : undefined,
+      headers: { Authorization: req.headers.authorization, "X-Caller-Id": callerId },
+    },
+  )
+    .then((resp) => res.status(resp.status).jsonp(resp.data))
+    .catch((err) => forwardAxiosError(res, err, "Não foi possível obter a última tarefa de recorte."));
+});
+
+router.get("/:user/:project/video/tasks/:taskId", auth.checkToken, (req, res) => {
+  const callerId = req.authUserId || req.params.user;
+  axios.get(
+    projectsURL + `${req.params.user}/${req.params.project}/video/tasks/${req.params.taskId}`,
+    {
+      httpsAgent,
+      params: req.query.share ? { share: req.query.share } : undefined,
+      headers: { Authorization: req.headers.authorization, "X-Caller-Id": callerId },
+    },
+  )
+    .then((resp) => res.status(resp.status).jsonp(resp.data))
+    .catch((err) => forwardAxiosError(res, err, "Não foi possível obter o estado da tarefa."));
+});
+
+router.post("/:user/:project/video/tasks/:taskId/cancel", auth.checkToken, (req, res) => {
+  const callerId = req.authUserId || req.params.user;
+  axios.post(
+    projectsURL + `${req.params.user}/${req.params.project}/video/tasks/${req.params.taskId}/cancel`,
+    {},
+    {
+      httpsAgent,
+      params: req.query.share ? { share: req.query.share } : undefined,
+      headers: { Authorization: req.headers.authorization, "X-Caller-Id": callerId },
+    },
+  )
+    .then((resp) => res.status(resp.status).jsonp(resp.data))
+    .catch((err) => forwardAxiosError(res, err, "Não foi possível cancelar a tarefa."));
 });
 
 
@@ -408,20 +477,22 @@ router.post(
  */
 router.post(
   "/:user/:project/img",
-  upload.single("image"),
   auth.checkToken,
-  function (req, res, next) {
+  upload.single("image"),
+  async function (req, res) {
+    if (!req.file) return res.status(400).jsonp("No file found");
     const ownerId = req.query.owner || req.params.user;
     const callerId = req.authUserId || req.params.user;
 
     const data = new FormData();
-    data.append("image", req.file.buffer, {
+    data.append("image", fs.createReadStream(req.file.path), {
       filename: req.file.originalname,
       contentType: req.file.mimetype,
+      knownLength: req.file.size,
     });
 
-    axios
-      .post(
+    try {
+      const resp = await axios.post(
         projectsURL + `${ownerId}/${req.params.project}/img`,
         data,
         {
@@ -435,15 +506,16 @@ router.post(
           params: req.query.share ? { share: req.query.share } : undefined, 
           
         }
-      )
-      .then((resp) => {
-        if (resp.headers?.["x-project-version"]) {
-          res.set("X-Project-Version", resp.headers["x-project-version"]);
-        }
-        return res.sendStatus(204);
-      })
-    .catch((err) => forwardAxiosError(res, err, "mensagem fallback"))
-
+      );
+      if (resp.headers?.["x-project-version"]) {
+        res.set("X-Project-Version", resp.headers["x-project-version"]);
+      }
+      return res.sendStatus(204);
+    } catch (err) {
+      return forwardAxiosError(res, err, "mensagem fallback");
+    } finally {
+      fs.promises.unlink(req.file.path).catch(() => {});
+    }
   }
 );
 

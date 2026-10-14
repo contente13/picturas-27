@@ -11,6 +11,7 @@ import {
   useState,
   useEffect,
   useRef,
+  type RefObject,
 } from "react";
 import { useSession } from "@/providers/session-provider";
 import { useQueryClient } from "@tanstack/react-query";
@@ -29,6 +30,11 @@ interface ProjectContextData {
   hasUnsavedChanges: boolean;
   setHasUnsavedChanges: (dirty: boolean) => void;
   canEdit: boolean;
+  videoPlayerRef: RefObject<HTMLVideoElement | null>;
+  videoTrimOpen: boolean;
+  setVideoTrimOpen: (open: boolean) => void;
+  videoSourceOverride: { imageId: string; trimImageId?: string; url: string; name?: string } | null;
+  setVideoSourceOverride: (source: { imageId: string; trimImageId?: string; url: string; name?: string } | null) => void;
 }
 
 const ProjectContext = createContext<ProjectContextData | undefined>(undefined);
@@ -62,6 +68,19 @@ export function ProjectProvider({
 
   const [tools, setTools] = useState(project.tools);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const videoPlayerRef = useRef<HTMLVideoElement | null>(null);
+  const [videoTrimOpen, setVideoTrimOpen] = useState(false);
+  const [videoSourceOverride, setVideoSourceOverride] = useState<{
+    imageId: string;
+    trimImageId?: string;
+    url: string;
+    name?: string;
+  } | null>(null);
+
+  useEffect(() => {
+    const isVideo = Boolean(currentImage?.url && /\.(mp4|webm)$/i.test(currentImage.name || currentImage.url));
+    setVideoTrimOpen(isVideo);
+  }, [currentImage?._id, currentImage?.name, currentImage?.url]);
 
   // entrar na room do projeto
   useEffect(() => {
@@ -286,6 +305,11 @@ export function ProjectProvider({
         preview,
         hasUnsavedChanges,
         canEdit,
+        videoPlayerRef,
+        videoTrimOpen,
+        setVideoTrimOpen,
+        videoSourceOverride,
+        setVideoSourceOverride,
         setHasUnsavedChanges: (dirty: boolean) => {
           if (!canEdit) return;
           setHasUnsavedChanges(dirty);
@@ -346,4 +370,18 @@ export function useCanEditProject() {
     throw new Error("useCanEditProject() must be used within a ProjectProvider");
   }
   return context.canEdit;
+}
+
+export function useVideoTrim() {
+  const context = useContext(ProjectContext);
+  if (context === undefined) {
+    throw new Error("useVideoTrim() must be used within a ProjectProvider");
+  }
+  return {
+    videoPlayerRef: context.videoPlayerRef,
+    videoTrimOpen: context.videoTrimOpen,
+    setVideoTrimOpen: context.setVideoTrimOpen,
+    videoSourceOverride: context.videoSourceOverride,
+    setVideoSourceOverride: context.setVideoSourceOverride,
+  };
 }

@@ -27,6 +27,19 @@ const ImagePreview = ({
 
   if (!blobUrl) return <Loading />;
 
+  if (/\.(mp4|webm|mov|m4v)$/i.test(file.name) || file.type?.startsWith("video/")) {
+    return (
+      <div className="grid rounded-lg overflow-hidden shadow-md border size-full max-h-full bg-black">
+        <video
+          src={blobUrl}
+          controls
+          playsInline
+          className="size-full max-h-full object-contain"
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="grid rounded-lg overflow-hidden shadow-md border size-full max-h-full bg-background">
       <Image
