@@ -244,7 +244,7 @@ async function processTask(taskId) {
   const task = await VideoTask.findOne({ taskId });
   if (!task) return;
   if (task.state === "CANCELADA") {
-    await VideoTask.updateOne({ taskId, state: "CANCELADA" }, { $unset: { active_user_id: "" } });
+    await VideoTask.updateOne({ taskId, state: "CANCELADA" }, { $unset: { active_project_id: "" } });
     return;
   }
   if (!["EM_FILA", "EM_PROCESSAMENTO", "A_FINALIZAR"].includes(task.state)) return;
@@ -388,7 +388,7 @@ async function processTask(taskId) {
         error: null,
         completedAt: new Date(),
       },
-      $unset: { active_user_id: "" },
+      $unset: { active_project_id: "" },
     });
     if (!completed.matchedCount) {
       throw new Error("A tarefa foi interrompida antes de guardar o resultado.");
@@ -407,7 +407,7 @@ async function processTask(taskId) {
     if (current && current.state !== "CANCELADA") {
       await VideoTask.updateOne({ taskId }, {
         $set: { state: "FALHADA", error: taskError, completedAt: new Date() },
-        $unset: { active_user_id: "" },
+        $unset: { active_project_id: "" },
       });
       await releaseReservation(taskId).catch((releaseError) => {
         console.error("Failed to refund a video operation:", releaseError.message);
@@ -427,7 +427,7 @@ async function processTask(taskId) {
     await fs.promises.rm(workDir, { recursive: true, force: true }).catch(() => {});
     await VideoTask.updateOne(
       { taskId, state: "CANCELADA" },
-      { $unset: { active_user_id: "" } },
+      { $unset: { active_project_id: "" } },
     ).catch((error) => console.error("Could not release the cancelled video task lock:", error.message));
   }
 }
@@ -479,7 +479,7 @@ async function processSubtitleGeneration(task) {
     if (Date.now() >= deadlineAt) throw new Error(SUBTITLE_PROCESSING_TIMEOUT_MESSAGE);
     await VideoTask.updateOne({ taskId: task.taskId, state: "EM_PROCESSAMENTO" }, {
       $set: { state: "CONCLUIDA", progress: 100, subtitleSegments: segments, error: null, completedAt: new Date() },
-      $unset: { active_user_id: "" },
+      $unset: { active_project_id: "" },
     });
   } catch (error) {
     const current = await VideoTask.findOne({ taskId: task.taskId }).select("state").lean().catch(() => null);
@@ -490,18 +490,32 @@ async function processSubtitleGeneration(task) {
           error: timedOut ? SUBTITLE_PROCESSING_TIMEOUT_MESSAGE : error.message || "Não foi possível gerar as legendas.",
           completedAt: new Date(),
         },
-        $unset: { active_user_id: "" },
+        $unset: { active_project_id: "" },
       });
     }
   } finally {
     clearTimeout(timeout);
     clearInterval(progressTimer);
     clearInterval(cancellationPoll);
-    await VideoTask.updateOne({ taskId: task.taskId, state: "CANCELADA" }, { $unset: { active_user_id: "" } });
+    await VideoTask.updateOne({ taskId: task.taskId, state: "CANCELADA" }, { $unset: { active_project_id: "" } });
   }
 }
 
+// Tasks created before RNG-11 were locked per user (active_user_id). Active ones are moved to the
+// project lock, and syncIndexes drops the old unique per-user index, which would otherwise keep
+// blocking a second task of the same user in another project.
+async function migrateTaskLocks() {
+  await VideoTask.collection.updateMany(
+    { active_user_id: { $type: "string" } },
+    [{ $set: { active_project_id: { $toString: "$project_id" } } }, { $unset: "active_user_id" }],
+  );
+  await VideoTask.syncIndexes();
+}
+
 async function recoverTasks() {
+  await migrateTaskLocks().catch((error) => {
+    console.error("Could not migrate video task locks to the per-project policy:", error);
+  });
   await recoverPendingReservations().catch((error) => {
     console.error("Could not recover video operation reservations:", error);
   });
@@ -539,7 +553,7 @@ async function cancelTask(task) {
   }
   if (!updated) return false;
   if (previousState === "EM_FILA") {
-    await VideoTask.updateOne({ taskId: task.taskId, state: "CANCELADA" }, { $unset: { active_user_id: "" } });
+    await VideoTask.updateOne({ taskId: task.taskId, state: "CANCELADA" }, { $unset: { active_project_id: "" } });
   }
   await releaseReservation(task.taskId).catch((error) => {
     console.error("Failed to refund a cancelled video operation:", error.message);
@@ -551,6 +565,7 @@ module.exports = {
   cancelTask,
   enqueueTask,
   getUserType,
+  migrateTaskLocks,
   processTask,
   recoverPendingReservations,
   recoverTasks,

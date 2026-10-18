@@ -22,6 +22,24 @@ const CANCELLABLE_STATES = ["EM_FILA", "EM_PROCESSAMENTO"];
 const SUBTITLE_EMBED_DURATION_LIMIT_SECONDS = { free: 60, premium: 600 };
 const PREMIUM_VIDEO_SIZE_LIMIT_BYTES = 2 * 1024 * 1024 * 1024;
 const PREMIUM_VIDEO_DURATION_LIMIT_SECONDS = 60 * 60;
+const OPERATION_LABELS = {
+  trim: "um recorte",
+  subtitles: "uma incorporação de legendas",
+  generate_subtitles: "uma geração automática de legendas",
+};
+
+// RNG-11: at most one active video task per project, whatever the tool. Tasks of the same user
+// in other projects do not block. The unique index on active_project_id (models/videoTask.js)
+// makes the check atomic: of two simultaneous requests only one task can be saved.
+function findActiveProjectTask(projectId) {
+  return VideoTask.findOne({ project_id: projectId, state: { $in: ACTIVE_STATES } }).select("operation").lean();
+}
+
+function projectBusyMessage(activeTask) {
+  const label = OPERATION_LABELS[activeTask?.operation] || "outra operação de vídeo";
+  return `Este projeto já tem ${label} em curso. Aguarda que termine ou cancela-a antes de iniciar outra operação de vídeo.`;
+}
+
 router.get(
   "/:user/:project/video/:imageId/subtitles",
   checkSharePermission,
@@ -111,8 +129,8 @@ router.post(
       if (userType === "free" && process.env.ALLOW_FREE_SUBTITLE_AI_TESTING !== "true") {
         return res.status(403).jsonp("A geração automática requer o plano Premium.");
       }
-      const activeTask = await VideoTask.findOne({ user_id: req.params.user, state: { $in: ACTIVE_STATES } });
-      if (activeTask) return res.status(409).jsonp("Já tens uma tarefa de vídeo em curso. Aguarda que termine.");
+      const activeTask = await findActiveProjectTask(req.params.project);
+      if (activeTask) return res.status(409).jsonp(projectBusyMessage(activeTask));
       taskId = uuidv4();
       const task = new VideoTask({
         taskId,
@@ -128,7 +146,7 @@ router.post(
         maxProcessingMs: 900_000,
         state: "EM_FILA",
         progress: 0,
-        active_user_id: String(req.params.user),
+        active_project_id: String(req.params.project),
       });
       await task.save();
       savedTaskId = taskId;
@@ -138,10 +156,10 @@ router.post(
       if (savedTaskId) {
         await VideoTask.updateOne({ taskId: savedTaskId, state: "EM_FILA" }, {
           $set: { state: "FALHADA", error: "Não foi possível colocar a tarefa na fila.", completedAt: new Date() },
-          $unset: { active_user_id: "" },
+          $unset: { active_project_id: "" },
         }).catch(() => {});
       }
-      if (error.code === 11000) return res.status(409).jsonp("Já tens uma tarefa de vídeo em curso. Aguarda que termine.");
+      if (error.code === 11000) return res.status(409).jsonp(projectBusyMessage(await findActiveProjectTask(req.params.project).catch(() => null)));
       console.error("Could not create video subtitle generation task:", error.message);
       return res.status(503).jsonp("Não foi possível iniciar a geração automática. Tenta novamente mais tarde.");
     }
@@ -173,8 +191,8 @@ router.post(
       if (!["free", "premium"].includes(userType)) return res.status(403).jsonp("A incorporação de legendas está disponível para contas Registadas e Premium.");
       const limit = SUBTITLE_EMBED_DURATION_LIMIT_SECONDS[userType];
       if (duration > limit) return res.status(400).jsonp(`O vídeo excede o limite de ${limit} segundos do teu perfil.`);
-      const activeTask = await VideoTask.findOne({ user_id: req.params.user, state: { $in: ACTIVE_STATES } });
-      if (activeTask) return res.status(409).jsonp("Já tens uma tarefa de vídeo em curso. Aguarda que termine.");
+      const activeTask = await findActiveProjectTask(req.params.project);
+      if (activeTask) return res.status(409).jsonp(projectBusyMessage(activeTask));
       taskId = uuidv4();
       let reserved = false;
       if (userType === "free") {
@@ -199,7 +217,7 @@ router.post(
         state: "EM_FILA",
         progress: 0,
         reservedOperation: reserved,
-        active_user_id: String(req.params.user),
+        active_project_id: String(req.params.project),
       });
       await task.save();
       savedTaskId = taskId;
@@ -209,7 +227,7 @@ router.post(
       if (savedTaskId) {
         await VideoTask.updateOne({ taskId: savedTaskId, state: "EM_FILA" }, {
           $set: { state: "FALHADA", error: "Não foi possível colocar a tarefa na fila.", completedAt: new Date() },
-          $unset: { active_user_id: "" },
+          $unset: { active_project_id: "" },
         }).catch(() => {});
       }
       if (reservationAttempted) {
@@ -217,7 +235,7 @@ router.post(
           if (savedTaskId) await VideoTask.updateOne({ taskId: savedTaskId, reservedOperation: true }, { $set: { reservedOperation: false } });
         }).catch((refundError) => console.error("Could not release subtitles quota:", refundError.message));
       }
-      if (error.code === 11000) return res.status(409).jsonp("Já tens uma tarefa de vídeo em curso. Aguarda que termine.");
+      if (error.code === 11000) return res.status(409).jsonp(projectBusyMessage(await findActiveProjectTask(req.params.project).catch(() => null)));
       console.error("Could not create video subtitle task:", error);
       return res.status(error.response?.status === 701 ? 429 : 503).jsonp(error.response?.data || "Não foi possível iniciar a incorporação. Tenta novamente mais tarde.");
     }
@@ -280,8 +298,8 @@ router.post(
         return res.status(400).jsonp(`O recorte excede o limite de ${durationLimit} segundos do teu perfil.`);
       }
 
-      const activeTask = await VideoTask.findOne({ user_id: req.params.user, state: { $in: ACTIVE_STATES } });
-      if (activeTask) return res.status(409).jsonp("Já tens uma tarefa de vídeo em curso. Aguarda que termine.");
+      const activeTask = await findActiveProjectTask(req.params.project);
+      if (activeTask) return res.status(409).jsonp(projectBusyMessage(activeTask));
 
       taskId = uuidv4();
       if (userType === "free") {
@@ -303,7 +321,7 @@ router.post(
         state: "EM_FILA",
         progress: 0,
         reservedOperation: reserved,
-        active_user_id: String(req.params.user),
+        active_project_id: String(req.params.project),
       });
       await task.save();
       savedTaskId = taskId;
@@ -313,7 +331,7 @@ router.post(
       if (savedTaskId) {
         await VideoTask.updateOne({ taskId: savedTaskId, state: "EM_FILA" }, {
           $set: { state: "FALHADA", error: "Não foi possível colocar a tarefa na fila.", completedAt: new Date() },
-          $unset: { active_user_id: "" },
+          $unset: { active_project_id: "" },
         }).catch(() => {});
       }
       if (reservationAttempted) {
@@ -328,7 +346,7 @@ router.post(
           console.error("Could not release operation reservation after task creation failure:", refundError.message);
         }
       }
-      if (error.code === 11000) return res.status(409).jsonp("Já tens uma tarefa de vídeo em curso. Aguarda que termine.");
+      if (error.code === 11000) return res.status(409).jsonp(projectBusyMessage(await findActiveProjectTask(req.params.project).catch(() => null)));
       console.error("Could not create video trim task:", error);
       const status = error.response?.status === 701
         ? 429

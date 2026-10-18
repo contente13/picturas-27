@@ -25,14 +25,17 @@ const videoTaskSchema = new mongoose.Schema({
   resultUrl: { type: String, default: null },
   resultImageId: { type: String, default: null },
   reservedOperation: { type: Boolean, default: false },
-  active_user_id: { type: String, default: undefined },
+  // Project lock (RNG-11): set while the task is queued, processing or finalizing, and removed
+  // when it ends. The unique partial index below allows at most one active video task per
+  // project, whatever the tool, while the same user can have tasks in different projects.
+  active_project_id: { type: String, default: undefined },
   startedAt: { type: Date, default: null },
   completedAt: { type: Date, default: null },
 }, { timestamps: true });
 
 videoTaskSchema.index(
-  { active_user_id: 1 },
-  { unique: true, partialFilterExpression: { active_user_id: { $type: "string" } } },
+  { active_project_id: 1 },
+  { unique: true, partialFilterExpression: { active_project_id: { $type: "string" } } },
 );
 
 module.exports = mongoose.model("video_task", videoTaskSchema);
