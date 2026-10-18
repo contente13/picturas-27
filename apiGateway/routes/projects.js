@@ -7,6 +7,7 @@ const https = require("https");
 const fs = require("fs");
 
 const multer = require("multer");
+const { utf8FilenameFilter } = require("../utils/filename");
 const FormData = require("form-data");
 const os = require("os");
 const path = require("path");
@@ -30,6 +31,7 @@ const storage = multer.diskStorage({
 });
 const upload = multer({
   storage,
+  fileFilter: utf8FilenameFilter,
   limits: { fileSize: 2 * 1024 * 1024 * 1024 },
 });
 
