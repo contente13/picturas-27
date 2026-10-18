@@ -17,11 +17,13 @@ const {
   delete_image,
 } = require("../utils/imageStorage");
 const { inspectVideo, validateVideoCodecs } = require("../utils/video");
+const { generateSubtitleSegments } = require("./subtitlesAI");
 
 const usersUrl = "https://users:10001/";
 const videoQueue = "video.trim.tasks";
 const rabbitUrl = process.env.RABBITMQ_URL || "amqp://user:password@rabbitmq:5672";
 const PROCESSING_TIMEOUT_MESSAGE = "O processamento excedeu o limite de tempo do teu perfil. Tenta um recorte mais curto.";
+const SUBTITLE_PROCESSING_TIMEOUT_MESSAGE = "A geração automática excedeu o limite de 900 segundos do plano Premium.";
 let rabbitConnection;
 let rabbitChannel;
 
@@ -245,6 +247,10 @@ async function processTask(taskId) {
     return;
   }
   if (!["EM_FILA", "EM_PROCESSAMENTO", "A_FINALIZAR"].includes(task.state)) return;
+  if (task.operation === "generate_subtitles") {
+    await processSubtitleGeneration(task);
+    return;
+  }
 
   const workDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), task.operation === "subtitles" ? "picturas-subtitles-" : "picturas-trim-"));
   const sourceExtension = path.extname(task.source_name);
@@ -420,6 +426,67 @@ async function enqueueTask(taskId) {
     persistent: true,
     contentType: "application/json",
   });
+}
+
+async function processSubtitleGeneration(task) {
+  const started = await VideoTask.updateOne(
+    { taskId: task.taskId, state: { $in: ["EM_FILA", "EM_PROCESSAMENTO"] } },
+    { $set: { state: "EM_PROCESSAMENTO", progress: 5, startedAt: new Date() } },
+  );
+  if (!started.matchedCount) return;
+  const startedAt = Date.now();
+  const deadlineAt = startedAt + task.maxProcessingMs;
+  const abortController = new AbortController();
+  let timedOut = false;
+  const timeout = setTimeout(() => {
+    timedOut = true;
+    abortController.abort();
+  }, task.maxProcessingMs);
+  const progressTimer = setInterval(() => {
+    const estimate = Math.min(90, 5 + Math.floor(((Date.now() - startedAt) / task.maxProcessingMs) * 80));
+    VideoTask.updateOne({ taskId: task.taskId, state: "EM_PROCESSAMENTO" }, { $max: { progress: estimate } })
+      .catch((error) => console.error("Could not update subtitle generation progress:", error.message));
+  }, 10_000);
+  const cancellationPoll = setInterval(async () => {
+    const current = await VideoTask.findOne({ taskId: task.taskId }).select("state").lean().catch(() => null);
+    if (current?.state === "CANCELADA") abortController.abort();
+  }, 500);
+  progressTimer.unref?.();
+  cancellationPoll.unref?.();
+  try {
+    const segments = await generateSubtitleSegments({
+      userId: task.user_id,
+      projectId: task.project_id,
+      source: { og_uri: task.source_name, og_img_key: task.source_key },
+      duration: task.durationSeconds,
+      deadlineAt,
+      signal: abortController.signal,
+    });
+    const current = await VideoTask.findOne({ taskId: task.taskId }).select("state").lean();
+    if (current?.state === "CANCELADA") return;
+    if (Date.now() >= deadlineAt) throw new Error(SUBTITLE_PROCESSING_TIMEOUT_MESSAGE);
+    await VideoTask.updateOne({ taskId: task.taskId, state: "EM_PROCESSAMENTO" }, {
+      $set: { state: "CONCLUIDA", progress: 100, subtitleSegments: segments, error: null, completedAt: new Date() },
+      $unset: { active_user_id: "" },
+    });
+  } catch (error) {
+    const current = await VideoTask.findOne({ taskId: task.taskId }).select("state").lean().catch(() => null);
+    if (current?.state !== "CANCELADA") {
+      await VideoTask.updateOne({ taskId: task.taskId, state: "EM_PROCESSAMENTO" }, {
+        $set: {
+          state: "FALHADA",
+          error: timedOut ? SUBTITLE_PROCESSING_TIMEOUT_MESSAGE : error.message || "Não foi possível gerar as legendas.",
+          completedAt: new Date(),
+        },
+        $unset: { active_user_id: "" },
+      });
+    }
+  } finally {
+    clearTimeout(timeout);
+    clearInterval(progressTimer);
+    clearInterval(cancellationPoll);
+    await VideoTask.updateOne({ taskId: task.taskId, state: "CANCELADA" }, { $unset: { active_user_id: "" } });
+  }
 }
 
 async function recoverTasks() {

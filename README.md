@@ -42,6 +42,7 @@ PictuRAS is a web-based image editing platform that combines traditional image p
 - **Object Detection** (`obj_ai`): object detection and classification with YOLO
 - **People Detection** (`people_ai`): person detection and counting
 - **Text Recognition** (`text_ai`): OCR for text extraction from images
+- **Automatic Subtitles** (`subtitles-ai`): local Whisper transcription for video captions
 - **Image Enhancement** (`upgrade_ai`): AI-driven quality improvement and upscaling
 - **Generative Expand** (`expand_ai`): outpainting / canvas expansion, backed by a generative
   image API (a local **mock** of the Stable Diffusion WebUI API ships with the project, so no
@@ -117,6 +118,7 @@ has no link to any other microservice. Note that **`subscriptions` means paid me
 | **API Gateway**           | 8000           | Single entry point for the REST API, JWT checks |
 | **User Service**          | 10001          | Registration, authentication, user profile      |
 | **Project Service**       | 9001           | Projects, image pipelines, tool orchestration   |
+| **Subtitle AI Service**   | 9100 (internal) | Local Whisper transcription model               |
 | **Subscription Service**  | 11001          | Plans, payments (mock), usage limits            |
 | **Image Storage Service** | 11000          | Upload/download façade in front of SeaweedFS    |
 | **WebSocket Gateway**     | 4000           | Real-time progress events to the browser        |
@@ -330,6 +332,11 @@ All configuration currently lives as `environment:` entries in `docker-compose.y
 | `FRONTEND_URL`                                | `https://localhost:8080`      | img_storage            | CORS / redirect origin                       |
 | `NEXT_PUBLIC_API_BASE_URL`                    | `/api-gateway/`               | frontend               | Relative API base (keep it relative!)        |
 | `GEN_EXPAND_URL`                              | `http://generative-mock:7860` | expand_ai              | Generative image API endpoint                |
+| `SUBTITLE_MODEL`                              | `base`                         | subtitles-ai           | Local Whisper model (`tiny`, `base`, `small`, etc.) |
+| `SUBTITLE_CPU_THREADS`                        | `4`                           | subtitles-ai           | CPU threads used during local transcription |
+| `ALLOW_FREE_SUBTITLE_AI_TESTING`               | `true`                        | projects               | Allow registered accounts to test AI captions |
+
+Automatic subtitle generation uses a local CPU Whisper model in the `subtitles-ai` container; it needs no API key and sends no audio to an external transcription provider. Generation is queued in RabbitMQ and its state and result are stored in MongoDB, so the API can respond immediately while the editor checks progress. The model is downloaded from Hugging Face on the first startup and kept in the `subtitles_model_cache` Docker volume, so first startup requires internet access. The default `base` model balances accuracy and memory use; choose a different model with `SUBTITLE_MODEL`. Free-account access is enabled for testing by default; set `ALLOW_FREE_SUBTITLE_AI_TESTING=false` outside the test environment to enforce the Premium-only rule in UC-VID-001.
 
 ⚠️ If you change `JWT_SECRET_KEY`, change it in **all three** services (`users`, `api_gateway`,
 `ws_gateway`) or authentication silently breaks.

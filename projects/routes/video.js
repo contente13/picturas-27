@@ -12,11 +12,15 @@ const {
   getUserType,
   refundOperation,
   reserveOperation,
-} = require("../controllers/videoTrim");
+} = require("../controllers/videoTasks");
 
 const router = express.Router();
 const ACTIVE_STATES = ["EM_FILA", "EM_PROCESSAMENTO", "A_FINALIZAR"];
 const CANCELLABLE_STATES = ["EM_FILA", "EM_PROCESSAMENTO"];
+// UC-VID-001 RN14: source-video duration limit for subtitle embedding.
+const SUBTITLE_EMBED_DURATION_LIMIT_SECONDS = { free: 60, premium: 600 };
+const PREMIUM_VIDEO_SIZE_LIMIT_BYTES = 2 * 1024 * 1024 * 1024;
+const PREMIUM_VIDEO_DURATION_LIMIT_SECONDS = 60 * 60;
 
 function validateSubtitleSegments(segments, duration) {
   if (!Array.isArray(segments) || segments.length > 2000) return "A lista de legendas é inválida ou demasiado longa.";
@@ -90,6 +94,78 @@ router.put(
 );
 
 router.post(
+  "/:user/:project/video/:imageId/subtitles/generate",
+  checkSharePermission,
+  requireEditPermission,
+  requireVideoAccess,
+  async (req, res) => {
+    let savedTaskId = null;
+    let taskId = null;
+    try {
+      const project = await Project.getOne(req.params.user, req.params.project);
+      if (!project) return res.status(404).jsonp("Project not found");
+      const source = project.imgs.id(req.params.imageId);
+      const duration = Number(source?.mediaMetadata?.duration);
+      if (!source || !Number.isFinite(duration) || duration <= 0) {
+        return res.status(404).jsonp("O vídeo selecionado não tem metadados válidos no projeto.");
+      }
+      const sourceName = require("path").basename(source.og_uri);
+      if (!/\.(mp4|webm)$/i.test(sourceName)) return res.status(415).jsonp("Formato não suportado. Usa um vídeo MP4 ou WebM compatível.");
+      const sizeBytes = Number(source.mediaMetadata?.sizeBytes);
+      if (!Number.isFinite(sizeBytes) || sizeBytes <= 0) {
+        return res.status(422).jsonp("Não foi possível validar o tamanho do vídeo para a geração automática.");
+      }
+      if (sizeBytes > PREMIUM_VIDEO_SIZE_LIMIT_BYTES) {
+        return res.status(413).jsonp("A geração automática aceita vídeos até 2 GB, de acordo com os limites Premium.");
+      }
+      if (duration > PREMIUM_VIDEO_DURATION_LIMIT_SECONDS) {
+        return res.status(413).jsonp("A geração automática aceita vídeos até 60 minutos, de acordo com os limites Premium.");
+      }
+      const userType = await getUserType(req.params.user);
+      if (!["free", "premium"].includes(userType)) {
+        return res.status(403).jsonp("A geração automática está disponível para contas Registadas e Premium durante a fase de testes.");
+      }
+      if (userType === "free" && process.env.ALLOW_FREE_SUBTITLE_AI_TESTING !== "true") {
+        return res.status(403).jsonp("A geração automática requer o plano Premium.");
+      }
+      const activeTask = await VideoTask.findOne({ user_id: req.params.user, state: { $in: ACTIVE_STATES } });
+      if (activeTask) return res.status(409).jsonp("Já tens uma tarefa de vídeo em curso. Aguarda que termine.");
+      taskId = uuidv4();
+      const task = new VideoTask({
+        taskId,
+        operation: "generate_subtitles",
+        user_id: req.params.user,
+        project_id: req.params.project,
+        image_id: String(source._id),
+        source_key: source.og_img_key,
+        source_name: sourceName,
+        tempoInicio: 0,
+        tempoFim: duration,
+        durationSeconds: duration,
+        maxProcessingMs: 900_000,
+        state: "EM_FILA",
+        progress: 0,
+        active_user_id: String(req.params.user),
+      });
+      await task.save();
+      savedTaskId = taskId;
+      await enqueueTask(taskId);
+      return res.status(202).json({ tarefaId: taskId, estado: task.state });
+    } catch (error) {
+      if (savedTaskId) {
+        await VideoTask.updateOne({ taskId: savedTaskId, state: "EM_FILA" }, {
+          $set: { state: "FALHADA", error: "Não foi possível colocar a tarefa na fila.", completedAt: new Date() },
+          $unset: { active_user_id: "" },
+        }).catch(() => {});
+      }
+      if (error.code === 11000) return res.status(409).jsonp("Já tens uma tarefa de vídeo em curso. Aguarda que termine.");
+      console.error("Could not create video subtitle generation task:", error.message);
+      return res.status(503).jsonp("Não foi possível iniciar a geração automática. Tenta novamente mais tarde.");
+    }
+  },
+);
+
+router.post(
   "/:user/:project/video/:imageId/subtitles/embed",
   checkSharePermission,
   requireEditPermission,
@@ -102,17 +178,17 @@ router.post(
       const project = await Project.getOne(req.params.user, req.params.project);
       if (!project) return res.status(404).jsonp("Project not found");
       const source = project.imgs.id(req.params.imageId);
-      if (!source?.mediaMetadata?.duration) return res.status(404).jsonp("O vídeo selecionado não tem metadados válidos no projeto.");
+      const duration = Number(source?.mediaMetadata?.duration);
+      if (!source || !Number.isFinite(duration) || duration <= 0) return res.status(404).jsonp("O vídeo selecionado não tem metadados válidos no projeto.");
       const sourceName = require("path").basename(source.og_uri);
       if (!/\.(mp4|webm)$/i.test(sourceName)) return res.status(415).jsonp("Formato não suportado. Usa um vídeo MP4 ou WebM compatível.");
       const segments = source.subtitles || [];
-      const validationError = validateSubtitleSegments(segments, Number(source.mediaMetadata.duration));
+      const validationError = validateSubtitleSegments(segments, duration);
       if (validationError) return res.status(400).jsonp(validationError);
       if (!segments.length) return res.status(400).jsonp("Adiciona pelo menos uma legenda antes de a incorporar.");
       const userType = await getUserType(req.params.user);
       if (!["free", "premium"].includes(userType)) return res.status(403).jsonp("A incorporação de legendas está disponível para contas Registadas e Premium.");
-      const duration = Number(source.mediaMetadata.duration);
-      const limit = userType === "premium" ? 600 : 60;
+      const limit = SUBTITLE_EMBED_DURATION_LIMIT_SECONDS[userType];
       if (duration > limit) return res.status(400).jsonp(`O vídeo excede o limite de ${limit} segundos do teu perfil.`);
       const activeTask = await VideoTask.findOne({ user_id: req.params.user, state: { $in: ACTIVE_STATES } });
       if (activeTask) return res.status(409).jsonp("Já tens uma tarefa de vídeo em curso. Aguarda que termine.");
@@ -290,6 +366,7 @@ router.get(
         project_id: req.params.project,
       };
       if (req.query.operation === "subtitles") taskFilter.operation = "subtitles";
+      else if (req.query.operation === "generate_subtitles") taskFilter.operation = "generate_subtitles";
       else taskFilter.$or = [{ operation: "trim" }, { operation: { $exists: false } }];
       const task = await VideoTask.findOne(taskFilter).sort({ createdAt: -1 }).lean();
       if (!task) return res.json({ tarefa: null });
@@ -317,6 +394,8 @@ router.get(
           recursoSaida: task.resultName,
           resultUrl,
           resultImageId: task.resultImageId,
+          segments: task.operation === "generate_subtitles" ? task.subtitleSegments : undefined,
+          operation: task.operation,
         },
       });
     } catch (error) {
@@ -347,6 +426,8 @@ router.get(
         recursoSaida: task.resultName,
         resultUrl: task.resultUrl,
         resultImageId: task.resultImageId,
+        segments: task.operation === "generate_subtitles" && task.state === "CONCLUIDA" ? task.subtitleSegments : undefined,
+        operation: task.operation,
         projectVersion: task.state === "CONCLUIDA"
           ? (await Project.getOne(task.user_id, task.project_id))?.version ?? null
           : null,

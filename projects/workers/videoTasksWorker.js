@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 const amqp = require("amqplib");
-const { processTask } = require("../controllers/videoTrim");
+const { processTask } = require("../controllers/videoTasks");
 
 const mongoUrl = process.env.MONGO_URL || "mongodb://projects_mongoDB:27018/project";
 const rabbitUrl = process.env.RABBITMQ_URL || "amqp://user:password@rabbitmq:5672";
@@ -20,14 +20,14 @@ async function start() {
       await processTask(payload.taskId);
       channel.ack(message);
     } catch (error) {
-      console.error("Video trim worker error:", error);
+      console.error("Video tasks worker error:", error);
       channel.nack(message, false, true);
     }
   }, { noAck: false });
-  console.log(`Video trim worker listening on ${queue}`);
+  console.log(`Video tasks worker listening on ${queue}`);
 }
 
 start().catch((error) => {
-  console.error("Could not start video trim worker:", error);
+  console.error("Could not start video tasks worker:", error);
   process.exit(1);
 });

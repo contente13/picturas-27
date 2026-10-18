@@ -7,7 +7,7 @@ const mongoose = require("mongoose");
 
 const { router: projectsRouter, process_msg } = require("./routes/projects");
 const videoRouter = require("./routes/video");
-const { recoverPendingReservations, recoverTasks } = require("./controllers/videoTrim");
+const { recoverPendingReservations, recoverTasks } = require("./controllers/videoTasks");
 
 // Run Docker
 const mongoDB = "mongodb://projects_mongoDB:27018/project";

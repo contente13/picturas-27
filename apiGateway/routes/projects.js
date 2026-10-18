@@ -179,6 +179,17 @@ router.put("/:user/:project/video/:imageId/subtitles", auth.checkToken, (req, re
     .catch((err) => forwardAxiosError(res, err, "Não foi possível guardar as legendas."));
 });
 
+router.post("/:user/:project/video/:imageId/subtitles/generate", auth.checkToken, (req, res) => {
+  const callerId = req.authUserId || req.params.user;
+  axios.post(projectsURL + `${req.params.user}/${req.params.project}/video/${req.params.imageId}/subtitles/generate`, req.body, {
+    httpsAgent,
+    params: req.query.share ? { share: req.query.share } : undefined,
+    headers: { Authorization: req.headers.authorization, "X-Caller-Id": callerId },
+    timeout: 600_000,
+  }).then((resp) => res.status(resp.status).jsonp(resp.data))
+    .catch((err) => forwardAxiosError(res, err, "Não foi possível gerar as legendas automaticamente."));
+});
+
 router.post("/:user/:project/video/:imageId/subtitles/embed", auth.checkToken, (req, res) => {
   const callerId = req.authUserId || req.params.user;
   axios.post(projectsURL + `${req.params.user}/${req.params.project}/video/${req.params.imageId}/subtitles/embed`, req.body, {

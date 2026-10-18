@@ -132,6 +132,8 @@ services:
         condition: service_healthy
       projects_mongoDB:
         condition: service_started
+      subtitles-ai:
+        condition: service_healthy
     ports:
       - "9002:9001"
     restart: on-failure
@@ -141,14 +143,36 @@ services:
       RABBITMQ_USER: user
       RABBITMQ_PASS: password
       RABBITMQ_URL: amqp://user:password@rabbitmq:5672
+      SUBTITLE_AI_URL: http://subtitles-ai:9100
+      ALLOW_FREE_SUBTITLE_AI_TESTING: ${ALLOW_FREE_SUBTITLE_AI_TESTING:-true}
     networks:
       - elk
     volumes:
       - image_data:/app/images
 
-  video_trim_worker:
+  subtitles-ai:
+    build:
+      context: ./Tools
+      dockerfile: subtitles_ai/Dockerfile
+    restart: on-failure
+    networks:
+      - elk
+    environment:
+      SUBTITLE_MODEL: ${SUBTITLE_MODEL:-base}
+      SUBTITLE_CPU_THREADS: ${SUBTITLE_CPU_THREADS:-4}
+      HF_HOME: /models
+    volumes:
+      - subtitles_model_cache:/models
+    healthcheck:
+      test: ["CMD", "python", "healthcheck.py"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 300s
+
+  video_tasks_worker:
     build: ./projects
-    command: ["node", "workers/videoTrimWorker.js"]
+    command: ["node", "workers/videoTasksWorker.js"]
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -559,3 +583,4 @@ volumes:
   image_data:
   seaweedfs_data:
   subscription_data:
+  subtitles_model_cache:
