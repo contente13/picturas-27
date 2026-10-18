@@ -10,6 +10,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const mongoose = require("mongoose");
 
+// Each integration file uses its own database: node --test runs the files in parallel.
 const mongoUrl = process.env.MONGO_TEST_URL;
 const skip = !mongoUrl && "MONGO_TEST_URL not set";
 
@@ -103,7 +104,7 @@ async function waitFor(condition, timeoutMs = 5000) {
 
 test.describe("RNG-11: one active video operation per project", { skip }, () => {
   test.before(async () => {
-    await mongoose.connect(mongoUrl);
+    await mongoose.connect(mongoUrl, { dbName: "picturas_test_rng11" });
     await mongoose.connection.db.dropDatabase();
     await VideoTask.syncIndexes();
     const app = express();
