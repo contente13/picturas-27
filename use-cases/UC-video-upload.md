@@ -6,8 +6,8 @@
 |---|---|
 | Grupo / Equipa | Grupo 1 |
 | Autores | Eduardo Freitas, Francisco Contente, Luís Pires, Rui Castro |
-| Data | 2026-10-15 |
-| Versão do documento | v1.0 |
+| Data | 2026-10-18 |
+| Versão do documento | v1.1 |
 | Unidade Curricular | Requisitos e Arquiteturas de Software - MEI, Universidade do Minho |
 
 ## 1.0 Funcionalidade - Carregamento de vídeo
@@ -26,7 +26,7 @@
 |---|---|
 | ID do Caso de Uso | UC-VID-000 |
 | Nome | Carregar um vídeo para um projeto |
-| Versão | v1.0 |
+| Versão | v1.1 |
 | Autor | Luís Pires |
 | Data | 2026-10-15 |
 | Objetivo | Permitir a um utilizador Registado ou Premium adicionar um vídeo suportado a um projeto, guardando-o de forma íntegra e apresentando-o na biblioteca para reprodução e utilização posterior. |
@@ -90,7 +90,7 @@
 | RN4 | Cada nome de ficheiro tem de ser único dentro do projeto. O sistema não substitui automaticamente ficheiros existentes. |
 | RN5 | Cada carregamento associa o vídeo ao projeto e guarda os metadados identificados, incluindo hash SHA-256, tamanho, formato, duração, codecs, resolução e taxa de fotogramas. A atualização do projeto respeita a versão esperada, evitando perda de alterações concorrentes. |
 | RN6 | O acesso ao carregamento exige autenticação e permissão de edição no projeto, incluindo quando este é acedido através de partilha. Os vídeos ficam protegidos pelas regras de acesso do projeto e pela proteção de transporte e armazenamento definida para o sistema. |
-| RN7 | O carregamento não conta como operação diária de processamento de vídeo e não cria uma tarefa assíncrona de processamento. Cada ficheiro selecionado é carregado e validado individualmente. |
+| RN7 | O carregamento não conta como operação diária de processamento de vídeo e não cria uma tarefa assíncrona de processamento. Por isso não está sujeito ao limite de uma operação de vídeo ativa por projeto (RNG-11) e é aceite mesmo com uma operação em curso no projeto. Cada ficheiro selecionado é carregado e validado individualmente. |
 | RN8 | Ficheiros temporários locais são eliminados após sucesso ou falha. Se a gravação no armazenamento tiver sucesso mas a atualização do projeto falhar, o objeto órfão é removido. |
 | RN9 | Um vídeo carregado com sucesso passa a poder ser selecionado pelas ferramentas de vídeo, que aplicam os seus próprios requisitos adicionais, limites e regras de acesso. |
 

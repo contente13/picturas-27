@@ -6,8 +6,8 @@
 |---|---|
 | Grupo / Equipa | Grupo 1 |
 | Autores | Eduardo Freitas, Francisco Contente, Luís Pires, Rui Castro |
-| Data | 2026-10-06 |
-| Versão do documento | v1.0 |
+| Data | 2026-10-18 |
+| Versão do documento | v1.1 |
 | Unidade Curricular | Requisitos e Arquiteturas de Software - MEI, Universidade do Minho |
 
 ## 1.3 Funcionalidade 3 - Juntar vários vídeos
@@ -26,7 +26,7 @@
 |---|---|
 | ID do Caso de Uso | UC-VID-003 |
 | Nome | Juntar vários vídeos |
-| Versão | v1.0 |
+| Versão | v1.1 |
 | Autor | Eduardo Freitas |
 | Data | 2026-10-06 |
 | Objetivo | Permitir ao utilizador selecionar dois ou mais vídeos de um projeto, definir a ordem em que devem aparecer e gerar um único vídeo resultante da concatenação, mantendo os ficheiros originais inalterados. |
@@ -79,7 +79,7 @@
 | E7 - Falha durante a conversão intermédia | O sistema termina a execução, elimina os ficheiros temporários e mantém os originais intactos. |
 | E8 - Falha durante a concatenação | O resultado parcial é descartado, os vídeos originais permanecem inalterados e o utilizador pode repetir a operação. |
 | E9 - Falta de espaço de armazenamento | O sistema interrompe a operação antes de consolidar o resultado e informa que não existe espaço disponível suficiente. |
-| E10 - Processamento concorrente incompatível | Se existir outra operação de processamento de vídeo Em Fila ou Em Processamento no mesmo projeto, independentemente da ferramenta e dos vídeos selecionados, impede a criação de nova tarefa e informa que deve aguardar a conclusão ou cancelar a operação anterior. |
+| E10 - Processamento concorrente incompatível | Se existir outra operação de processamento de vídeo Em Fila ou Em Processamento no mesmo projeto, independentemente da ferramenta e dos vídeos selecionados, impede a criação de nova tarefa, não reserva quota e informa que deve aguardar a conclusão ou cancelar a operação anterior. Operações do mesmo utilizador noutros projetos não originam esta exceção. |
 | E11 - Quota diária esgotada (passo 6) | Se as 5 operações diárias do Registado estiverem consumidas ou reservadas, rejeita o pedido, informa quando a quota será reposta e não cria tarefa nem reserva operação adicional. |
 
 ### 2.3.5 Pós-condições
@@ -110,7 +110,7 @@
 | RN15 | O resultado é armazenado como um novo vídeo do projeto e nunca substitui automaticamente os ficheiros utilizados como entrada. |
 | RN16 | Cada concatenação conta como 1 operação, independentemente das normalizações internas. Para Registados, a quota é de 5 operações diárias partilhadas entre todas as ferramentas do PictuRAS, reposta à meia-noite (Europe/Lisbon). A verificação considera consumidas e reservadas e reserva atomicamente 1 operação ao aceitar o pedido; o consumo ocorre apenas no sucesso. A reserva é libertada imediatamente em falha de criação, processamento, cancelamento ou outro desfecho sem sucesso. Pedidos rejeitados antes da reserva não consomem quota. Premium não tem limite diário. |
 | RN17 | Entrada aceite: MP4 (H.264/AAC) e WebM (VP8/Vorbis), incluindo seleções mistas e clips sem áudio (RN11). O sistema normaliza quando necessário e produz o resultado em MP4 (H.264/AAC). |
-| RN18 | Cada projeto pode ter no máximo uma operação de processamento de vídeo Em Fila ou Em Processamento, independentemente da ferramenta utilizada, em conformidade com UC-VID-001 - RN8 e UC-VID-002 - RN5. Resultados tardios de tarefas canceladas ou falhadas não são consolidados. |
+| RN18 | Cada projeto pode ter no máximo uma operação de processamento de vídeo Em Fila ou Em Processamento, independentemente da ferramenta utilizada (RNG-11), em conformidade com UC-VID-001 - RN7 e UC-VID-002 - RN5. O mesmo utilizador pode ter operações ativas em projetos diferentes, sujeitas à quota diária por utilizador (RN16) e à disponibilidade dos workers. Resultados tardios de tarefas canceladas ou falhadas não são consolidados. |
 | RN19 | Os vídeos de entrada e o resultado são acessíveis ao proprietário do projeto ou a quem tenha um link de partilha válido, com encriptação em trânsito e em repouso. O acesso por link não dispensa a autenticação e o perfil exigidos para executar a ferramenta. |
 
 ### 2.3.7 Assunções
