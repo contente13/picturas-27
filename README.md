@@ -332,11 +332,14 @@ All configuration currently lives as `environment:` entries in `docker-compose.y
 | `FRONTEND_URL`                                | `https://localhost:8080`      | img_storage            | CORS / redirect origin                       |
 | `NEXT_PUBLIC_API_BASE_URL`                    | `/api-gateway/`               | frontend               | Relative API base (keep it relative!)        |
 | `GEN_EXPAND_URL`                              | `http://generative-mock:7860` | expand_ai              | Generative image API endpoint                |
-| `SUBTITLE_MODEL`                              | `base`                         | subtitles-ai           | Local Whisper model (`tiny`, `base`, `small`, etc.) |
-| `SUBTITLE_CPU_THREADS`                        | `4`                           | subtitles-ai           | CPU threads used during local transcription |
-| `ALLOW_FREE_SUBTITLE_AI_TESTING`               | `true`                        | projects               | Allow registered accounts to test AI captions |
+| `SUBTITLE_MODEL`                              | `large-v3-turbo`              | subtitles-ai           | Local Whisper model (`small`, `medium`, `large-v3-turbo`, etc.) |
+| `SUBTITLE_FAST_MODEL`                         | `small`                       | subtitles-ai           | Model used for audio longer than `SUBTITLE_LONG_AUDIO_SECONDS` |
+| `SUBTITLE_LONG_AUDIO_SECONDS`                 | `1800`                        | subtitles-ai           | Audio duration above which the fast model is used |
+| `SUBTITLE_LANGUAGE`                           | *(empty: auto-detect)*        | subtitles-ai           | Force a transcription language, e.g. `pt` |
+| `SUBTITLE_CPU_THREADS`                        | `8`                           | subtitles-ai           | CPU threads used during local transcription |
+| `ALLOW_FREE_SUBTITLE_AI_TESTING`               | `false`                       | projects               | Allow registered accounts to test AI captions |
 
-Automatic subtitle generation uses a local CPU Whisper model in the `subtitles-ai` container; it needs no API key and sends no audio to an external transcription provider. Generation is queued in RabbitMQ and its state and result are stored in MongoDB, so the API can respond immediately while the editor checks progress. The model is downloaded from Hugging Face on the first startup and kept in the `subtitles_model_cache` Docker volume, so first startup requires internet access. The default `base` model balances accuracy and memory use; choose a different model with `SUBTITLE_MODEL`. Free-account access is enabled for testing by default; set `ALLOW_FREE_SUBTITLE_AI_TESTING=false` outside the test environment to enforce the Premium-only rule in UC-VID-001.
+Automatic subtitle generation uses a local CPU Whisper model in the `subtitles-ai` container; it needs no API key and sends no audio to an external transcription provider. Generation is queued in RabbitMQ and its state and result are stored in MongoDB, so the API can respond immediately while the editor checks progress. The model is downloaded from Hugging Face on the first startup and kept in the `subtitles_model_cache` Docker volume, so first startup requires internet access. The default `large-v3-turbo` model gives the best accuracy on CPU; audio longer than `SUBTITLE_LONG_AUDIO_SECONDS` uses `SUBTITLE_FAST_MODEL` so that a 60-minute video stays within the 900 s limit. Automatic generation is Premium-only, as required by UC-VID-001; set `ALLOW_FREE_SUBTITLE_AI_TESTING=true` to let registered accounts try it while testing.
 
 ⚠️ If you change `JWT_SECRET_KEY`, change it in **all three** services (`users`, `api_gateway`,
 `ws_gateway`) or authentication silently breaks.

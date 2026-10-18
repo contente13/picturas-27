@@ -144,7 +144,7 @@ services:
       RABBITMQ_PASS: password
       RABBITMQ_URL: amqp://user:password@rabbitmq:5672
       SUBTITLE_AI_URL: http://subtitles-ai:9100
-      ALLOW_FREE_SUBTITLE_AI_TESTING: ${ALLOW_FREE_SUBTITLE_AI_TESTING:-true}
+      ALLOW_FREE_SUBTITLE_AI_TESTING: ${ALLOW_FREE_SUBTITLE_AI_TESTING:-false}
     networks:
       - elk
     volumes:
