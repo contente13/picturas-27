@@ -138,7 +138,7 @@ function isVideoImage(image: ReturnType<typeof useCurrentImage>) {
 export default function VideoTrimTool({ disabled }: { disabled: boolean }) {
   const currentImage = useCurrentImage();
   const canEdit = useCanEditProject();
-  const { videoTrimOpen, setVideoTrimOpen } = useVideoTrim();
+  const { videoTrimOpen, setVideoTrimOpen, setVideoSubtitlesOpen } = useVideoTrim();
   if (!isVideoImage(currentImage)) return null;
 
   const isDisabled = disabled || !canEdit;
@@ -150,7 +150,7 @@ export default function VideoTrimTool({ disabled }: { disabled: boolean }) {
       className={`flex h-auto flex-col gap-1 px-1 py-2 text-xs ${videoTrimOpen ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}
       disabled={isDisabled}
       title="Recorte Temporal (UC-VID-002)"
-      onClick={() => setVideoTrimOpen(true)}
+      onClick={() => { setVideoSubtitlesOpen(false); setVideoTrimOpen(true); }}
     >
       <Scissors className="size-5" />
       <span>Recorte</span>

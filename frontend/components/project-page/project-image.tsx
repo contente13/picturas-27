@@ -46,7 +46,7 @@ export function ProjectImage({ image, animation = true }: ImageItemProps) {
 
   const projectInfo = useProjectInfo();
   const currentImage = useCurrentImage();
-  const { videoPlayerRef, videoSourceOverride } = useVideoTrim();
+  const { videoPlayerRef, videoSourceOverride, videoSubtitlePreview } = useVideoTrim();
   const { _id: pid, version } = projectInfo;
   const session = useSession();
   const ownerId = searchParams.get("owner") ?? session.user._id;
@@ -69,7 +69,7 @@ export function ProjectImage({ image, animation = true }: ImageItemProps) {
       : image.url;
 
     return (
-      <div className="size-full flex flex-col items-center justify-center bg-black/95 rounded-xl p-4">
+      <div className="relative size-full flex flex-col items-center justify-center bg-black/95 rounded-xl p-4">
         <video
           ref={isActiveVideo ? videoPlayerRef : undefined}
           src={sourceUrl}
@@ -77,6 +77,11 @@ export function ProjectImage({ image, animation = true }: ImageItemProps) {
           playsInline
           className="min-h-0 max-h-full w-full max-w-4xl flex-1 object-contain rounded-lg shadow-2xl"
         />
+        {isActiveVideo && videoSubtitlePreview?.imageId === image._id && videoSubtitlePreview.text && (
+          <div className="pointer-events-none absolute bottom-16 left-1/2 max-w-[85%] -translate-x-1/2 rounded bg-black/75 px-3 py-1.5 text-center text-base font-semibold text-white shadow-lg">
+            {videoSubtitlePreview.text.split("\n").map((line, index) => <span className="block" key={index}>{line}</span>)}
+          </div>
+        )}
         <div className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
           <span className="bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded font-bold uppercase">VIDEO</span>
           <span>{videoSourceOverride?.imageId === image._id ? videoSourceOverride.name ?? image.name : image.name}</span>

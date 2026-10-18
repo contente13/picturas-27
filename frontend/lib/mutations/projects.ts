@@ -144,8 +144,9 @@ export const useAddProjectImages = (uid: string, pid: string, token: string, own
 
     onSuccess: (result) => {
       bumpProjectVersion(qc, projectKey, result.latestVersion);
-      qc.invalidateQueries({ queryKey: projectKey, refetchType: "all" });
-      qc.invalidateQueries({ queryKey: ["projectImages", uid, pid, token, ownerId, shareId], refetchType: "all" });
+      // Match cached owner/share variants of the same project after an upload.
+      qc.invalidateQueries({ queryKey: ["project", uid, pid, token], refetchType: "all" });
+      qc.invalidateQueries({ queryKey: ["projectImages", uid, pid, token], refetchType: "all" });
     },
   });
 };

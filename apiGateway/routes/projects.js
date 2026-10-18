@@ -159,6 +159,36 @@ router.get("/share/:shareId/project", auth.checkToken, (req, res) => {
 });
 
 // Video trim task API (authenticated and scoped to the project owner/share).
+router.get("/:user/:project/video/:imageId/subtitles", auth.checkToken, (req, res) => {
+  const callerId = req.authUserId || req.params.user;
+  axios.get(projectsURL + `${req.params.user}/${req.params.project}/video/${req.params.imageId}/subtitles`, {
+    httpsAgent,
+    params: req.query.share ? { share: req.query.share } : undefined,
+    headers: { Authorization: req.headers.authorization, "X-Caller-Id": callerId },
+  }).then((resp) => res.status(resp.status).jsonp(resp.data))
+    .catch((err) => forwardAxiosError(res, err, "Não foi possível carregar as legendas."));
+});
+
+router.put("/:user/:project/video/:imageId/subtitles", auth.checkToken, (req, res) => {
+  const callerId = req.authUserId || req.params.user;
+  axios.put(projectsURL + `${req.params.user}/${req.params.project}/video/${req.params.imageId}/subtitles`, req.body, {
+    httpsAgent,
+    params: req.query.share ? { share: req.query.share } : undefined,
+    headers: { Authorization: req.headers.authorization, "X-Caller-Id": callerId },
+  }).then((resp) => res.status(resp.status).jsonp(resp.data))
+    .catch((err) => forwardAxiosError(res, err, "Não foi possível guardar as legendas."));
+});
+
+router.post("/:user/:project/video/:imageId/subtitles/embed", auth.checkToken, (req, res) => {
+  const callerId = req.authUserId || req.params.user;
+  axios.post(projectsURL + `${req.params.user}/${req.params.project}/video/${req.params.imageId}/subtitles/embed`, req.body, {
+    httpsAgent,
+    params: req.query.share ? { share: req.query.share } : undefined,
+    headers: { Authorization: req.headers.authorization, "X-Caller-Id": callerId },
+  }).then((resp) => res.status(resp.status).jsonp(resp.data))
+    .catch((err) => forwardAxiosError(res, err, "Não foi possível iniciar a incorporação das legendas."));
+});
+
 router.post("/:user/:project/video/:imageId/trim", auth.checkToken, (req, res) => {
   const callerId = req.authUserId || req.params.user;
   axios.post(
@@ -180,7 +210,7 @@ router.get("/:user/:project/video/tasks/latest", auth.checkToken, (req, res) => 
     projectsURL + `${req.params.user}/${req.params.project}/video/tasks/latest`,
     {
       httpsAgent,
-      params: req.query.share ? { share: req.query.share } : undefined,
+      params: { ...(req.query.share ? { share: req.query.share } : {}), ...(req.query.operation ? { operation: req.query.operation } : {}) },
       headers: { Authorization: req.headers.authorization, "X-Caller-Id": callerId },
     },
   )

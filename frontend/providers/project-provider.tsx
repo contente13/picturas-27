@@ -33,6 +33,10 @@ interface ProjectContextData {
   videoPlayerRef: RefObject<HTMLVideoElement | null>;
   videoTrimOpen: boolean;
   setVideoTrimOpen: (open: boolean) => void;
+  videoSubtitlesOpen: boolean;
+  setVideoSubtitlesOpen: (open: boolean) => void;
+  videoSubtitlePreview: { imageId: string; text: string } | null;
+  setVideoSubtitlePreview: (preview: { imageId: string; text: string } | null) => void;
   videoSourceOverride: { imageId: string; trimImageId?: string; url: string; name?: string } | null;
   setVideoSourceOverride: (source: { imageId: string; trimImageId?: string; url: string; name?: string } | null) => void;
 }
@@ -70,6 +74,8 @@ export function ProjectProvider({
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const videoPlayerRef = useRef<HTMLVideoElement | null>(null);
   const [videoTrimOpen, setVideoTrimOpen] = useState(false);
+  const [videoSubtitlesOpen, setVideoSubtitlesOpen] = useState(false);
+  const [videoSubtitlePreview, setVideoSubtitlePreview] = useState<{ imageId: string; text: string } | null>(null);
   const [videoSourceOverride, setVideoSourceOverride] = useState<{
     imageId: string;
     trimImageId?: string;
@@ -78,8 +84,14 @@ export function ProjectProvider({
   } | null>(null);
 
   useEffect(() => {
+    setVersion(Number(project.version) || 0);
+  }, [project.version]);
+
+  useEffect(() => {
     const isVideo = Boolean(currentImage?.url && /\.(mp4|webm)$/i.test(currentImage.name || currentImage.url));
     setVideoTrimOpen(isVideo);
+    setVideoSubtitlesOpen(false);
+    setVideoSubtitlePreview(null);
   }, [currentImage?._id, currentImage?.name, currentImage?.url]);
 
   // entrar na room do projeto
@@ -308,6 +320,10 @@ export function ProjectProvider({
         videoPlayerRef,
         videoTrimOpen,
         setVideoTrimOpen,
+        videoSubtitlesOpen,
+        setVideoSubtitlesOpen,
+        videoSubtitlePreview,
+        setVideoSubtitlePreview,
         videoSourceOverride,
         setVideoSourceOverride,
         setHasUnsavedChanges: (dirty: boolean) => {
@@ -381,6 +397,10 @@ export function useVideoTrim() {
     videoPlayerRef: context.videoPlayerRef,
     videoTrimOpen: context.videoTrimOpen,
     setVideoTrimOpen: context.setVideoTrimOpen,
+    videoSubtitlesOpen: context.videoSubtitlesOpen,
+    setVideoSubtitlesOpen: context.setVideoSubtitlesOpen,
+    videoSubtitlePreview: context.videoSubtitlePreview,
+    setVideoSubtitlePreview: context.setVideoSubtitlePreview,
     videoSourceOverride: context.videoSourceOverride,
     setVideoSourceOverride: context.setVideoSourceOverride,
   };

@@ -1,4 +1,4 @@
-# UC-VID-002 — Recortar Vídeo
+# UC-VID-002 - Recortar Vídeo
 
 ## 0. Identificação
 
@@ -8,17 +8,17 @@
 | Autores | Eduardo Freitas, Francisco Contente, Luís Pires, Rui Castro |
 | Data | 2026-10-06 |
 | Versão do documento | v1.0 |
-| Unidade Curricular | Requisitos e Arquiteturas de Software — MEI, Universidade do Minho |
+| Unidade Curricular | Requisitos e Arquiteturas de Software - MEI, Universidade do Minho |
 
-## 1.2 Funcionalidade 2 — Recorte temporal de vídeo
+## 1.2 Funcionalidade 2 - Recorte temporal de vídeo
 
 | Campo | Valor |
 |---|---|
 | Funcionalidade | Recorte temporal de vídeo. |
 | Perfil(s) de utilizador abrangidos | Registado (gratuito) e Premium, com limites diferentes de duração e quota. O perfil anónimo não tem acesso, uma vez que o processamento de vídeo consome recursos significativos e o anónimo está limitado a operações sobre imagens. A prioridade de escalonamento da fila permanece como questão futura (Q3) e não faz parte do MVP. |
-| Justificação no contexto do MVP | O recorte temporal é uma funcionalidade simples, frequente e de valor imediato, permitindo reduzir vídeos ao excerto de interesse para partilha. A sua implementação valida o ciclo assíncrono completo do PictuRAS — carregamento, persistência, gestão de filas e produção do resultado final — constituindo a operação elementar adequada ao MVP. Sem esta funcionalidade, ficaria por validar o comportamento do sistema face ao processamento demorado de vídeo, ao acompanhamento do progresso e ao controlo de quotas. |
+| Justificação no contexto do MVP | O recorte temporal é uma funcionalidade simples, frequente e de valor imediato, permitindo reduzir vídeos ao excerto de interesse para partilha. A sua implementação valida o ciclo assíncrono completo do PictuRAS - carregamento, persistência, gestão de filas e produção do resultado final - constituindo a operação elementar adequada ao MVP. Sem esta funcionalidade, ficaria por validar o comportamento do sistema face ao processamento demorado de vídeo, ao acompanhamento do progresso e ao controlo de quotas. |
 
-## 2.2 Caso de Uso 02 — Recortar Vídeo
+## 2.2 Caso de Uso 02 - Recortar Vídeo
 
 ### 2.2.1 Cabeçalho
 
@@ -44,12 +44,12 @@
 |---|---|---|
 | 1 | Seleciona o vídeo pretendido no projeto ativo e aciona Recortar vídeo. | Mantém o leitor central existente como único leitor visível e apresenta o painel de recorte diretamente por baixo dele, com duração, resolução e formato. Gera no cliente uma filmstrip com 8 a 12 fotogramas. Para o perfil Registado, apresenta também as operações diárias restantes. Pré-preenche `T_in = 0` e `T_out = duração total` como ponto de partida (este intervalo ainda não é válido para submissão, RN3). |
 | 2 | Define `T_in` e `T_out` arrastando as pegas da moldura de recorte na filmstrip, usando os marcadores de posição atual ou introduzindo os valores em segundos, com uma casa decimal. | Sincroniza os campos, a seleção visual, o indicador de reprodução e o leitor central. |
-| 3 | Aciona Aplicar recorte. | — |
-| 4 | — | Valida o pedido pela seguinte ordem: (a) intervalo temporal (RN3); (b) duração do recorte face ao limite do perfil (RN1); (c) inexistência de outra operação de processamento de vídeo ativa no mesmo projeto, independentemente da ferramenta (RN5); (d) quota diária, no perfil Registado (RN4). Se tudo for válido, reserva 1 operação da quota (perfil Registado). |
-| 5 | — | Cria uma tarefa de processamento assíncrona no estado Em Fila e devolve o identificador da tarefa ao utilizador. |
-| 6 | — | Enquanto a tarefa está Em Fila ou Em Processamento, apresenta no painel, sem abrir janelas, o estado, a percentagem de progresso (quando em processamento) e a opção Cancelar Processamento. O utilizador pode aguardar ou continuar a usar a aplicação. |
-| 7 | — | Quando a tarefa começa a ser executada, passa a Em Processamento e processa o vídeo, gerando um novo vídeo com o intervalo pedido, no mesmo formato, codecs, resolução e taxa de fotogramas do original. |
-| 8 | — | Ao concluir, marca a tarefa como Concluída, consome a operação reservada (perfil Registado) e adiciona o novo vídeo ao projeto, com pré-visualização. |
+| 3 | Aciona Aplicar recorte. | - |
+| 4 | - | Valida o pedido pela seguinte ordem: (a) intervalo temporal (RN3); (b) duração do recorte face ao limite do perfil (RN1); (c) inexistência de outra operação de processamento de vídeo ativa no mesmo projeto, independentemente da ferramenta (RN5); (d) quota diária, no perfil Registado (RN4). Se tudo for válido, reserva 1 operação da quota (perfil Registado). |
+| 5 | - | Cria uma tarefa de processamento assíncrona no estado Em Fila e devolve o identificador da tarefa ao utilizador. |
+| 6 | - | Enquanto a tarefa está Em Fila ou Em Processamento, apresenta no painel, sem abrir janelas, o estado, a percentagem de progresso (quando em processamento) e a opção Cancelar Processamento. O utilizador pode aguardar ou continuar a usar a aplicação. |
+| 7 | - | Quando a tarefa começa a ser executada, passa a Em Processamento e processa o vídeo, gerando um novo vídeo com o intervalo pedido, no mesmo formato, codecs, resolução e taxa de fotogramas do original. |
+| 8 | - | Ao concluir, marca a tarefa como Concluída, consome a operação reservada (perfil Registado) e adiciona o novo vídeo ao projeto, com pré-visualização. |
 
 ### 2.2.3 Fluxos Alternativos
 
@@ -86,7 +86,7 @@
 | RN4 | Quota (perfil Registado). Cada recorte conta como 1 operação. A operação é reservada ao aceitar o pedido (passo 4), consumida apenas quando a tarefa termina com sucesso e libertada em qualquer outro desfecho (cancelamento, falha na criação ou no processamento, tempo excedido). A verificação da quota considera as operações consumidas e as reservadas, incluindo as de outras ferramentas do PictuRAS, e é feita antes de criar a tarefa. A verificação e a reserva são atómicas: duas ou mais operações concorrentes não podem ultrapassar as 5 operações diárias. As operações restantes são sempre visíveis ao utilizador. |
 | RN5 | Uma tarefa ativa por utilizador. Cada utilizador pode ter, no máximo, 1 tarefa de recorte Em Fila ou Em Processamento. |
 | RN6 | Formatos. Entrada aceite: MP4 (H.264/AAC) e WebM (VP8/Vorbis). O resultado mantém o formato, os codecs, a resolução e a taxa de fotogramas do original. A pista de áudio, se existir, é recortada em sincronia com o vídeo. |
-| RN7 | Não destrutividade. O vídeo original nunca é alterado nem substituído; cada recorte gera um novo vídeo no projeto, com o nome do original acrescido do sufixo `_recorte` (ex.: `ferias.mp4` passa a `ferias_recorte.mp4`; se o nome já existir, acrescenta-se um número sequencial, `ferias_recorte_2.mp4`). Se existirem legendas editáveis, cada segmento `[início, fim]` que intersecte o recorte é copiado com `início_novo = max(início, T_in) − T_in` e `fim_novo = min(fim, T_out) − T_in`. Segmentos com duração resultante inferior a 0,5 s são descartados. As cópias são independentes, cumprem UC-VID-001 — RN4 e não alteram as legendas originais. |
+| RN7 | Não destrutividade. O vídeo original nunca é alterado nem substituído; cada recorte gera um novo vídeo no projeto, com o nome do original acrescido do sufixo `_recorte` (ex.: `ferias.mp4` passa a `ferias_recorte.mp4`; se o nome já existir, acrescenta-se um número sequencial, `ferias_recorte_2.mp4`). Se existirem legendas editáveis, cada segmento `[início, fim]` que intersecte o recorte é copiado com `início_novo = max(início, T_in) − T_in` e `fim_novo = min(fim, T_out) − T_in`. Segmentos com duração resultante inferior a 0,5 s são descartados. As cópias são independentes, cumprem UC-VID-001 - RN4 e não alteram as legendas originais. |
 | RN8 | Tempo máximo de processamento. Registado: 120 s. Premium: 900 s. Contados desde a transição da tarefa para Em Processamento até ao fim do processo (conclusão, falha ou cancelamento). O tempo em fila não conta. |
 | RN9 | Privacidade. O vídeo original e os resultados gerados são acessíveis ao proprietário do projeto ou a quem tenha um link de partilha válido, e protegidos por encriptação em trânsito e em repouso. O acesso por link não dispensa a autenticação e o perfil exigidos para executar a ferramenta. |
 
@@ -115,7 +115,7 @@
 | Q5 | Os vídeos resultantes ficam guardados até o utilizador os apagar ou expiram após um prazo? |
 | Q6 | A conclusão do processamento deve gerar uma notificação (na aplicação ou por e-mail), em vez de apenas atualizar o estado da tarefa? |
 | Q7 | O tempo máximo do perfil Premium (900 s) é suficiente para recodificar um recorte de 600 s? A confirmar com um teste de recodificação. |
-| Q8 | Deve o recorte também admitir acesso por link de partilha, previsto para legendas em UC-VID-001 — RN10, ou manter acesso exclusivo do proprietário (RN9)? A política comum não está definida no PDF. |
+| Q8 | Deve o recorte também admitir acesso por link de partilha, previsto para legendas em UC-VID-001 - RN10, ou manter acesso exclusivo do proprietário (RN9)? A política comum não está definida no PDF. |
 
 ## 4. Esboço de requisitos derivados
 
@@ -144,7 +144,7 @@
 | REQ-TRIM-019 | O sistema deve terminar como Falhada por tempo excedido a tarefa cujo processamento ultrapasse o tempo máximo do perfil (120 s Registado, 900 s Premium), contado desde a transição para Em Processamento e sem incluir o tempo em fila, terminando o processamento associado em ≤ 5 s e sugerindo um recorte mais curto. | NF (Fiabilidade) | Deve ter | NOVO | Passo 7, RN8, E6, A4, A9 | Dado um Registado, uma execução simulada de 125 s termina Falhada por tempo excedido com a sugestão e uma de 115 s conclui; uma tarefa que espera 200 s em fila e executa 100 s conclui; dado um Premium, 905 s termina Falhada e 895 s conclui; nos casos Falhada, em ≤ 5 s não existe nenhum processo de vídeo ativo para a tarefa. |
 | REQ-TRIM-020 | O sistema deve permitir acesso aos vídeos originais e recortados ao proprietário ou através de um link de partilha válido, protegendo-os com encriptação em trânsito e em repouso. | NF (Segurança) | Deve ter | ALT | RN9 | O proprietário e quem apresenta um link válido conseguem aceder; outro utilizador sem autorização e quem apresenta link inválido, expirado ou revogado são recusados. A transferência e o armazenamento são cifrados. |
 | REQ-TRIM-021 | O sistema deve aplicar os limites de 200 MB/10 min para Registados e 2 GB/60 min para Premium apenas no carregamento de vídeos externos. Deve permitir recortar vídeos gerados no projeto sem reaplicar esses limites, mantendo as validações de formato e da operação de recorte. | F | Deve ter | NOVO | Pré-condições, RN2, A2 | No carregamento, aceitar ficheiros nos limites e rejeitar acima deles. Para um Registado, recortar um vídeo de 300 MB gerado por concatenação, com intervalo válido de até 60 s, deve ser permitido se cumprir as restantes regras. |
-| REQ-TRIM-022 | Quando o vídeo original tiver legendas editáveis, o sistema deve copiar para o resultado os segmentos que intersectem o recorte, limitar cada segmento ao intervalo, subtrair `T_in` aos tempos e descartar durações inferiores a 0,5 s, preservando as legendas originais. | F | Deve ter | NOVO | Passo 8, RN7; UC-VID-001 — RN5, FA7 | Dado um recorte [10 s, 20 s] e segmentos [9 s, 10,3 s], [12 s, 15 s] e [19 s, 22 s], então o primeiro é descartado e as cópias são [2 s, 5 s] e [9 s, 10 s]. Editar as cópias não altera o original. |
+| REQ-TRIM-022 | Quando o vídeo original tiver legendas editáveis, o sistema deve copiar para o resultado os segmentos que intersectem o recorte, limitar cada segmento ao intervalo, subtrair `T_in` aos tempos e descartar durações inferiores a 0,5 s, preservando as legendas originais. | F | Deve ter | NOVO | Passo 8, RN7; UC-VID-001 - RN5, FA7 | Dado um recorte [10 s, 20 s] e segmentos [9 s, 10,3 s], [12 s, 15 s] e [19 s, 22 s], então o primeiro é descartado e as cópias são [2 s, 5 s] e [9 s, 10 s]. Editar as cópias não altera o original. |
 
 ### 4.2 Impacto no sistema existente
 

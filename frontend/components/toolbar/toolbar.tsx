@@ -15,6 +15,7 @@ import PeopleAITool from "./people-ai-tool";
 import TextAITool from "./text-ai-tool";
 import UpgradeAITool from "./upgrade-ai-tool";
 import VideoTrimTool from "./video-trim-tool";
+import VideoSubtitlesTool from "./video-subtitles-tool";
 import { useClearProjectTools } from "@/lib/mutations/projects";
 import { useSession } from "@/providers/session-provider";
 import { useProjectInfo, useCurrentImage } from "@/providers/project-provider";
@@ -71,7 +72,10 @@ export function Toolbar() {
           <div className="flex flex-col gap-2 items-center">
             <span className="text-sm text-gray-500">{isVideo ? "Video Tools" : "Tools"}</span>
             {isVideo ? (
-              <VideoTrimTool disabled={disabled} />
+              <>
+                <VideoTrimTool disabled={disabled} />
+                <VideoSubtitlesTool disabled={disabled} />
+              </>
             ) : (
               <>
                 <BrightnessTool disabled={disabled} />

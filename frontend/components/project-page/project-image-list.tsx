@@ -25,6 +25,7 @@ import { useToast } from "@/hooks/use-toast";
 import * as ProjectTypes from "@/lib/projects";
 import { ProjectImage } from "./project-image";
 import { VideoTrimPanel } from "@/components/toolbar/video-trim-tool";
+import { VideoSubtitlesPanel } from "@/components/toolbar/video-subtitles-tool";
 import { useQueryClient } from "@tanstack/react-query";
 import ProjectText from "./project-text";
 import { getAiErrorMessage, getErrorMessage } from "@/lib/error-messages";
@@ -62,7 +63,7 @@ export function ProjectImageList({
   const project = useProjectInfo();
   const currentImage = useCurrentImage();
   const canEdit = useCanEditProject();
-  const { videoTrimOpen } = useVideoTrim();
+  const { videoTrimOpen, videoSubtitlesOpen } = useVideoTrim();
   const session = useSession();
   const { toast } = useToast();
   const preview = usePreview();
@@ -77,10 +78,10 @@ export function ProjectImageList({
   const qc = useQueryClient();
   const socket = useGetSocket(session.token);
 
-  const showVideoTrim = Boolean(
+  const showVideoPanel = Boolean(
     view === "carousel" &&
       mode === "edit" &&
-      videoTrimOpen &&
+          (videoTrimOpen || videoSubtitlesOpen) &&
       currentImage?.url &&
       /\.(mp4|webm)$/i.test(currentImage.name || currentImage.url),
   );
@@ -327,7 +328,7 @@ useEffect(() => {
         setPreviewImage(null);
       }}
     >
-      <div className={showVideoTrim ? "h-full min-h-0 w-full overflow-y-auto flex flex-col" : "size-full"}>
+      <div className={showVideoPanel ? "h-full min-h-0 w-full overflow-y-auto flex flex-col" : "size-full"}>
         {view === "grid" || project.imgs.length <= 0 ? (
           mode === "edit" && canEdit ? (
             <AppDropzone
@@ -343,11 +344,11 @@ useEffect(() => {
         ) : (
           // Carousel view
           <>
-            <div className={showVideoTrim ? "w-full shrink-0 px-2 sm:px-10 py-2" : "size-full px-2 sm:px-16 py-2"}>
+            <div className={showVideoPanel ? "w-full shrink-0 px-2 sm:px-10 py-2" : "size-full px-2 sm:px-16 py-2"}>
               <Carousel setApi={setApi}>
                 <CarouselContent
                   className="aspect-auto h-[calc(100vh-99px-0.5rem-36px)] xl:h-[calc(100vh-55px-0.5rem-36px)]"
-                  style={showVideoTrim ? { height: "min(52vh, 560px)" } : undefined}
+                  style={showVideoPanel ? { height: "min(52vh, 560px)" } : undefined}
                 >
                   {mode === "edit" &&
                     project.imgs.length > 0 &&
@@ -378,7 +379,8 @@ useEffect(() => {
                 {current} / {count}
               </div>
             </div>
-            {showVideoTrim && <VideoTrimPanel disabled={!canEdit} />}
+            {showVideoPanel && videoTrimOpen && <VideoTrimPanel disabled={!canEdit} />}
+            {showVideoPanel && videoSubtitlesOpen && <VideoSubtitlesPanel disabled={!canEdit} />}
           </>
         )}
       </div>

@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 
 const videoTaskSchema = new mongoose.Schema({
   taskId: { type: String, required: true, unique: true, index: true },
+  operation: { type: String, enum: ["trim", "subtitles"], default: "trim", index: true },
   user_id: { type: mongoose.Schema.Types.ObjectId, required: true, index: true },
   project_id: { type: mongoose.Schema.Types.ObjectId, required: true },
   image_id: { type: String, required: true },
@@ -9,6 +10,8 @@ const videoTaskSchema = new mongoose.Schema({
   source_name: { type: String, required: true },
   tempoInicio: { type: Number, required: true },
   tempoFim: { type: Number, required: true },
+  durationSeconds: { type: Number, default: null },
+  subtitleSegments: { type: [mongoose.Schema.Types.Mixed], default: [] },
   maxProcessingMs: { type: Number, required: true },
   state: {
     type: String,

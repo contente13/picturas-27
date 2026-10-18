@@ -1,4 +1,4 @@
-# UC-VID-000 — Carregar Vídeo para um Projeto
+# UC-VID-000 - Carregar Vídeo para um Projeto
 
 ## 0. Identificação
 
@@ -8,9 +8,9 @@
 | Autores | Eduardo Freitas, Francisco Contente, Luís Pires, Rui Castro |
 | Data | 2026-10-15 |
 | Versão do documento | v1.0 |
-| Unidade Curricular | Requisitos e Arquiteturas de Software — MEI, Universidade do Minho |
+| Unidade Curricular | Requisitos e Arquiteturas de Software - MEI, Universidade do Minho |
 
-## 1.0 Funcionalidade — Carregamento de vídeo
+## 1.0 Funcionalidade - Carregamento de vídeo
 
 | Campo | Valor |
 |---|---|
@@ -18,7 +18,7 @@
 | Perfil(s) de utilizador abrangido(s) | Registado (gratuito) e Premium. O perfil anónimo pode carregar imagens, mas não vídeos. O Registado está sujeito aos limites de 200 MB e 10 minutos; o Premium, aos limites de 2 GB e 60 minutos. |
 | Justificação no contexto do MVP | O carregamento é o ponto de entrada comum às funcionalidades de vídeo. Legendas (UC-VID-001), recorte (UC-VID-002) e concatenação (UC-VID-003) dependem de vídeos disponíveis no projeto. Este caso de uso especifica a seleção, validação, armazenamento e disponibilização de um vídeo externo, incluindo os limites por perfil e a preservação dos ficheiros já existentes. |
 
-## 2.0 Caso de Uso 00 — Carregar um vídeo para um projeto
+## 2.0 Caso de Uso 00 - Carregar um vídeo para um projeto
 
 ### 2.0.1 Cabeçalho
 
@@ -42,36 +42,36 @@
 |---|---|---|
 | 1 | Abre um projeto e seleciona um ficheiro de vídeo (`.mp4` ou `.webm`) na área de carregamento. | Apresenta o ficheiro na lista de itens a carregar, com o nome e uma pré-visualização. |
 | 2 | Confirma o carregamento. | Verifica a sessão, a permissão de edição e a versão do projeto. Recebe o ficheiro como multipart/form-data e guarda-o temporariamente para validação. |
-| 3 | — | Consulta o perfil do utilizador e valida a extensão, o tamanho máximo aplicável, a existência de uma pista de vídeo válida, a duração e os codecs permitidos (RN1–RN3). |
-| 4 | — | Verifica se já existe no projeto um ficheiro com o mesmo nome. Se os controlos forem válidos, calcula o hash SHA-256 e envia o vídeo para o armazenamento, associado ao projeto e à área de origem (`src`). |
-| 5 | — | Adiciona ao projeto a referência do ficheiro, o identificador no armazenamento, o hash e os metadados técnicos (duração, codecs, resolução, taxa de fotogramas, dimensão e formato). Atualiza a versão do projeto de forma consistente (RN4, RN5). |
-| 6 | — | Elimina o ficheiro temporário local e responde com sucesso e a nova versão do projeto. |
+| 3 | - | Consulta o perfil do utilizador e valida a extensão, o tamanho máximo aplicável, a existência de uma pista de vídeo válida, a duração e os codecs permitidos (RN1–RN3). |
+| 4 | - | Verifica se já existe no projeto um ficheiro com o mesmo nome. Se os controlos forem válidos, calcula o hash SHA-256 e envia o vídeo para o armazenamento, associado ao projeto e à área de origem (`src`). |
+| 5 | - | Adiciona ao projeto a referência do ficheiro, o identificador no armazenamento, o hash e os metadados técnicos (duração, codecs, resolução, taxa de fotogramas, dimensão e formato). Atualiza a versão do projeto de forma consistente (RN4, RN5). |
+| 6 | - | Elimina o ficheiro temporário local e responde com sucesso e a nova versão do projeto. |
 | 7 | Continua a utilizar o projeto. | Atualiza a biblioteca e disponibiliza o vídeo para reprodução e para as ferramentas de vídeo compatíveis. |
 
 ### 2.0.3 Fluxos Alternativos
 
 | Fluxo | Descrição |
 |---|---|
-| FA1 — Vários ficheiros selecionados | A interface envia cada ficheiro individualmente e em sequência, atualizando a versão do projeto após cada carregamento aceite. Se um ficheiro falhar, apresenta o erro associado a esse ficheiro; os carregamentos anteriores concluídos mantêm-se. |
-| FA2 — Vídeo sem áudio | O vídeo é aceite se cumprir as restantes validações. Os metadados registam ausência de pista de áudio; ferramentas que necessitam de áudio, como a geração de legendas, aplicam as suas próprias regras. |
-| FA3 — Recuperação após falha de versão | Se a versão do projeto enviada pelo cliente estiver desatualizada, o sistema rejeita o carregamento, informa da versão atual e permite atualizar o projeto antes de tentar novamente. |
-| FA4 — Carregamento por projeto partilhado | Um colaborador com permissão de edição pode carregar o vídeo conforme as permissões de partilha do projeto. A associação do ficheiro continua a ser feita ao projeto proprietário. |
+| FA1 - Vários ficheiros selecionados | A interface envia cada ficheiro individualmente e em sequência, atualizando a versão do projeto após cada carregamento aceite. Se um ficheiro falhar, apresenta o erro associado a esse ficheiro; os carregamentos anteriores concluídos mantêm-se. |
+| FA2 - Vídeo sem áudio | O vídeo é aceite se cumprir as restantes validações. Os metadados registam ausência de pista de áudio; ferramentas que necessitam de áudio, como a geração de legendas, aplicam as suas próprias regras. |
+| FA3 - Recuperação após falha de versão | Se a versão do projeto enviada pelo cliente estiver desatualizada, o sistema rejeita o carregamento, informa da versão atual e permite atualizar o projeto antes de tentar novamente. |
+| FA4 - Carregamento por projeto partilhado | Um colaborador com permissão de edição pode carregar o vídeo conforme as permissões de partilha do projeto. A associação do ficheiro continua a ser feita ao projeto proprietário. |
 
 ### 2.0.4 Exceções
 
 | Condição | Comportamento do Sistema |
 |---|---|
-| E1 — Utilizador anónimo ou perfil não elegível | Recusa o carregamento do vídeo, informa que é necessária uma conta Registada ou Premium e não altera o projeto. |
-| E2 — Ficheiro ausente ou extensão não suportada | Rejeita o pedido e informa que deve ser selecionado um ficheiro MP4 ou WebM. Não altera o projeto. |
-| E3 — Tamanho acima do limite do perfil | Rejeita o ficheiro antes de o guardar no armazenamento do projeto e indica o limite aplicável: 200 MB para Registado ou 2 GB para Premium. |
-| E4 — Vídeo inválido, corrompido ou sem pista de vídeo | A inspeção falha; o sistema rejeita o ficheiro, informa que não foi possível ler um vídeo válido e limpa o ficheiro temporário. |
-| E5 — Codec incompatível com a extensão | Rejeita o ficheiro e indica a combinação aceite: MP4 com H.264 e áudio AAC (ou sem áudio); WebM com VP8 e áudio Vorbis (ou sem áudio). |
-| E6 — Duração acima do limite do perfil | Rejeita o ficheiro e indica o limite aplicável: 10 minutos para Registado ou 60 minutos para Premium. |
-| E7 — Nome já utilizado no projeto | Rejeita o carregamento e informa que já existe um ficheiro com esse nome. O utilizador pode renomear o ficheiro e tentar novamente. |
-| E8 — Projeto inexistente ou sem permissão de edição | Recusa o pedido e não grava o vídeo nem altera o projeto. |
-| E9 — Conflito de versão do projeto | Não associa o vídeo ao projeto; se o ficheiro já tiver chegado ao armazenamento, elimina essa cópia. Devolve a versão atual para sincronização. |
-| E10 — Armazenamento indisponível ou erro ao guardar | Informa que o carregamento falhou, elimina o temporário e qualquer objeto incompleto, e mantém o projeto inalterado. |
-| E11 — Interrupção ou falha de rede durante o envio | Apresenta uma falha para o ficheiro afetado. O projeto não deve apresentar um item incompleto; o utilizador pode tentar novamente. |
+| E1 - Utilizador anónimo ou perfil não elegível | Recusa o carregamento do vídeo, informa que é necessária uma conta Registada ou Premium e não altera o projeto. |
+| E2 - Ficheiro ausente ou extensão não suportada | Rejeita o pedido e informa que deve ser selecionado um ficheiro MP4 ou WebM. Não altera o projeto. |
+| E3 - Tamanho acima do limite do perfil | Rejeita o ficheiro antes de o guardar no armazenamento do projeto e indica o limite aplicável: 200 MB para Registado ou 2 GB para Premium. |
+| E4 - Vídeo inválido, corrompido ou sem pista de vídeo | A inspeção falha; o sistema rejeita o ficheiro, informa que não foi possível ler um vídeo válido e limpa o ficheiro temporário. |
+| E5 - Codec incompatível com a extensão | Rejeita o ficheiro e indica a combinação aceite: MP4 com H.264 e áudio AAC (ou sem áudio); WebM com VP8 e áudio Vorbis (ou sem áudio). |
+| E6 - Duração acima do limite do perfil | Rejeita o ficheiro e indica o limite aplicável: 10 minutos para Registado ou 60 minutos para Premium. |
+| E7 - Nome já utilizado no projeto | Rejeita o carregamento e informa que já existe um ficheiro com esse nome. O utilizador pode renomear o ficheiro e tentar novamente. |
+| E8 - Projeto inexistente ou sem permissão de edição | Recusa o pedido e não grava o vídeo nem altera o projeto. |
+| E9 - Conflito de versão do projeto | Não associa o vídeo ao projeto; se o ficheiro já tiver chegado ao armazenamento, elimina essa cópia. Devolve a versão atual para sincronização. |
+| E10 - Armazenamento indisponível ou erro ao guardar | Informa que o carregamento falhou, elimina o temporário e qualquer objeto incompleto, e mantém o projeto inalterado. |
+| E11 - Interrupção ou falha de rede durante o envio | Apresenta uma falha para o ficheiro afetado. O projeto não deve apresentar um item incompleto; o utilizador pode tentar novamente. |
 
 ### 2.0.5 Pós-condições
 
@@ -85,7 +85,7 @@
 | ID | Regra |
 |---|---|
 | RN1 | O carregamento de vídeo está disponível apenas para utilizadores autenticados com perfil Registado (`free`) ou Premium. O perfil anónimo não pode carregar vídeos. |
-| RN2 | Limites para vídeos externos: Registado — tamanho máximo de 200 MB e duração máxima de 10 minutos; Premium — tamanho máximo de 2 GB e duração máxima de 60 minutos. O ficheiro tem de cumprir ambos os limites. Estes limites são aplicados ao carregamento externo e não são reaplicados a vídeos gerados no projeto por outras operações. |
+| RN2 | Limites para vídeos externos: Registado - tamanho máximo de 200 MB e duração máxima de 10 minutos; Premium - tamanho máximo de 2 GB e duração máxima de 60 minutos. O ficheiro tem de cumprir ambos os limites. Estes limites são aplicados ao carregamento externo e não são reaplicados a vídeos gerados no projeto por outras operações. |
 | RN3 | Formatos e codecs aceites: MP4 com vídeo H.264 e áudio AAC, ou sem áudio; WebM com vídeo VP8 e áudio Vorbis, ou sem áudio. A extensão e os codecs têm de corresponder. Tem de existir uma pista de vídeo legível e uma duração válida. |
 | RN4 | Cada nome de ficheiro tem de ser único dentro do projeto. O sistema não substitui automaticamente ficheiros existentes. |
 | RN5 | Cada carregamento associa o vídeo ao projeto e guarda os metadados identificados, incluindo hash SHA-256, tamanho, formato, duração, codecs, resolução e taxa de fotogramas. A atualização do projeto respeita a versão esperada, evitando perda de alterações concorrentes. |

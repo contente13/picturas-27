@@ -80,14 +80,15 @@ async function commitReservation(taskId) {
   await VideoTask.updateOne({ taskId, reservedOperation: true }, { $set: { reservedOperation: false } });
 }
 
-function outputNameFor(project, sourceName) {
-  const extension = path.extname(sourceName);
-  const base = path.basename(sourceName, extension);
+function outputNameFor(project, sourceName, operation = "trim") {
+  const extension = operation === "subtitles" ? ".mp4" : path.extname(sourceName);
+  const base = path.basename(sourceName, path.extname(sourceName));
+  const suffixName = operation === "subtitles" ? "_legendas" : "_recorte";
   const existingNames = new Set(project.imgs.map((image) => path.basename(image.og_uri)));
-  let candidate = `${base}_recorte${extension}`;
+  let candidate = `${base}${suffixName}${outputExtension}`;
   let suffix = 2;
   while (existingNames.has(candidate)) {
-    candidate = `${base}_recorte_${suffix}${extension}`;
+    candidate = `${base}${suffixName}_${suffix}${outputExtension}`;
     suffix += 1;
   }
   return candidate;
@@ -145,6 +146,17 @@ async function downloadSource(task, destination, startedAt) {
 }
 
 function runFfmpeg(task, inputPath, outputPath) {
+  if (task.operation === "subtitles") {
+    const args = [
+      "-y", "-i", inputPath,
+      "-vf", "subtitles=captions.srt:force_style=FontSize=20\\,Outline=2\\,Shadow=1\\,MarginV=24",
+      "-map", "0:v:0", "-map", "0:a?",
+      "-c:v", "libx264", "-preset", "veryfast", "-crf", "23",
+      "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart",
+      "-progress", "pipe:1", "-nostats", outputPath,
+    ];
+    return spawnFfmpeg(task, args, inputPath);
+  }
   const extension = path.extname(task.source_name).toLowerCase();
   const start = task.tempoInicio;
   const duration = task.tempoFim - task.tempoInicio;
@@ -157,10 +169,14 @@ function runFfmpeg(task, inputPath, outputPath) {
     "-progress", "pipe:1", "-nostats", outputPath,
   ];
 
+  return spawnFfmpeg(task, args, inputPath);
+}
+
+function spawnFfmpeg(task, args, inputPath) {
   return new Promise((resolve, reject) => {
     let child;
     try {
-      child = spawn("ffmpeg", args, { stdio: ["ignore", "pipe", "pipe"] });
+      child = spawn("ffmpeg", args, { cwd: path.dirname(inputPath), stdio: ["ignore", "pipe", "pipe"] });
     } catch (error) {
       reject(error);
       return;
@@ -193,7 +209,10 @@ function runFfmpeg(task, inputPath, outputPath) {
       if (!outTime) return;
       const elapsed = Number(outTime.split("=")[1]) / 1_000_000;
       if (!Number.isFinite(elapsed)) return;
-      const progress = Math.max(1, Math.min(95, Math.floor((elapsed / (task.tempoFim - task.tempoInicio)) * 100)));
+      const duration = task.operation === "subtitles"
+        ? Number(task.durationSeconds)
+        : task.tempoFim - task.tempoInicio;
+      const progress = Math.max(1, Math.min(95, Math.floor((elapsed / duration) * 100)));
       const now = Date.now();
       if (now - lastProgressWrite >= 1000) {
         lastProgressWrite = now;
@@ -227,10 +246,11 @@ async function processTask(taskId) {
   }
   if (!["EM_FILA", "EM_PROCESSAMENTO", "A_FINALIZAR"].includes(task.state)) return;
 
-  const workDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "picturas-trim-"));
-  const extension = path.extname(task.source_name);
-  const inputPath = path.join(workDir, `source${extension}`);
-  const outputPath = path.join(workDir, `trimmed${extension}`);
+  const workDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), task.operation === "subtitles" ? "picturas-subtitles-" : "picturas-trim-"));
+  const sourceExtension = path.extname(task.source_name);
+  const outputExtension = task.operation === "subtitles" ? ".mp4" : sourceExtension;
+  const inputPath = path.join(workDir, `source${sourceExtension}`);
+  const outputPath = path.join(workDir, `output${outputExtension}`);
   let outputKey = null;
   let resultAddedToProject = false;
   const processingStartedAt = Date.now();
@@ -241,13 +261,27 @@ async function processTask(taskId) {
       { $set: { state: "EM_PROCESSAMENTO", progress: 1, startedAt: new Date() } },
     );
     if (!started.matchedCount) return;
-    await downloadSource(task, inputPath, processingStartedAt);
+    await downloadSource(task.toObject(), inputPath, processingStartedAt);
     const afterDownload = await VideoTask.findOne({ taskId });
     if (!afterDownload || afterDownload.state === "CANCELADA") return;
     const metadata = await inspectVideo(inputPath, requireRemainingProcessingTime(processingStartedAt, task.maxProcessingMs));
     validateVideoCodecs(task.source_name, metadata);
+    if (task.operation === "subtitles") {
+      const srt = task.subtitleSegments.map((segment, index) => {
+        const stamp = (seconds) => {
+          const ms = Math.round(Number(seconds) * 1000);
+          const hours = Math.floor(ms / 3600000);
+          const minutes = Math.floor((ms % 3600000) / 60000);
+          const secs = Math.floor((ms % 60000) / 1000);
+          return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(secs).padStart(2, "0")},${String(ms % 1000).padStart(3, "0")}`;
+        };
+        return `${index + 1}\n${stamp(segment.start)} --> ${stamp(segment.end)}\n${segment.text}\n`;
+      }).join("\n");
+      await fs.promises.writeFile(path.join(workDir, "captions.srt"), srt, "utf8");
+    }
     await runFfmpeg({
       ...task.toObject(),
+      durationSeconds: metadata.duration,
       maxProcessingMs: requireRemainingProcessingTime(processingStartedAt, task.maxProcessingMs),
     }, inputPath, outputPath);
 
@@ -262,12 +296,12 @@ async function processTask(taskId) {
     const source = project.imgs.id(task.image_id);
     if (!source) throw new Error("O vídeo original já não está disponível no projeto.");
 
-    const resultName = outputNameFor(project, task.source_name);
+    const resultName = outputNameFor(project, task.source_name, task.operation);
     const outputStream = fs.createReadStream(outputPath);
     const form = new FormData();
     form.append("file", outputStream, {
       filename: resultName,
-      contentType: extension === ".webm" ? "video/webm" : "video/mp4",
+      contentType: outputExtension === ".webm" ? "video/webm" : "video/mp4",
       knownLength: (await fs.promises.stat(outputPath)).size,
     });
     const uploadResponse = await post_image(
@@ -295,8 +329,18 @@ async function processTask(taskId) {
       new_uri: `./images/users/${task.user_id}/projects/${task.project_id}/out/${resultName}`,
       og_img_key: outputKey,
       og_sha256: sha.digest("hex"),
-      mediaMetadata: { ...resultMetadata, sizeBytes: (await fs.promises.stat(outputPath)).size, format: extension.slice(1) },
+      mediaMetadata: { ...resultMetadata, sizeBytes: (await fs.promises.stat(outputPath)).size, format: outputExtension.slice(1) },
     };
+    if (task.operation === "trim" && source.subtitles?.length) {
+      item.subtitles = source.subtitles.flatMap((segment) => {
+        const start = Math.max(Number(segment.start), task.tempoInicio);
+        const end = Math.min(Number(segment.end), task.tempoFim);
+        if (end - start < 0.5) return [];
+        return [{ start: start - task.tempoInicio, end: end - task.tempoInicio, text: segment.text }];
+      });
+    } else if (task.operation === "subtitles") {
+      item.subtitles = task.subtitleSegments;
+    }
 
     const publicResponse = await get_image_public_url(
       task.user_id,

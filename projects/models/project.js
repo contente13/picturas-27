@@ -12,6 +12,7 @@ const imgSchema = new mongoose.Schema({
   og_img_key: { type: String, required: true },
   og_sha256: { type: String, required: true }, 
   mediaMetadata: { type: mongoose.Schema.Types.Mixed, default: null },
+  subtitles: { type: [mongoose.Schema.Types.Mixed], default: [] },
 });
 
 
