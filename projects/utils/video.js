@@ -9,23 +9,37 @@ function isSupportedVideoName(name) {
   return /\.(mp4|webm)$/i.test(name || "");
 }
 
+// Errors caused by the uploaded file carry the HTTP status to answer with (UC-VID-000 E4/E5).
+function invalidVideo(message, status) {
+  const error = new Error(message);
+  error.status = status;
+  return error;
+}
+
 async function inspectVideo(filePath, timeoutMs = 0) {
-  const { stdout } = await execFileAsync(
-    "ffprobe",
-    [
-      "-v", "error",
-      "-show_entries", "format=duration:stream=codec_type,codec_name,width,height,r_frame_rate",
-      "-of", "json",
-      filePath,
-    ],
-    { maxBuffer: 1024 * 1024, ...(timeoutMs > 0 ? { timeout: timeoutMs } : {}) },
-  );
+  let stdout;
+  try {
+    ({ stdout } = await execFileAsync(
+      "ffprobe",
+      [
+        "-v", "error",
+        "-show_entries", "format=duration:stream=codec_type,codec_name,width,height,r_frame_rate",
+        "-of", "json",
+        filePath,
+      ],
+      { maxBuffer: 1024 * 1024, ...(timeoutMs > 0 ? { timeout: timeoutMs } : {}) },
+    ));
+  } catch (error) {
+    // A killed ffprobe is a timeout, which callers report themselves; anything else is an unreadable file.
+    if (error.killed) throw error;
+    throw invalidVideo("Não foi possível ler um vídeo válido neste ficheiro.", 422);
+  }
   const metadata = JSON.parse(stdout);
   const video = metadata.streams?.find((stream) => stream.codec_type === "video");
   const audio = metadata.streams?.find((stream) => stream.codec_type === "audio");
   const duration = Number(metadata.format?.duration);
   if (!video || !Number.isFinite(duration) || duration <= 0) {
-    throw new Error("O ficheiro não contém uma pista de vídeo válida.");
+    throw invalidVideo("O ficheiro não contém uma pista de vídeo válida.", 422);
   }
 
   return {
@@ -42,17 +56,17 @@ function validateVideoCodecs(name, metadata) {
   const extension = name.toLowerCase().split(".").pop();
   if (extension === "mp4") {
     if (metadata.videoCodec !== "h264" || (metadata.audioCodec && metadata.audioCodec !== "aac")) {
-      throw new Error("O MP4 tem de usar vídeo H.264 e áudio AAC (ou não ter áudio).");
+      throw invalidVideo("O MP4 tem de usar vídeo H.264 e áudio AAC (ou não ter áudio).", 415);
     }
     return;
   }
   if (extension === "webm") {
     if (metadata.videoCodec !== "vp8" || (metadata.audioCodec && metadata.audioCodec !== "vorbis")) {
-      throw new Error("O WebM tem de usar vídeo VP8 e áudio Vorbis (ou não ter áudio).");
+      throw invalidVideo("O WebM tem de usar vídeo VP8 e áudio Vorbis (ou não ter áudio).", 415);
     }
     return;
   }
-  throw new Error("Formato de vídeo não suportado. Usa MP4 ou WebM.");
+  throw invalidVideo("Formato de vídeo não suportado. Usa MP4 ou WebM.", 415);
 }
 
 function hashFile(filePath) {

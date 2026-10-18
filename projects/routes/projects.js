@@ -1271,7 +1271,7 @@ router.post(
       return res.sendStatus(204);
     } catch (error) {
       console.error("Project media upload failed:", error);
-      return res.status(error.response?.status || 500).jsonp(error.response?.data || error.message || "Error uploading media");
+      return res.status(error.status || error.response?.status || 500).jsonp(error.response?.data || error.message || "Error uploading media");
     } finally {
       await require("fs").promises.unlink(req.file.path).catch(() => {});
       if (storedObjectKey && !projectCommitted) {
