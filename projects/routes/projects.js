@@ -55,6 +55,7 @@ const {
 
 const { requireProjectVersion } = require("../middleware/projectVersion");
 const { utf8FilenameFilter } = require("../utils/filename");
+const { createVideoThumbnail, deleteThumbnail, thumbnailUrl } = require("../utils/videoThumbnail");
 
 const storage = multer.diskStorage({
   destination: os.tmpdir(),
@@ -502,6 +503,7 @@ async function deleteProjectAndResources(userId, projectId) {
   const previous_img = JSON.parse(JSON.stringify(project["imgs"]));
   for (let img of previous_img) {
     await delete_image(userId, projectId, "src", img.og_img_key);
+    await deleteThumbnail(userId, projectId, img);
     project["imgs"].remove(img);
   }
 
@@ -707,6 +709,7 @@ router.get("/share/:shareId/project", requireAuth,async (req, res) => {
             _id: img._id,
             name: path.basename(img.og_uri),
             url,
+            thumbnailUrl: await thumbnailUrl(project.user_id, project._id, img),
             mediaMetadata: img.mediaMetadata || null,
           });
         } catch (err) {
@@ -901,6 +904,7 @@ router.get("/:user/:project/imgs", checkSharePermission, async (req, res, next) 
               _id: img._id,
               name: path.basename(img.og_uri),
               url: url,
+              thumbnailUrl: await thumbnailUrl(req.params.user, req.params.project, img),
               mediaMetadata: img.mediaMetadata || null,
             });
           } catch (_) {
@@ -1189,6 +1193,7 @@ router.post(
       return res.status(400).jsonp("No file found");
     }
     let storedObjectKey = null;
+    let thumbKey = null;
     let projectCommitted = false;
     try {
       const project = await Project.getOne(req.params.user, req.params.project);
@@ -1232,12 +1237,22 @@ router.post(
       const resp = await post_image(req.params.user, req.params.project, "src", data);
       const og_key = resp.data.data.imageKey.split("/").pop();
       storedObjectKey = og_key;
+      if (isVideo) {
+        thumbKey = await createVideoThumbnail({
+          userId: req.params.user,
+          projectId: req.params.project,
+          videoPath: req.file.path,
+          duration: mediaMetadata.duration,
+          videoName: req.file.originalname,
+        });
+      }
       const item = {
         og_uri: `./images/users/${req.params.user}/projects/${req.params.project}/src/${req.file.originalname}`,
         new_uri: `./images/users/${req.params.user}/projects/${req.params.project}/out/${req.file.originalname}`,
         og_img_key: og_key,
         og_sha256: await hashFile(req.file.path),
         mediaMetadata,
+        thumb_img_key: thumbKey,
       };
       const updated = await Project.updateIfVersion(
         req.params.user,
@@ -1263,6 +1278,7 @@ router.post(
         await delete_image(req.params.user, req.params.project, "src", storedObjectKey).catch((cleanupError) => {
           console.error("Could not remove uncommitted project upload:", cleanupError.message);
         });
+        await deleteThumbnail(req.params.user, req.params.project, { thumb_img_key: thumbKey });
       }
     }
   }
@@ -1811,6 +1827,7 @@ router.delete("/:user/:project/img/:img", checkSharePermission, requireEditPermi
           "src",
           img.og_img_key
         );
+        await deleteThumbnail(req.params.user, req.params.project, img);
         project["imgs"].remove(img);
 
         const results = await Result.getOne(

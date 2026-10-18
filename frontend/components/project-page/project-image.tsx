@@ -28,6 +28,7 @@ import { useSession } from "@/providers/session-provider";
 import { useToast } from "@/hooks/use-toast";
 import type { ProjectImage as ProjectImageType } from "@/lib/projects";
 import { useSearchParams } from "next/navigation";
+import VideoThumbnail from "./video-thumbnail";
 import { getErrorMessage } from "@/lib/error-messages";
 
 interface ImageItemProps {
@@ -98,14 +99,7 @@ export function ProjectImage({ image, animation = true }: ImageItemProps) {
             {/* Image or Video Thumbnail */}
             <div className="size-full relative grid z-0 grid-cols-1 grid-rows-1 items-center justify-center bg-black/60">
               {isVideo ? (
-                <div className="flex flex-col items-center justify-center size-full z-30 p-2 text-center">
-                  <span className="bg-primary/90 text-primary-foreground text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider mb-1">
-                    [VIDEO]
-                  </span>
-                  <span className="text-xs text-white truncate max-w-full">
-                    {image.name}
-                  </span>
-                </div>
+                <VideoThumbnail image={image} animation={animation} />
               ) : (
                 <>
                   <Image

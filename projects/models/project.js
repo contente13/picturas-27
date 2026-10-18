@@ -15,6 +15,8 @@ const imgSchema = new mongoose.Schema({
   subtitles: { type: [mongoose.Schema.Types.Mixed], default: [] },
   // Last time the user saved the subtitles; an AI proposal finished before this was already reviewed.
   subtitlesUpdatedAt: { type: Date, default: null },
+  // Storage key of the JPEG frame shown as the video's thumbnail in the grid (utils/videoThumbnail.js).
+  thumb_img_key: { type: String, default: null },
 });
 
 

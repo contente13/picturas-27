@@ -38,6 +38,8 @@ export interface ProjectImage {
   _id: string;
   name: string;
   url: string;
+  /** JPEG frame shown in the grid for videos; null for images and older videos without one. */
+  thumbnailUrl?: string | null;
   mediaMetadata?: {
     duration?: number;
     width?: number;

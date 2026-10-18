@@ -18,6 +18,7 @@ const {
 } = require("../utils/imageStorage");
 const { inspectVideo, validateVideoCodecs } = require("../utils/video");
 const { generateSubtitleSegments } = require("./subtitlesAI");
+const { createVideoThumbnail, deleteThumbnail } = require("../utils/videoThumbnail");
 
 const usersUrl = "https://users:10001/";
 const videoQueue = "video.trim.tasks";
@@ -258,6 +259,7 @@ async function processTask(taskId) {
   const inputPath = path.join(workDir, `source${sourceExtension}`);
   const outputPath = path.join(workDir, `output${outputExtension}`);
   let outputKey = null;
+  let thumbKey = null;
   let resultAddedToProject = false;
   const processingStartedAt = Date.now();
 
@@ -330,12 +332,21 @@ async function processTask(taskId) {
       outputPath,
       requireRemainingProcessingTime(processingStartedAt, task.maxProcessingMs),
     );
+    thumbKey = await createVideoThumbnail({
+      userId: task.user_id,
+      projectId: task.project_id,
+      videoPath: outputPath,
+      duration: resultMetadata.duration,
+      videoName: resultName,
+      timeoutMs: Math.min(30_000, requireRemainingProcessingTime(processingStartedAt, task.maxProcessingMs)),
+    });
     const item = {
       og_uri: `./images/users/${task.user_id}/projects/${task.project_id}/src/${resultName}`,
       new_uri: `./images/users/${task.user_id}/projects/${task.project_id}/out/${resultName}`,
       og_img_key: outputKey,
       og_sha256: sha.digest("hex"),
       mediaMetadata: { ...resultMetadata, sizeBytes: (await fs.promises.stat(outputPath)).size, format: outputExtension.slice(1) },
+      thumb_img_key: thumbKey,
     };
     if (task.operation === "trim" && source.subtitles?.length) {
       item.subtitles = source.subtitles.flatMap((segment) => {
@@ -411,6 +422,7 @@ async function processTask(taskId) {
       });
     }
     if (outputKey) await delete_image(task.user_id, task.project_id, "src", outputKey).catch(() => {});
+    await deleteThumbnail(task.user_id, task.project_id, { thumb_img_key: thumbKey });
   } finally {
     await fs.promises.rm(workDir, { recursive: true, force: true }).catch(() => {});
     await VideoTask.updateOne(
