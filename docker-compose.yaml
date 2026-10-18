@@ -158,8 +158,11 @@ services:
     networks:
       - elk
     environment:
-      SUBTITLE_MODEL: ${SUBTITLE_MODEL:-base}
-      SUBTITLE_CPU_THREADS: ${SUBTITLE_CPU_THREADS:-4}
+      SUBTITLE_MODEL: ${SUBTITLE_MODEL:-large-v3-turbo}
+      SUBTITLE_LANGUAGE: ${SUBTITLE_LANGUAGE:-}
+      SUBTITLE_FAST_MODEL: ${SUBTITLE_FAST_MODEL:-small}
+      SUBTITLE_LONG_AUDIO_SECONDS: ${SUBTITLE_LONG_AUDIO_SECONDS:-1800}
+      SUBTITLE_CPU_THREADS: ${SUBTITLE_CPU_THREADS:-8}
       HF_HOME: /models
     volumes:
       - subtitles_model_cache:/models

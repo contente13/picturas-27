@@ -9,6 +9,8 @@ COPY subtitles_ai/requirements.txt requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY subtitles_ai/app.py app.py
+COPY subtitles_ai/transcription.py transcription.py
+COPY subtitles_ai/word_timing.py word_timing.py
 COPY subtitles_ai/healthcheck.py healthcheck.py
 
 EXPOSE 9100

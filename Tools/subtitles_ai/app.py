@@ -1,29 +1,22 @@
 import os
 import tempfile
 
-from faster_whisper import WhisperModel
 from flask import Flask, jsonify, request
+
+import transcription
 
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 25 * 1024 * 1024
 
-MODEL_NAME = os.environ.get("SUBTITLE_MODEL", "base")
-MODEL_DIR = os.environ.get("HF_HOME", "/models")
-os.makedirs(MODEL_DIR, exist_ok=True)
-
-# The model is loaded once per container and reused for each transcription.
-model = WhisperModel(
-    MODEL_NAME,
-    device="cpu",
-    compute_type="int8",
-    download_root=MODEL_DIR,
-    cpu_threads=int(os.environ.get("SUBTITLE_CPU_THREADS", "4")),
-)
-
 
 @app.get("/health")
 def health():
-    return jsonify({"status": "ok", "model": MODEL_NAME})
+    return jsonify({
+        "status": "ok",
+        "model": transcription.MODEL_NAME,
+        "fastModel": transcription.FAST_MODEL_NAME,
+        "longAudioSeconds": transcription.LONG_AUDIO_SECONDS,
+    })
 
 
 @app.post("/transcribe")
@@ -38,20 +31,18 @@ def transcribe():
             audio_path = audio_file.name
             uploaded.save(audio_path)
 
-        segments, _info = model.transcribe(
+        try:
+            duration = float(request.form.get("duration") or 0)
+        except ValueError:
+            duration = 0
+        segments, language = transcription.transcribe_file(
             audio_path,
-            beam_size=5,
-            vad_filter=True,
-            condition_on_previous_text=False,
+            language=(request.form.get("language") or "").strip() or None,
+            duration=duration,
         )
-        result = [
-            {"start": float(segment.start), "end": float(segment.end), "text": segment.text.strip()}
-            for segment in segments
-            if segment.text.strip()
-        ]
-        if not result:
+        if not segments:
             return jsonify({"error": "Não foi detetada fala suficiente para criar legendas."}), 422
-        return jsonify({"segments": result})
+        return jsonify({"segments": segments, "language": language})
     except Exception as error:
         app.logger.exception("Local subtitle transcription failed")
         return jsonify({"error": "O modelo local de transcrição não conseguiu processar este áudio."}), 500
