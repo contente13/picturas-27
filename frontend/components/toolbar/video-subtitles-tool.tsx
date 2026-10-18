@@ -25,6 +25,7 @@ type VideoTask = {
   resultUrl?: string | null;
   recursoSaida?: string | null;
   segments?: Omit<Segment, "id">[];
+  completedAt?: string | null;
 };
 
 function formatStamp(seconds: number, separator: "," | ".") {
@@ -130,14 +131,17 @@ export function VideoSubtitlesPanel({ disabled }: { disabled: boolean }) {
     setProgress(0);
     setGenerating(false);
     setTaskError(null);
-    api.get<{ segments: Segment[]; projectVersion: number }>(`${basePath}/${imageId}/subtitles`, {
+    api.get<{ segments: Segment[]; subtitlesUpdatedAt: string | null; projectVersion: number }>(`${basePath}/${imageId}/subtitles`, {
       headers: { Authorization: `Bearer ${session.token}` }, params: shareParams,
-    }).then(({ data }) => {
+    }).then(async ({ data }) => {
       if (cancelled) return;
       const restored = (data.segments || []).map((segment) => ({ ...segment, id: segment.id || crypto.randomUUID() }));
       setSegments(restored);
       setSavedSegments(restored);
       setProjectVersion(data.projectVersion);
+      // Only after the saved subtitles are in place, check for an AI proposal that is still
+      // running or that finished after the last save (and therefore was never reviewed).
+      await restoreLatestGeneration(restored.length > 0, data.subtitlesUpdatedAt, () => cancelled);
     }).catch((error: any) => {
       if (!cancelled) toast({ title: "Não foi possível carregar as legendas", description: error?.response?.data || "Tenta novamente.", variant: "destructive" });
     }).finally(() => { if (!cancelled) setLoading(false); });
@@ -352,25 +356,33 @@ export function VideoSubtitlesPanel({ disabled }: { disabled: boolean }) {
   }
   useEffect(() => { if (imageId) void restoreLatestTask(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [imageId]);
 
-  async function restoreLatestGeneration() {
+  async function restoreLatestGeneration(hasSaved: boolean, savedAt: string | null, isCancelled: () => boolean) {
     try {
       const { data } = await api.get<{ tarefa: VideoTask | null }>(`${basePath}/tasks/latest`, {
         headers: { Authorization: `Bearer ${session.token}` },
         params: { ...(shareParams || {}), operation: "generate_subtitles" },
       });
       const latest = data.tarefa;
-      if (!imageId || !latest || latest.imageId !== imageId) return;
+      if (isCancelled() || !imageId || !latest || latest.imageId !== imageId) return;
       if (latest.estado === "EM_FILA" || latest.estado === "EM_PROCESSAMENTO") {
         setTask(latest);
         setProgress(latest.progresso ?? 0);
         setGenerating(true);
-      } else if (latest.estado === "CONCLUIDA" && latest.segments?.length) {
-        setSegments(latest.segments.map((segment) => ({ ...segment, id: crypto.randomUUID() })));
-        setTask(latest);
+        return;
       }
+      if (latest.estado !== "CONCLUIDA" || !latest.segments?.length) return;
+      // A proposal is pending review only if it finished after the last save; subtitles saved
+      // before this field existed are treated as already reviewed.
+      const completedAt = latest.completedAt ? Date.parse(latest.completedAt) : NaN;
+      const pending = savedAt
+        ? Number.isFinite(completedAt) && completedAt > Date.parse(savedAt)
+        : !hasSaved;
+      if (!pending) return;
+      setSegments(latest.segments.map((segment) => ({ ...segment, id: crypto.randomUUID() })));
+      setTask(latest);
+      toast({ title: "Proposta automática por rever", description: "Revê as legendas geradas e guarda-as, ou descarta as alterações." });
     } catch { /* the editor can still be used if task restoration fails */ }
   }
-  useEffect(() => { if (imageId) void restoreLatestGeneration(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [imageId]);
 
   if (!currentImage || !imageId) return null;
   const active = Boolean(task && ["EM_FILA", "EM_PROCESSAMENTO"].includes(task.estado));
