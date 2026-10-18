@@ -33,6 +33,12 @@ import { usePreview } from "@/providers/project-provider";
 import AppDropzone from "@/components/app-dropzone";
 import { useAddProjectImages } from "@/lib/mutations/projects";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Check, Film } from "lucide-react";
+import { useConcatTask } from "@/hooks/use-concat-task";
+import type { ConcatTask } from "@/lib/video-concat";
+import VideoConcatDialog from "./video-concat-dialog";
+import VideoSelectionBar from "./video-selection-bar";
 
 export function ProjectImageList({
   setCurrentImageId,
@@ -58,6 +64,10 @@ export function ProjectImageList({
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [previewText, setPreviewText] = useState<string[] | null>(null);
   const [mediaFilter, setMediaFilter] = useState("all");
+  // UC-VID-003: videos selected for "Juntar vídeos", in selection order.
+  const [selecting, setSelecting] = useState(false);
+  const [selection, setSelection] = useState<ProjectTypes.ProjectImage[]>([]);
+  const [concatOpen, setConcatOpen] = useState(false);
 
   const project = useProjectInfo();
   const currentImage = useCurrentImage();
@@ -76,6 +86,16 @@ export function ProjectImageList({
 
   const qc = useQueryClient();
   const socket = useGetSocket(session.token);
+  const concat = useConcatTask(
+    { ownerId: owner ?? session.user._id, projectId: project._id, token: session.token, shareId: share },
+    (task: ConcatTask) => {
+      qc.invalidateQueries({ queryKey: ["project"] });
+      qc.invalidateQueries({ queryKey: ["projectImages"] });
+      window.dispatchEvent(new Event("session-updated"));
+      if (task.estado === "CONCLUIDA") toast({ title: "Vídeos juntos", description: `${task.recursoSaida ?? "O novo vídeo"} foi guardado no projeto.` });
+      else if (task.estado === "FALHADA") toast({ title: "A junção falhou", description: task.erro ?? undefined, variant: "destructive" });
+    },
+  );
 
   // Video edits are saved as project media, while image processing returns a
   // separate result. Keep every project item visible in preview in either case.
@@ -203,6 +223,62 @@ useEffect(() => {
     image.mediaMetadata?.format === "webm" ||
     /\.(mp4|webm|mov|m4v)$/i.test(image.name || image.url);
   const videoImages = project.imgs.filter(isVideo);
+
+  // Keep the selected items in sync with the project (fresh URLs, removed videos dropped).
+  useEffect(() => {
+    setSelection((current) => {
+      const next = current.flatMap((item) => project.imgs.filter((image) => image._id === item._id));
+      return next.length === current.length && next.every((image, index) => image === current[index]) ? current : next;
+    });
+  }, [project.imgs]);
+
+  const toggleSelected = (image: ProjectTypes.ProjectImage) => {
+    setSelection((current) => current.some((item) => item._id === image._id)
+      ? current.filter((item) => item._id !== image._id)
+      : [...current, image]);
+  };
+
+  const openImage = (image: ProjectTypes.ProjectImage) => {
+    setCurrentImageId(image);
+    setJumpTo(carouselImages.findIndex((item) => item._id === image._id));
+    const params = new URLSearchParams();
+    params.set("mode", mode);
+    params.set("view", "carousel");
+    if (owner) params.set("owner", owner);
+    if (share) params.set("share", share);
+    router.push(`?${params.toString()}`);
+    qc.invalidateQueries({ queryKey: ["socket"], refetchType: "all" });
+  };
+
+  // An active concatenation always opens with the sequence it is processing.
+  const startNewConcat = () => {
+    if (concat.active) {
+      showRunningConcat();
+      return;
+    }
+    concat.dismiss();
+    setConcatOpen(true);
+  };
+
+  // FA9: "ver" on a running concatenation shows its progress with the sequence it is joining.
+  const showRunningConcat = () => {
+    if (concat.task?.imageIds?.length) {
+      setSelection(concat.task.imageIds.flatMap((id) => project.imgs.filter((image) => image._id === id)));
+    }
+    setConcatOpen(true);
+  };
+
+  const openConcatResult = (imageId: string) => {
+    const result = project.imgs.find((image) => image._id === imageId);
+    if (!result) {
+      toast({ title: "A atualizar a biblioteca", description: "O novo vídeo aparece no projeto dentro de instantes." });
+      qc.invalidateQueries({ queryKey: ["project"] });
+      return;
+    }
+    setConcatOpen(false);
+    setSelecting(false);
+    openImage(result);
+  };
   const photoImages = project.imgs.filter((image) => !isVideo(image));
   const gridImages =
     mode === "results"
@@ -251,37 +327,42 @@ useEffect(() => {
             </div>
           )}
           {mode === "edit" && project.imgs.length > 0 && (
-            <Tabs value={mediaFilter} onValueChange={setMediaFilter} className="w-full px-2 pt-3">
-              <TabsList>
-                <TabsTrigger value="all">All ({project.imgs.length})</TabsTrigger>
-                <TabsTrigger value="images">Images ({photoImages.length})</TabsTrigger>
-                <TabsTrigger value="videos">Videos ({videoImages.length})</TabsTrigger>
-              </TabsList>
-            </Tabs>
+            <div className="flex w-full flex-wrap items-center justify-between gap-2 px-2 pt-3">
+              <Tabs value={mediaFilter} onValueChange={setMediaFilter}>
+                <TabsList>
+                  <TabsTrigger value="all">All ({project.imgs.length})</TabsTrigger>
+                  <TabsTrigger value="images">Images ({photoImages.length})</TabsTrigger>
+                  <TabsTrigger value="videos">Videos ({videoImages.length})</TabsTrigger>
+                </TabsList>
+              </Tabs>
+              {canEdit && videoImages.length > 0 && !selecting && (
+                <Button size="sm" variant="outline" onClick={() => { setSelecting(true); setMediaFilter("videos"); }}>
+                  <Film className="mr-1 size-4" />Selecionar vídeos para juntar
+                </Button>
+              )}
+            </div>
           )}
           {gridImages.length > 0 || (mode === "results" && results.texts.length > 0) ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2 p-2 overflow-scroll overflow-x-hidden h-fit w-full">
-              {gridImages.map((image) => (
-                <button
-                  key={image._id}
-                  className="aspect-square"
-                  onClick={() => {
-                    setCurrentImageId(image);
-                    setJumpTo(carouselImages.findIndex((item) => item._id === image._id));
-
-                    const params = new URLSearchParams();
-                    params.set("mode", mode);
-                    params.set("view", "carousel");
-                    if (owner) params.set("owner", owner);
-                    if (share) params.set("share", share);
-
-                    router.push(`?${params.toString()}`);
-                    qc.invalidateQueries({ queryKey: ["socket"], refetchType: "all" });
-                  }}
-                >
-                  <ProjectImage image={image} />
-                </button>
-              ))}
+              {gridImages.map((image) => {
+                const order = selection.findIndex((item) => item._id === image._id);
+                const selectable = selecting && isVideo(image);
+                return (
+                  <button
+                    key={image._id}
+                    className={`relative aspect-square ${selecting && !selectable ? "pointer-events-none opacity-40" : ""}`}
+                    aria-pressed={selecting ? order >= 0 : undefined}
+                    onClick={() => (selecting ? selectable && toggleSelected(image) : openImage(image))}
+                  >
+                    <ProjectImage image={image} />
+                    {selectable && (
+                      <span className={`absolute bottom-10 right-2 z-40 flex size-7 items-center justify-center rounded-full border-2 text-sm font-bold shadow ${order >= 0 ? "border-primary bg-primary text-primary-foreground" : "border-white bg-black/50 text-transparent"}`}>
+                        {order >= 0 ? order + 1 : <Check className="size-4" />}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
               {mode === "results" &&
                 results.texts.map((text, index) => (
                   <button
@@ -321,6 +402,31 @@ useEffect(() => {
             <p className="mt-2 text-sm text-muted-foreground">Drop an image or MP4/WebM video anywhere in this area, or choose Add Media.</p>
           )}
         </div>
+      )}
+      {mode === "edit" && (
+        <>
+          <VideoSelectionBar
+            selecting={selecting}
+            selectedCount={selection.length}
+            onJoin={startNewConcat}
+            onCancelSelection={() => { setSelecting(false); setSelection([]); }}
+            concatActive={concat.active}
+            concatProgress={concat.task?.progresso}
+            onShowConcat={showRunningConcat}
+          />
+          <VideoConcatDialog
+            open={concatOpen}
+            onOpenChange={setConcatOpen}
+            context={{ ownerId: owner ?? session.user._id, projectId: project._id, token: session.token, shareId: share }}
+            sequence={selection}
+            onSequenceChange={setSelection}
+            projectVideos={videoImages}
+            concat={concat}
+            userType={session.user.type}
+            remainingOperations={session.user.remaining_operations}
+            onOpenResult={openConcatResult}
+          />
+        </>
       )}
     </div>
   );
