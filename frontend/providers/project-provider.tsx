@@ -87,12 +87,25 @@ export function ProjectProvider({
     setVersion(Number(project.version) || 0);
   }, [project.version]);
 
+  // The selected video tool is remembered per video in sessionStorage: it survives switching
+  // browser tabs, navigating and reloading, and is forgotten when the browser tab is closed.
+  // The effect is keyed by the video id only; the presigned URL changes on every refetch.
+  const isCurrentVideo = Boolean(currentImage?.url && /\.(mp4|webm)$/i.test(currentImage.name || currentImage.url));
+  const videoToolKey = currentImage?._id ? `picturas:video-tool:${project._id}:${currentImage._id}` : null;
+
   useEffect(() => {
-    const isVideo = Boolean(currentImage?.url && /\.(mp4|webm)$/i.test(currentImage.name || currentImage.url));
-    setVideoTrimOpen(isVideo);
-    setVideoSubtitlesOpen(false);
+    let saved: string | null = null;
+    try { saved = videoToolKey ? sessionStorage.getItem(videoToolKey) : null; } catch { /* storage unavailable */ }
+    setVideoTrimOpen(isCurrentVideo && saved !== "subtitles" && saved !== "none");
+    setVideoSubtitlesOpen(isCurrentVideo && saved === "subtitles");
     setVideoSubtitlePreview(null);
-  }, [currentImage?._id, currentImage?.name, currentImage?.url]);
+  }, [videoToolKey, isCurrentVideo]);
+
+  useEffect(() => {
+    if (!videoToolKey || !isCurrentVideo) return;
+    const tool = videoSubtitlesOpen ? "subtitles" : videoTrimOpen ? "trim" : "none";
+    try { sessionStorage.setItem(videoToolKey, tool); } catch { /* storage unavailable */ }
+  }, [videoToolKey, isCurrentVideo, videoTrimOpen, videoSubtitlesOpen]);
 
   // entrar na room do projeto
   useEffect(() => {
