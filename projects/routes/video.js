@@ -4,6 +4,7 @@ const Project = require("../controllers/project");
 const ProjectModel = require("../models/project");
 const VideoTask = require("../models/videoTask");
 const { getCallerId } = require("../utils/caller");
+const { validateSubtitleSegments } = require("../utils/subtitles");
 const { get_image_public_url } = require("../utils/imageStorage");
 const { checkSharePermission, requireEditPermission } = require("../middleware/shareAuth");
 const {
@@ -21,28 +22,6 @@ const CANCELLABLE_STATES = ["EM_FILA", "EM_PROCESSAMENTO"];
 const SUBTITLE_EMBED_DURATION_LIMIT_SECONDS = { free: 60, premium: 600 };
 const PREMIUM_VIDEO_SIZE_LIMIT_BYTES = 2 * 1024 * 1024 * 1024;
 const PREMIUM_VIDEO_DURATION_LIMIT_SECONDS = 60 * 60;
-
-function validateSubtitleSegments(segments, duration) {
-  if (!Array.isArray(segments) || segments.length > 2000) return "A lista de legendas é inválida ou demasiado longa.";
-  const ordered = [...segments].sort((a, b) => Number(a.start) - Number(b.start));
-  let previousEnd = -1;
-  for (const segment of ordered) {
-    const start = Number(segment.start);
-    const end = Number(segment.end);
-    const text = typeof segment.text === "string" ? segment.text.trim() : "";
-    const lines = text.split(/\r?\n/);
-    if (!text || !Number.isFinite(start) || !Number.isFinite(end) || start < 0 || end > duration || start >= end) {
-      return "Cada legenda precisa de texto e de tempos válidos dentro da duração do vídeo.";
-    }
-    if (end - start < 0.5 || end - start > 10 || lines.length > 2 || lines.some((line) => line.length > 42)) {
-      return "Cada legenda deve durar entre 0,5 e 10 segundos e ter no máximo duas linhas de 42 caracteres.";
-    }
-    if (start < previousEnd) return "Os intervalos das legendas não podem sobrepor-se.";
-    previousEnd = end;
-  }
-  return null;
-}
-
 router.get(
   "/:user/:project/video/:imageId/subtitles",
   checkSharePermission,
@@ -53,7 +32,7 @@ router.get(
       if (!project) return res.status(404).jsonp("Project not found");
       const video = project.imgs.id(req.params.imageId);
       if (!video) return res.status(404).jsonp("O vídeo já não está disponível no projeto.");
-      return res.json({ segments: video.subtitles || [], projectVersion: project.version });
+      return res.json({ segments: video.subtitles || [], subtitlesUpdatedAt: video.subtitlesUpdatedAt || null, projectVersion: project.version });
     } catch (error) {
       console.error("Could not load video subtitles:", error);
       return res.status(500).jsonp("Não foi possível carregar as legendas.");
@@ -81,7 +60,7 @@ router.put(
       if (!Number.isFinite(expectedVersion)) return res.status(400).jsonp("Falta a versão atual do projeto.");
       const saved = await ProjectModel.findOneAndUpdate(
         { _id: req.params.project, user_id: req.params.user, version: expectedVersion, "imgs._id": req.params.imageId },
-        { $set: { "imgs.$.subtitles": req.body.segments }, $inc: { version: 1 } },
+        { $set: { "imgs.$.subtitles": req.body.segments, "imgs.$.subtitlesUpdatedAt": new Date() }, $inc: { version: 1 } },
         { new: true },
       ).select("version").lean();
       if (!saved) return res.status(409).jsonp("O projeto foi alterado noutra sessão. Atualiza os dados e tenta novamente.");
@@ -120,6 +99,10 @@ router.post(
       }
       if (duration > PREMIUM_VIDEO_DURATION_LIMIT_SECONDS) {
         return res.status(413).jsonp("A geração automática aceita vídeos até 60 minutos, de acordo com os limites Premium.");
+      }
+      // UC-VID-001 E12 / UC-VID-000 FA2: a video without an audio track cannot be transcribed.
+      if (source.mediaMetadata?.audioCodec === null) {
+        return res.status(422).jsonp("Este vídeo não tem pista de áudio, por isso não é possível gerar legendas automaticamente. Podes criá-las manualmente.");
       }
       const userType = await getUserType(req.params.user);
       if (!["free", "premium"].includes(userType)) {
@@ -396,6 +379,7 @@ router.get(
           resultImageId: task.resultImageId,
           segments: task.operation === "generate_subtitles" ? task.subtitleSegments : undefined,
           operation: task.operation,
+          completedAt: task.completedAt,
         },
       });
     } catch (error) {

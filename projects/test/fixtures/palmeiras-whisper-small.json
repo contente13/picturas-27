@@ -1,0 +1,541 @@
+{
+ "language": "pt",
+ "segments": [
+  {
+   "end": 6.14,
+   "start": 0.0,
+   "text": "Eu já estou dizendo, mas a bola está do lado de cá. O Prato não pode entrar do lado em que a jogada está acontecendo.",
+   "words": [
+    {
+     "end": 0.8,
+     "start": 0.0,
+     "word": "Eu"
+    },
+    {
+     "end": 0.92,
+     "start": 0.8,
+     "word": "já"
+    },
+    {
+     "end": 1.08,
+     "start": 0.92,
+     "word": "estou"
+    },
+    {
+     "end": 1.28,
+     "start": 1.08,
+     "word": "dizendo,"
+    },
+    {
+     "end": 1.46,
+     "start": 1.36,
+     "word": "mas"
+    },
+    {
+     "end": 1.64,
+     "start": 1.46,
+     "word": "a"
+    },
+    {
+     "end": 1.78,
+     "start": 1.64,
+     "word": "bola"
+    },
+    {
+     "end": 2.02,
+     "start": 1.78,
+     "word": "está"
+    },
+    {
+     "end": 2.18,
+     "start": 2.02,
+     "word": "do"
+    },
+    {
+     "end": 2.38,
+     "start": 2.18,
+     "word": "lado"
+    },
+    {
+     "end": 2.56,
+     "start": 2.38,
+     "word": "de"
+    },
+    {
+     "end": 2.86,
+     "start": 2.56,
+     "word": "cá."
+    },
+    {
+     "end": 3.2,
+     "start": 3.08,
+     "word": "O"
+    },
+    {
+     "end": 3.44,
+     "start": 3.2,
+     "word": "Prato"
+    },
+    {
+     "end": 3.64,
+     "start": 3.44,
+     "word": "não"
+    },
+    {
+     "end": 3.92,
+     "start": 3.64,
+     "word": "pode"
+    },
+    {
+     "end": 4.26,
+     "start": 3.92,
+     "word": "entrar"
+    },
+    {
+     "end": 4.72,
+     "start": 4.26,
+     "word": "do"
+    },
+    {
+     "end": 4.94,
+     "start": 4.72,
+     "word": "lado"
+    },
+    {
+     "end": 5.06,
+     "start": 4.94,
+     "word": "em"
+    },
+    {
+     "end": 5.1,
+     "start": 5.06,
+     "word": "que"
+    },
+    {
+     "end": 5.18,
+     "start": 5.1,
+     "word": "a"
+    },
+    {
+     "end": 5.4,
+     "start": 5.18,
+     "word": "jogada"
+    },
+    {
+     "end": 5.62,
+     "start": 5.4,
+     "word": "está"
+    },
+    {
+     "end": 6.14,
+     "start": 5.62,
+     "word": "acontecendo."
+    }
+   ]
+  },
+  {
+   "end": 10.46,
+   "start": 6.36,
+   "text": "Reparei, o Bufarini chegou o Egidio, deu o bote do Dupor, cobertura!",
+   "words": [
+    {
+     "end": 6.76,
+     "start": 6.36,
+     "word": "Reparei,"
+    },
+    {
+     "end": 6.86,
+     "start": 6.84,
+     "word": "o"
+    },
+    {
+     "end": 7.34,
+     "start": 6.86,
+     "word": "Bufarini"
+    },
+    {
+     "end": 7.88,
+     "start": 7.34,
+     "word": "chegou"
+    },
+    {
+     "end": 8.08,
+     "start": 7.88,
+     "word": "o"
+    },
+    {
+     "end": 8.56,
+     "start": 8.08,
+     "word": "Egidio,"
+    },
+    {
+     "end": 8.66,
+     "start": 8.58,
+     "word": "deu"
+    },
+    {
+     "end": 8.82,
+     "start": 8.66,
+     "word": "o"
+    },
+    {
+     "end": 9.02,
+     "start": 8.82,
+     "word": "bote"
+    },
+    {
+     "end": 9.2,
+     "start": 9.02,
+     "word": "do"
+    },
+    {
+     "end": 9.56,
+     "start": 9.2,
+     "word": "Dupor,"
+    },
+    {
+     "end": 10.46,
+     "start": 9.66,
+     "word": "cobertura!"
+    }
+   ]
+  },
+  {
+   "end": 38.68,
+   "start": 19.54,
+   "text": "um gol do Palmeiras, um golaço do Dudu. Veja aí o bote na marcação. O Douglas, o",
+   "words": [
+    {
+     "end": 20.46,
+     "start": 19.54,
+     "word": "um"
+    },
+    {
+     "end": 20.46,
+     "start": 20.46,
+     "word": "gol"
+    },
+    {
+     "end": 24.5,
+     "start": 20.46,
+     "word": "do"
+    },
+    {
+     "end": 26.94,
+     "start": 24.5,
+     "word": "Palmeiras,"
+    },
+    {
+     "end": 31.06,
+     "start": 28.02,
+     "word": "um"
+    },
+    {
+     "end": 32.86,
+     "start": 31.06,
+     "word": "golaço"
+    },
+    {
+     "end": 33.1,
+     "start": 32.86,
+     "word": "do"
+    },
+    {
+     "end": 33.56,
+     "start": 33.1,
+     "word": "Dudu."
+    },
+    {
+     "end": 35.8,
+     "start": 34.88,
+     "word": "Veja"
+    },
+    {
+     "end": 36.0,
+     "start": 35.8,
+     "word": "aí"
+    },
+    {
+     "end": 36.12,
+     "start": 36.0,
+     "word": "o"
+    },
+    {
+     "end": 36.52,
+     "start": 36.12,
+     "word": "bote"
+    },
+    {
+     "end": 36.7,
+     "start": 36.52,
+     "word": "na"
+    },
+    {
+     "end": 37.38,
+     "start": 36.7,
+     "word": "marcação."
+    },
+    {
+     "end": 37.6,
+     "start": 37.42,
+     "word": "O"
+    },
+    {
+     "end": 38.04,
+     "start": 37.6,
+     "word": "Douglas,"
+    },
+    {
+     "end": 38.68,
+     "start": 38.5,
+     "word": "o"
+    }
+   ]
+  },
+  {
+   "end": 42.8,
+   "start": 38.68,
+   "text": "O Farine e o Egid deu bote e Dudu pegou e mandou direto para o gol.",
+   "words": [
+    {
+     "end": 38.8,
+     "start": 38.68,
+     "word": "O"
+    },
+    {
+     "end": 39.3,
+     "start": 38.8,
+     "word": "Farine"
+    },
+    {
+     "end": 39.44,
+     "start": 39.3,
+     "word": "e"
+    },
+    {
+     "end": 39.44,
+     "start": 39.44,
+     "word": "o"
+    },
+    {
+     "end": 39.76,
+     "start": 39.44,
+     "word": "Egid"
+    },
+    {
+     "end": 39.98,
+     "start": 39.76,
+     "word": "deu"
+    },
+    {
+     "end": 40.32,
+     "start": 39.98,
+     "word": "bote"
+    },
+    {
+     "end": 40.46,
+     "start": 40.32,
+     "word": "e"
+    },
+    {
+     "end": 40.64,
+     "start": 40.46,
+     "word": "Dudu"
+    },
+    {
+     "end": 40.92,
+     "start": 40.64,
+     "word": "pegou"
+    },
+    {
+     "end": 41.0,
+     "start": 40.92,
+     "word": "e"
+    },
+    {
+     "end": 41.32,
+     "start": 41.0,
+     "word": "mandou"
+    },
+    {
+     "end": 42.24,
+     "start": 41.32,
+     "word": "direto"
+    },
+    {
+     "end": 42.44,
+     "start": 42.24,
+     "word": "para"
+    },
+    {
+     "end": 42.5,
+     "start": 42.44,
+     "word": "o"
+    },
+    {
+     "end": 42.8,
+     "start": 42.5,
+     "word": "gol."
+    }
+   ]
+  },
+  {
+   "end": 46.54,
+   "start": 43.16,
+   "text": "Demis desesperado, correu atrás da bola.",
+   "words": [
+    {
+     "end": 43.8,
+     "start": 43.16,
+     "word": "Demis"
+    },
+    {
+     "end": 45.22,
+     "start": 43.8,
+     "word": "desesperado,"
+    },
+    {
+     "end": 45.74,
+     "start": 45.4,
+     "word": "correu"
+    },
+    {
+     "end": 45.98,
+     "start": 45.74,
+     "word": "atrás"
+    },
+    {
+     "end": 46.2,
+     "start": 45.98,
+     "word": "da"
+    },
+    {
+     "end": 46.54,
+     "start": 46.2,
+     "word": "bola."
+    }
+   ]
+  },
+  {
+   "end": 51.22,
+   "start": 48.74,
+   "text": "Uma pintura na Arena Palmeiras.",
+   "words": [
+    {
+     "end": 49.38,
+     "start": 48.74,
+     "word": "Uma"
+    },
+    {
+     "end": 50.02,
+     "start": 49.38,
+     "word": "pintura"
+    },
+    {
+     "end": 50.26,
+     "start": 50.02,
+     "word": "na"
+    },
+    {
+     "end": 50.48,
+     "start": 50.26,
+     "word": "Arena"
+    },
+    {
+     "end": 51.22,
+     "start": 50.48,
+     "word": "Palmeiras."
+    }
+   ]
+  },
+  {
+   "end": 54.66,
+   "start": 52.32,
+   "text": "Dudu quase no meio do campo.",
+   "words": [
+    {
+     "end": 52.96,
+     "start": 52.32,
+     "word": "Dudu"
+    },
+    {
+     "end": 53.54,
+     "start": 52.96,
+     "word": "quase"
+    },
+    {
+     "end": 53.92,
+     "start": 53.54,
+     "word": "no"
+    },
+    {
+     "end": 54.1,
+     "start": 53.92,
+     "word": "meio"
+    },
+    {
+     "end": 54.28,
+     "start": 54.1,
+     "word": "do"
+    },
+    {
+     "end": 54.66,
+     "start": 54.28,
+     "word": "campo."
+    }
+   ]
+  },
+  {
+   "end": 58.32,
+   "start": 55.22,
+   "text": "Sai na frente, o Palmeiras dá marcado os 46.",
+   "words": [
+    {
+     "end": 55.72,
+     "start": 55.22,
+     "word": "Sai"
+    },
+    {
+     "end": 55.92,
+     "start": 55.72,
+     "word": "na"
+    },
+    {
+     "end": 56.24,
+     "start": 55.92,
+     "word": "frente,"
+    },
+    {
+     "end": 56.48,
+     "start": 56.4,
+     "word": "o"
+    },
+    {
+     "end": 56.96,
+     "start": 56.48,
+     "word": "Palmeiras"
+    },
+    {
+     "end": 57.18,
+     "start": 56.96,
+     "word": "dá"
+    },
+    {
+     "end": 57.5,
+     "start": 57.18,
+     "word": "marcado"
+    },
+    {
+     "end": 57.7,
+     "start": 57.5,
+     "word": "os"
+    },
+    {
+     "end": 58.32,
+     "start": 57.7,
+     "word": "46."
+    }
+   ]
+  }
+ ]
+}

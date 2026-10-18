@@ -13,6 +13,8 @@ const imgSchema = new mongoose.Schema({
   og_sha256: { type: String, required: true }, 
   mediaMetadata: { type: mongoose.Schema.Types.Mixed, default: null },
   subtitles: { type: [mongoose.Schema.Types.Mixed], default: [] },
+  // Last time the user saved the subtitles; an AI proposal finished before this was already reviewed.
+  subtitlesUpdatedAt: { type: Date, default: null },
 });
 
 
