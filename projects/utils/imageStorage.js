@@ -23,11 +23,28 @@ async function delete_image(user, project, type, img) {
 }
 
 async function copy_image(userId, projectId, fromStage, toStage, fileName) {
-  // usa o mesmo serviço interno (docker network) tal como as outras
+  // usa o mesmo serviÃ§o interno (docker network) tal como as outras
   return axios.post(
     `${img_storage_ms}/copy/${userId}/${projectId}/${fromStage}/${toStage}/${fileName}`,
     {}
   );
 }
 
-module.exports = { get_image_internal_url, get_image_public_url, post_image, delete_image, copy_image };
+// True when the object can still be read. Reads a single byte: the presigned URL is signed for
+// GET, so a HEAD request would be refused even for an existing object.
+async function is_object_readable(user, project, type, img, options = {}) {
+  try {
+    const { data } = await get_image_internal_url(user, project, type, img, options);
+    const response = await axios.get(data.url, {
+      ...options,
+      headers: { Range: "bytes=0-0" },
+      responseType: "arraybuffer",
+      validateStatus: (status) => status === 200 || status === 206,
+    });
+    return response.status === 200 || response.status === 206;
+  } catch {
+    return false;
+  }
+}
+
+module.exports = { get_image_internal_url, get_image_public_url, post_image, delete_image, copy_image, is_object_readable };

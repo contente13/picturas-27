@@ -3,10 +3,11 @@ const { v4: uuidv4 } = require("uuid");
 const Project = require("../controllers/project");
 const ProjectModel = require("../models/project");
 const VideoTask = require("../models/videoTask");
-const { getCallerId } = require("../utils/caller");
 const { validateSubtitleSegments } = require("../utils/subtitles");
 const { get_image_public_url } = require("../utils/imageStorage");
 const { checkSharePermission, requireEditPermission } = require("../middleware/shareAuth");
+const { requireVideoAccess } = require("../middleware/videoAccess");
+const { findActiveProjectTask, projectBusyMessage } = require("../controllers/videoTaskLock");
 const {
   cancelTask,
   enqueueTask,
@@ -16,30 +17,11 @@ const {
 } = require("../controllers/videoTasks");
 
 const router = express.Router();
-const ACTIVE_STATES = ["EM_FILA", "EM_PROCESSAMENTO", "A_FINALIZAR"];
 const CANCELLABLE_STATES = ["EM_FILA", "EM_PROCESSAMENTO"];
 // UC-VID-001 RN14: source-video duration limit for subtitle embedding.
 const SUBTITLE_EMBED_DURATION_LIMIT_SECONDS = { free: 60, premium: 600 };
 const PREMIUM_VIDEO_SIZE_LIMIT_BYTES = 2 * 1024 * 1024 * 1024;
 const PREMIUM_VIDEO_DURATION_LIMIT_SECONDS = 60 * 60;
-const OPERATION_LABELS = {
-  trim: "um recorte",
-  subtitles: "uma incorporação de legendas",
-  generate_subtitles: "uma geração automática de legendas",
-};
-
-// RNG-11: at most one active video task per project, whatever the tool. Tasks of the same user
-// in other projects do not block. The unique index on active_project_id (models/videoTask.js)
-// makes the check atomic: of two simultaneous requests only one task can be saved.
-function findActiveProjectTask(projectId) {
-  return VideoTask.findOne({ project_id: projectId, state: { $in: ACTIVE_STATES } }).select("operation").lean();
-}
-
-function projectBusyMessage(activeTask) {
-  const label = OPERATION_LABELS[activeTask?.operation] || "outra operação de vídeo";
-  return `Este projeto já tem ${label} em curso. Aguarda que termine ou cancela-a antes de iniciar outra operação de vídeo.`;
-}
-
 router.get(
   "/:user/:project/video/:imageId/subtitles",
   checkSharePermission,
@@ -242,15 +224,6 @@ router.post(
   },
 );
 
-function requireVideoAccess(req, res, next) {
-  const callerId = getCallerId(req);
-  if (!callerId) return res.status(401).jsonp("Authentication required");
-  if (String(callerId) !== String(req.params.user) && !req.sharedPermission) {
-    return res.status(403).jsonp("Not allowed");
-  }
-  next();
-}
-
 function invalidInterval(start, end, duration) {
   const hasTenthPrecision = (value) => Math.abs(value * 10 - Math.round(value * 10)) < 0.001;
   if (!Number.isFinite(start) || !Number.isFinite(end)) return "Os tempos de início e fim têm de ser números válidos.";
@@ -368,6 +341,7 @@ router.get(
       };
       if (req.query.operation === "subtitles") taskFilter.operation = "subtitles";
       else if (req.query.operation === "generate_subtitles") taskFilter.operation = "generate_subtitles";
+      else if (req.query.operation === "concat") taskFilter.operation = "concat";
       else taskFilter.$or = [{ operation: "trim" }, { operation: { $exists: false } }];
       const task = await VideoTask.findOne(taskFilter).sort({ createdAt: -1 }).lean();
       if (!task) return res.json({ tarefa: null });
@@ -398,6 +372,7 @@ router.get(
           segments: task.operation === "generate_subtitles" ? task.subtitleSegments : undefined,
           operation: task.operation,
           completedAt: task.completedAt,
+          imageIds: task.operation === "concat" ? task.sources.map((source) => source.image_id) : undefined,
         },
       });
     } catch (error) {

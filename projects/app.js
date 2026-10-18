@@ -7,6 +7,7 @@ const mongoose = require("mongoose");
 
 const { router: projectsRouter, process_msg } = require("./routes/projects");
 const videoRouter = require("./routes/video");
+const videoConcatRouter = require("./routes/videoConcat");
 const { recoverPendingReservations, recoverTasks } = require("./controllers/videoTasks");
 
 // Run Docker
@@ -39,6 +40,7 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, "public")));
 
 app.use("/", videoRouter);
+app.use("/", videoConcatRouter);
 app.use("/", projectsRouter);
 
 // Start the message processing

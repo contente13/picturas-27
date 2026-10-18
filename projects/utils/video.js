@@ -16,6 +16,13 @@ function invalidVideo(message, status) {
   return error;
 }
 
+// Rotation in degrees from the stream tag (older files) or the display matrix side data.
+function rotationOf(stream) {
+  const fromSideData = stream.side_data_list?.find((data) => data.rotation !== undefined)?.rotation;
+  const rotation = Number(fromSideData ?? stream.tags?.rotate ?? 0);
+  return Number.isFinite(rotation) ? ((rotation % 360) + 360) % 360 : 0;
+}
+
 async function inspectVideo(filePath, timeoutMs = 0) {
   let stdout;
   try {
@@ -23,7 +30,7 @@ async function inspectVideo(filePath, timeoutMs = 0) {
       "ffprobe",
       [
         "-v", "error",
-        "-show_entries", "format=duration:stream=codec_type,codec_name,width,height,r_frame_rate",
+        "-show_entries", "format=duration:stream=codec_type,codec_name,width,height,r_frame_rate,avg_frame_rate:stream_tags=rotate:stream_side_data=rotation",
         "-of", "json",
         filePath,
       ],
@@ -49,6 +56,8 @@ async function inspectVideo(filePath, timeoutMs = 0) {
     width: video.width,
     height: video.height,
     frameRate: video.r_frame_rate,
+    avgFrameRate: video.avg_frame_rate,
+    rotation: rotationOf(video),
   };
 }
 

@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 
 const videoTaskSchema = new mongoose.Schema({
   taskId: { type: String, required: true, unique: true, index: true },
-  operation: { type: String, enum: ["trim", "subtitles", "generate_subtitles"], default: "trim", index: true },
+  operation: { type: String, enum: ["trim", "subtitles", "generate_subtitles", "concat"], default: "trim", index: true },
   user_id: { type: mongoose.Schema.Types.ObjectId, required: true, index: true },
   project_id: { type: mongoose.Schema.Types.ObjectId, required: true },
   image_id: { type: String, required: true },
@@ -12,6 +12,9 @@ const videoTaskSchema = new mongoose.Schema({
   tempoFim: { type: Number, required: true },
   durationSeconds: { type: Number, default: null },
   subtitleSegments: { type: [mongoose.Schema.Types.Mixed], default: [] },
+  // Concatenation (UC-VID-003): the selected clips in the confirmed order, with a snapshot of the
+  // fields the worker needs ({ image_id, source_key, source_name, duration, sizeBytes, subtitles }).
+  sources: { type: [mongoose.Schema.Types.Mixed], default: [] },
   maxProcessingMs: { type: Number, required: true },
   state: {
     type: String,

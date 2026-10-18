@@ -217,6 +217,27 @@ router.post("/:user/:project/video/:imageId/trim", auth.checkToken, (req, res) =
     .catch((err) => forwardAxiosError(res, err, "Não foi possível criar a tarefa de recorte."));
 });
 
+// UC-VID-003: validate the confirmed sequence (no task) and queue the concatenation.
+router.post("/:user/:project/video/concat/validate", auth.checkToken, (req, res) => {
+  const callerId = req.authUserId || req.params.user;
+  axios.post(projectsURL + `${req.params.user}/${req.params.project}/video/concat/validate`, req.body, {
+    httpsAgent,
+    params: req.query.share ? { share: req.query.share } : undefined,
+    headers: { Authorization: req.headers.authorization, "X-Caller-Id": callerId },
+  }).then((resp) => res.status(resp.status).jsonp(resp.data))
+    .catch((err) => forwardAxiosError(res, err, "Não foi possível validar a sequência de vídeos."));
+});
+
+router.post("/:user/:project/video/concat", auth.checkToken, (req, res) => {
+  const callerId = req.authUserId || req.params.user;
+  axios.post(projectsURL + `${req.params.user}/${req.params.project}/video/concat`, req.body, {
+    httpsAgent,
+    params: req.query.share ? { share: req.query.share } : undefined,
+    headers: { Authorization: req.headers.authorization, "X-Caller-Id": callerId },
+  }).then((resp) => res.status(resp.status).jsonp(resp.data))
+    .catch((err) => forwardAxiosError(res, err, "Não foi possível iniciar a junção dos vídeos."));
+});
+
 router.get("/:user/:project/video/tasks/latest", auth.checkToken, (req, res) => {
   const callerId = req.authUserId || req.params.user;
   axios.get(
