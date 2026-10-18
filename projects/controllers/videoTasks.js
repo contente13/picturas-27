@@ -87,10 +87,10 @@ function outputNameFor(project, sourceName, operation = "trim") {
   const base = path.basename(sourceName, path.extname(sourceName));
   const suffixName = operation === "subtitles" ? "_legendas" : "_recorte";
   const existingNames = new Set(project.imgs.map((image) => path.basename(image.og_uri)));
-  let candidate = `${base}${suffixName}${outputExtension}`;
+  let candidate = `${base}${suffixName}${extension}`;
   let suffix = 2;
   while (existingNames.has(candidate)) {
-    candidate = `${base}${suffixName}_${suffix}${outputExtension}`;
+    candidate = `${base}${suffixName}_${suffix}${extension}`;
     suffix += 1;
   }
   return candidate;

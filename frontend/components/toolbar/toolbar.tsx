@@ -18,7 +18,7 @@ import VideoTrimTool from "./video-trim-tool";
 import VideoSubtitlesTool from "./video-subtitles-tool";
 import { useClearProjectTools } from "@/lib/mutations/projects";
 import { useSession } from "@/providers/session-provider";
-import { useProjectInfo, useCurrentImage } from "@/providers/project-provider";
+import { useProjectInfo, useCurrentImage, useCanEditProject } from "@/providers/project-provider";
 import { Button } from "../ui/button";
 import { AppliedToolsList } from "./applied-tools-list";
 import {
@@ -39,10 +39,10 @@ export function Toolbar() {
   const view = searchParams.get("view") ?? "grid";
   const mode = searchParams.get("mode") ?? "edit";
   const currentImage = useCurrentImage();
+  const canEdit = useCanEditProject();
 
-  // Only show editing controls for a selected item in the editable carousel.
-  const showTools = view !== "grid" && mode === "edit" && currentImage !== null;
-  const disabled = !showTools;
+  const showTools = view === "carousel" && currentImage != null;
+  const disabled = !showTools || mode !== "edit" || !canEdit;
 
   const project = useProjectInfo();
   const session = useSession();
@@ -61,8 +61,18 @@ export function Toolbar() {
     shareId,
   );
 
+  // The library grid uses the full workspace; tools appear beside an item
+  // only after opening it in the carousel.
+  if (view !== "carousel") return null;
+
   return (
-    <div className="flex h-full w-24 flex-col justify-between items-stretch border-r bg-background p-2">
+    <fieldset
+      key={disabled ? "read-only" : "editable"}
+      disabled={disabled}
+      inert={disabled}
+      aria-label="Ferramentas de edição"
+      className="flex h-full min-h-0 min-w-0 w-24 shrink-0 flex-col justify-between items-stretch overflow-y-auto border-r bg-background p-2 disabled:opacity-50"
+    >
       {!showTools ? (
         <div className="flex h-full items-center justify-center text-center text-xs text-muted-foreground">
           Select an image or video to see its tools.
@@ -103,7 +113,7 @@ export function Toolbar() {
               <Button
                 variant="outline"
                 className="text-red-400 size-8"
-                disabled={project.tools.length === 0}
+                disabled={disabled || project.tools.length === 0}
               >
                 <Eraser />
               </Button>
@@ -133,6 +143,6 @@ export function Toolbar() {
           </Dialog>
         </>
       )}
-    </div>
+    </fieldset>
   );
 }

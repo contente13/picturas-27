@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Carousel,
   CarouselContent,
@@ -38,7 +38,7 @@ export function ProjectImageList({
   setCurrentImageId,
   results,
 }: {
-  setCurrentImageId: (img: ProjectTypes.ProjectImage) => void;
+  setCurrentImageId: (img: ProjectTypes.ProjectImage | null) => void;
   results: {
     imgs: ProjectTypes.ProjectImage[];
     texts: ProjectTypes.ProjectImageText[];
@@ -53,7 +53,6 @@ export function ProjectImageList({
 
   const [api, setApi] = useState<CarouselApi>();
   const [current, setCurrent] = useState(0);
-  const [count, setCount] = useState(0);
   const [jumpTo, setJumpTo] = useState<number | null>(null);
   const [previewOpen, setPreviewOpen] = useState<boolean>(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
@@ -77,6 +76,16 @@ export function ProjectImageList({
 
   const qc = useQueryClient();
   const socket = useGetSocket(session.token);
+
+  // Video edits are saved as project media, while image processing returns a
+  // separate result. Keep every project item visible in preview in either case.
+  const carouselImages = useMemo(() => {
+    if (mode !== "results") return project.imgs;
+    const resultsById = new Map(results.imgs.map((image) => [image._id, image]));
+    return project.imgs.map((image) => resultsById.get(image._id) ?? image);
+  }, [mode, project.imgs, results.imgs]);
+  const carouselTexts = mode === "results" ? results.texts : [];
+  const count = carouselImages.length + carouselTexts.length;
 
   const showVideoPanel = Boolean(
     view === "carousel" &&
@@ -154,42 +163,40 @@ useEffect(() => {
   }, [socket.data, toast]);
 
   useEffect(() => {
-    if (view === "grid") {
+    if (view === "grid" || count === 0) {
       setApi(undefined);
       setJumpTo(null);
     }
-  }, [view]);
+    if (count === 0) {
+      setCurrent(0);
+      setCurrentImageId(null);
+    }
+  }, [view, count, setCurrentImageId]);
 
   useEffect(() => {
-    if (!api) {
-      return;
-    }
-
-    setCount(api.scrollSnapList().length);
-    setCurrent(api.selectedScrollSnap() + 1);
-    if (project.imgs) setCurrentImageId(project.imgs[api.selectedScrollSnap()]);
+    if (!api || view !== "carousel" || count === 0) return;
 
     const handleSelect = () => {
-      setCurrent(api.selectedScrollSnap() + 1);
-      if (project.imgs)
-        setCurrentImageId(project.imgs[api.selectedScrollSnap()]);
+      const index = api.selectedScrollSnap();
+      setCurrent(count === 0 ? 0 : Math.min(index + 1, count));
+      setCurrentImageId(carouselImages[index] ?? null);
     };
 
-    api.on("select", () => {
-      setCurrent(api.selectedScrollSnap() + 1);
-      if (project.imgs)
-        setCurrentImageId(project.imgs[api.selectedScrollSnap()]);
-    });
+    api.on("select", handleSelect);
+    api.on("reInit", handleSelect);
+    api.reInit();
 
-    if (jumpTo !== null && jumpTo !== api.selectedScrollSnap()) {
-      api.scrollTo(jumpTo, true);
+    if (jumpTo !== null) {
+      api.scrollTo(Math.max(0, Math.min(jumpTo, count - 1)), true);
       setJumpTo(null);
     }
+    handleSelect();
 
     return () => {
       api.off("select", handleSelect);
+      api.off("reInit", handleSelect);
     };
-  }, [api, jumpTo, project.imgs, setCurrentImageId]);
+  }, [api, view, jumpTo, carouselImages, count, setCurrentImageId]);
 
   const isVideo = (image: ProjectTypes.ProjectImage) =>
     image.mediaMetadata?.format === "mp4" ||
@@ -199,13 +206,12 @@ useEffect(() => {
   const photoImages = project.imgs.filter((image) => !isVideo(image));
   const gridImages =
     mode === "results"
-      ? results.imgs
+      ? carouselImages
       : mediaFilter === "videos"
         ? videoImages
         : mediaFilter === "images"
           ? photoImages
           : project.imgs;
-  const carouselImages = mode === "results" ? results.imgs : project.imgs;
 
   const handleGridDrop = (files: File[]) => {
     if (!canEdit || files.length === 0) return;
@@ -237,8 +243,7 @@ useEffect(() => {
 
   const gridContent = (
     <div className="size-full flex flex-col items-center">
-      {(mode === "edit" && project.imgs.length > 0) ||
-      (mode === "results" && (results.imgs.length > 0 || results.texts.length > 0)) ? (
+      {count > 0 ? (
         <>
           {mode !== "results" && (
             <div className="relative pt-4 pb-2 text-gray-500 text-sm after:h-2 after:bg-gradient-to-b after:from-background after:to-background/10 after:w-full after:absolute after:bottom-0 after:translate-y-2 after:z-50 w-full text-center flex flex-col">
@@ -283,7 +288,7 @@ useEffect(() => {
                     key={text._id + index}
                     className="aspect-square"
                     onClick={() => {
-                      setJumpTo(results.imgs.length + index);
+                      setJumpTo(carouselImages.length + index);
 
                       const params = new URLSearchParams();
                       params.set("mode", mode);
@@ -328,12 +333,13 @@ useEffect(() => {
         setPreviewImage(null);
       }}
     >
-      <div className={showVideoPanel ? "h-full min-h-0 w-full overflow-y-auto flex flex-col" : "size-full"}>
-        {view === "grid" || project.imgs.length <= 0 ? (
+      <div className={showVideoPanel ? "h-full min-h-0 min-w-0 flex-1 overflow-y-auto flex flex-col" : "h-full min-w-0 flex-1"}>
+        {view === "grid" || count === 0 ? (
           mode === "edit" && canEdit ? (
             <AppDropzone
               onDrop={handleGridDrop}
               noClick
+              borderless={project.imgs.length > 0}
               dropzoneClassName={project.imgs.length === 0 ? "min-h-[55vh]" : ""}
             >
               {gridContent}
@@ -350,33 +356,22 @@ useEffect(() => {
                   className="aspect-auto h-[calc(100vh-99px-0.5rem-36px)] xl:h-[calc(100vh-55px-0.5rem-36px)]"
                   style={showVideoPanel ? { height: "min(52vh, 560px)" } : undefined}
                 >
-                  {mode === "edit" &&
-                    project.imgs.length > 0 &&
-                    project.imgs.map((image) => (
-                      <CarouselItem key={image._id}>
-                        <ProjectImage image={image} animation={false} />
-                      </CarouselItem>
-                    ))}
-                  {mode === "results" &&
-                    results.imgs.length > 0 &&
-                    results.imgs.map((image) => (
-                      <CarouselItem key={image._id}>
-                        <ProjectImage image={image} animation={false} />
-                      </CarouselItem>
-                    ))}
-                  {mode === "results" &&
-                    results.texts.length > 0 &&
-                    results.texts.map((text) => (
-                      <CarouselItem key={text.name}>
-                        <ProjectText text={text.text} />
-                      </CarouselItem>
-                    ))}
+                  {carouselImages.map((image) => (
+                    <CarouselItem key={image._id}>
+                      <ProjectImage image={image} animation={false} />
+                    </CarouselItem>
+                  ))}
+                  {carouselTexts.map((text) => (
+                    <CarouselItem key={`text-${text._id}-${text.name}`}>
+                      <ProjectText text={text.text} />
+                    </CarouselItem>
+                  ))}
                 </CarouselContent>
                 <CarouselPrevious className="hidden sm:flex" />
                 <CarouselNext className="hidden sm:flex" />
               </Carousel>
               <div className="py-2 text-center text-sm text-muted-foreground">
-                {current} / {count}
+                {Math.min(Math.max(current, 1), count)} / {count}
               </div>
             </div>
             {showVideoPanel && videoTrimOpen && <VideoTrimPanel disabled={!canEdit} />}

@@ -9,6 +9,7 @@ interface CustomDropzoneProps {
   children?: React.ReactNode;
   noClick?: boolean;
   dropzoneClassName?: string;
+  borderless?: boolean;
 }
 
 export default function AppDropzone({
@@ -16,6 +17,7 @@ export default function AppDropzone({
   children,
   noClick = false,
   dropzoneClassName = "",
+  borderless = false,
 }: CustomDropzoneProps) {
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const { toast } = useToast();
@@ -50,10 +52,12 @@ export default function AppDropzone({
         {({ getRootProps, getInputProps }) => (
           <div
             {...getRootProps()}
-            className={`flex h-full w-full cursor-pointer items-center justify-center rounded-xl border-2 border-dashed ${dropzoneClassName} ${
+            className={`flex h-full w-full cursor-pointer items-center justify-center rounded-xl border-2 ${borderless ? "border-transparent" : "border-dashed"} ${dropzoneClassName} ${
               isDragging
                 ? "border-primary bg-primary/10 text-primary"
-                : "border-neutral-400 hover:bg-sidebar text-neutral-400"
+                : borderless
+                  ? "bg-transparent text-neutral-400"
+                  : "border-neutral-400 hover:bg-sidebar text-neutral-400"
             } p-4 text-center transition-colors`}
           >
             <input {...getInputProps()} />

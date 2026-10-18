@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle2, Scissors } from "lucide-react";
+import { Scissors } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "../ui/button";
@@ -149,7 +149,7 @@ export default function VideoTrimTool({ disabled }: { disabled: boolean }) {
       aria-pressed={videoTrimOpen}
       className={`flex h-auto flex-col gap-1 px-1 py-2 text-xs ${videoTrimOpen ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}
       disabled={isDisabled}
-      title="Recorte Temporal (UC-VID-002)"
+      title="Recorte Temporal"
       onClick={() => { setVideoSubtitlesOpen(false); setVideoTrimOpen(true); }}
     >
       <Scissors className="size-5" />
@@ -670,7 +670,6 @@ export function VideoTrimPanel({ disabled }: { disabled: boolean }) {
             <Scissors className="size-5 text-primary" />
             Recorte Temporal
           </h2>
-          <p className="mt-1 text-sm text-muted-foreground">UC-VID-002 · Escolhe um intervalo; o original fica intacto.</p>
         </div>
         <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
           <span>Duração {isTrimmedSource ? "atual" : "original"}: {isTrimmedSource
@@ -683,13 +682,9 @@ export function VideoTrimPanel({ disabled }: { disabled: boolean }) {
         </div>
       </div>
 
-      {session.user.type === "free" && session.user.remaining_operations != null && (
-        <p className="mb-3 text-xs text-muted-foreground">Operações diárias restantes: {session.user.remaining_operations}</p>
-      )}
-
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
         <div className="space-y-1.5">
-          <Label htmlFor="tempoInicio">T_in (segundos)</Label>
+          <Label htmlFor="tempoInicio">Instante inicial (segundos)</Label>
           <Input id="tempoInicio" type="number" step="0.1" min={0} max={Math.max(0, tempoFim - 1)} value={tempoInicioInput}
             aria-invalid={Boolean(trimErrors.start)} aria-describedby={trimErrors.start ? "tempoInicio-error" : undefined}
             className={trimErrors.start ? "border-destructive focus-visible:ring-destructive" : undefined}
@@ -697,7 +692,7 @@ export function VideoTrimPanel({ disabled }: { disabled: boolean }) {
           {trimErrors.start && <p id="tempoInicio-error" className="text-xs text-destructive">{trimErrors.start}</p>}
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="tempoFim">T_out (segundos)</Label>
+          <Label htmlFor="tempoFim">Instante final (segundos)</Label>
           <Input id="tempoFim" type="number" step="0.1" min={tempoInicio + 1} max={videoDuration} value={tempoFimInput}
             aria-invalid={Boolean(trimErrors.end)} aria-describedby={trimErrors.end ? "tempoFim-error" : undefined}
             className={trimErrors.end ? "border-destructive focus-visible:ring-destructive" : undefined}
@@ -797,20 +792,8 @@ export function VideoTrimPanel({ disabled }: { disabled: boolean }) {
         </div>
       )}
 
-      <div className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-2">
-        <Button variant="outline" className="w-full" disabled={isDisabled || submitting || !videoDuration} onClick={() => {
-          const time = videoPlayerRef.current?.currentTime;
-          if (Number.isFinite(time)) updateHandleTime("in", time as number, false);
-        }}>Marcar posição atual como T_in</Button>
-        <Button variant="outline" className="w-full" disabled={isDisabled || submitting || !videoDuration} onClick={() => {
-          const time = videoPlayerRef.current?.currentTime;
-          if (Number.isFinite(time)) updateHandleTime("out", time as number, false);
-        }}>Marcar posição atual como T_out</Button>
-      </div>
-
       <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/10 bg-background/40 p-3 text-sm">
         <span>Duração do recorte: <strong className="text-primary">{Math.max(0, tempoFim - tempoInicio).toFixed(1)} s</strong></span>
-        <span className="rounded-full border bg-background px-2 py-0.5 text-xs font-semibold">{taskStatus ?? "Aguardando"}</span>
       </div>
 
       {taskError && (taskStatus === "FALHADA" || taskStatus === "CANCELADA") && (
@@ -831,13 +814,6 @@ export function VideoTrimPanel({ disabled }: { disabled: boolean }) {
           <Button variant="destructive" onClick={handleCancel} disabled={progress >= 97 || !taskId}>
             {progress >= 97 ? "A guardar o resultado…" : "Cancelar tarefa"}
           </Button>
-        </div>
-      )}
-
-      {resultUrl && taskStatus === "CONCLUIDA" && (
-        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-primary/20 bg-primary/5 p-3 text-sm">
-          <span className="flex items-center gap-2 font-medium text-primary"><CheckCircle2 className="size-4" />Recorte carregado no leitor principal.</span>
-          <a href={resultUrl} download className="text-xs font-medium underline underline-offset-4">Descarregar vídeo recortado</a>
         </div>
       )}
 
