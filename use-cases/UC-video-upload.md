@@ -6,8 +6,8 @@
 |---|---|
 | Grupo / Equipa | Grupo 1 |
 | Autores | Eduardo Freitas, Francisco Contente, Luís Pires, Rui Castro |
-| Data | 2026-10-18 |
-| Versão do documento | v1.1 |
+| Data | 2026-10-19 |
+| Versão do documento | v1.2 |
 | Unidade Curricular | Requisitos e Arquiteturas de Software - MEI, Universidade do Minho |
 
 ## 1.0 Funcionalidade - Carregamento de vídeo
@@ -26,7 +26,7 @@
 |---|---|
 | ID do Caso de Uso | UC-VID-000 |
 | Nome | Carregar um vídeo para um projeto |
-| Versão | v1.1 |
+| Versão | v1.2 |
 | Autor | Luís Pires |
 | Data | 2026-10-15 |
 | Objetivo | Permitir a um utilizador Registado ou Premium adicionar um vídeo suportado a um projeto, guardando-o de forma íntegra e apresentando-o na biblioteca para reprodução e utilização posterior. |
@@ -44,7 +44,7 @@
 | 2 | Confirma o carregamento. | Verifica a sessão, a permissão de edição e a versão do projeto. Recebe o ficheiro como multipart/form-data e guarda-o temporariamente para validação. |
 | 3 | - | Consulta o perfil do utilizador e valida a extensão, o tamanho máximo aplicável, a existência de uma pista de vídeo válida, a duração e os codecs permitidos (RN1–RN3). |
 | 4 | - | Verifica se já existe no projeto um ficheiro com o mesmo nome. Se os controlos forem válidos, calcula o hash SHA-256 e envia o vídeo para o armazenamento, associado ao projeto e à área de origem (`src`). |
-| 5 | - | Adiciona ao projeto a referência do ficheiro, o identificador no armazenamento, o hash e os metadados técnicos (duração, codecs, resolução, taxa de fotogramas, dimensão e formato). Atualiza a versão do projeto de forma consistente (RN4, RN5). |
+| 5 | - | Adiciona ao projeto a referência do ficheiro, o identificador no armazenamento, o hash e os metadados técnicos (duração, codecs, resolução, taxa de fotogramas, dimensão e formato). Gera e guarda uma miniatura do vídeo (um fotograma a 10 % da duração, no máximo a 1 s) para a biblioteca; se a miniatura não puder ser gerada, o carregamento continua. Atualiza a versão do projeto de forma consistente (RN4, RN5). |
 | 6 | - | Elimina o ficheiro temporário local e responde com sucesso e a nova versão do projeto. |
 | 7 | Continua a utilizar o projeto. | Atualiza a biblioteca e disponibiliza o vídeo para reprodução e para as ferramentas de vídeo compatíveis. |
 
@@ -87,8 +87,8 @@
 | RN1 | O carregamento de vídeo está disponível apenas para utilizadores autenticados com perfil Registado (`free`) ou Premium. O perfil anónimo não pode carregar vídeos. |
 | RN2 | Limites para vídeos externos: Registado - tamanho máximo de 200 MB e duração máxima de 10 minutos; Premium - tamanho máximo de 2 GB e duração máxima de 60 minutos. O ficheiro tem de cumprir ambos os limites. Estes limites são aplicados ao carregamento externo e não são reaplicados a vídeos gerados no projeto por outras operações. |
 | RN3 | Formatos e codecs aceites: MP4 com vídeo H.264 e áudio AAC, ou sem áudio; WebM com vídeo VP8 e áudio Vorbis, ou sem áudio. A extensão e os codecs têm de corresponder. Tem de existir uma pista de vídeo legível e uma duração válida. |
-| RN4 | Cada nome de ficheiro tem de ser único dentro do projeto. O sistema não substitui automaticamente ficheiros existentes. |
-| RN5 | Cada carregamento associa o vídeo ao projeto e guarda os metadados identificados, incluindo hash SHA-256, tamanho, formato, duração, codecs, resolução e taxa de fotogramas. A atualização do projeto respeita a versão esperada, evitando perda de alterações concorrentes. |
+| RN4 | Cada nome de ficheiro tem de ser único dentro do projeto. O sistema não substitui automaticamente ficheiros existentes. O nome original é preservado tal como foi enviado, incluindo acentos e outros caracteres não ASCII (UTF-8). |
+| RN5 | Cada carregamento associa o vídeo ao projeto e guarda os metadados identificados, incluindo hash SHA-256, tamanho, formato, duração, codecs, resolução e taxa de fotogramas. A atualização do projeto respeita a versão esperada, evitando perda de alterações concorrentes. Para cada vídeo é guardada uma miniatura, apresentada na biblioteca com a duração; é apagada com o vídeo ou com o projeto. |
 | RN6 | O acesso ao carregamento exige autenticação e permissão de edição no projeto, incluindo quando este é acedido através de partilha. Os vídeos ficam protegidos pelas regras de acesso do projeto e pela proteção de transporte e armazenamento definida para o sistema. |
 | RN7 | O carregamento não conta como operação diária de processamento de vídeo e não cria uma tarefa assíncrona de processamento. Por isso não está sujeito ao limite de uma operação de vídeo ativa por projeto (RNG-11) e é aceite mesmo com uma operação em curso no projeto. Cada ficheiro selecionado é carregado e validado individualmente. |
 | RN8 | Ficheiros temporários locais são eliminados após sucesso ou falha. Se a gravação no armazenamento tiver sucesso mas a atualização do projeto falhar, o objeto órfão é removido. |
@@ -131,6 +131,8 @@
 | REQ-VID-UPLOAD-010 | Após um carregamento bem-sucedido, o vídeo deve aparecer na biblioteca do projeto e ficar disponível para reprodução e seleção pelas ferramentas de vídeo. | F | Deve ter | ALT | Passo 7; Garantia de Sucesso; RN9 | Carregar um vídeo válido, atualizar a biblioteca, reproduzi-lo e confirmar que pode ser selecionado numa ferramenta compatível. |
 | REQ-VID-UPLOAD-011 | O sistema deve permitir selecionar vários ficheiros e comunicar o resultado de cada carregamento individual, preservando os ficheiros cujo envio já terminou com sucesso. | F | Deveria ter | ALT | FA1; A5; RN7 | Selecionar vários ficheiros e provocar uma falha num deles; os restantes concluídos ficam no projeto e a falha é identificada pelo nome. |
 | REQ-VID-UPLOAD-012 | O carregamento de vídeo não deve consumir quota diária de processamento nem criar uma tarefa de processamento assíncrona. | F | Deve ter | NOVO | RN7 | Carregar um vídeo e confirmar que o saldo de operações não muda e que não é criada tarefa de vídeo. |
+| REQ-VID-UPLOAD-013 | O sistema deve gerar uma miniatura de cada vídeo carregado (ou produzido por uma ferramenta de vídeo) e apresentá-la na biblioteca com a duração, sem que uma falha na miniatura impeça o carregamento. | F | Deveria ter | NOVO | Passo 5; RN5 | Carregar um vídeo: a biblioteca mostra um fotograma do vídeo e a duração; apagar o vídeo remove também a miniatura. |
+| REQ-VID-UPLOAD-014 | O sistema deve preservar o nome original do ficheiro, incluindo acentos e caracteres não ASCII. | F | Deve ter | NOVO | RN4 | Carregar "São Paulo — ação.mp4": o projeto mostra exatamente esse nome. |
 
 ### 3.2 Impacto no sistema existente
 
@@ -148,8 +150,8 @@
 |---|---|---|
 | Trigger / Passos 1–2 | Seleção e envio do vídeo | REQ-VID-UPLOAD-001, REQ-VID-UPLOAD-008 |
 | Passo 3 | Perfil, formato, tamanho, codecs e duração | REQ-VID-UPLOAD-002, REQ-VID-UPLOAD-003, REQ-VID-UPLOAD-004 |
-| Passo 4 | Nome único e armazenamento do objeto | REQ-VID-UPLOAD-005, REQ-VID-UPLOAD-006, REQ-VID-UPLOAD-009 |
-| Passos 5–6 | Associação ao projeto, versão e limpeza | REQ-VID-UPLOAD-006, REQ-VID-UPLOAD-007, REQ-VID-UPLOAD-009 |
+| Passo 4 | Nome único e armazenamento do objeto | REQ-VID-UPLOAD-005, REQ-VID-UPLOAD-006, REQ-VID-UPLOAD-009, REQ-VID-UPLOAD-014 |
+| Passos 5–6 | Associação ao projeto, miniatura, versão e limpeza | REQ-VID-UPLOAD-006, REQ-VID-UPLOAD-007, REQ-VID-UPLOAD-009, REQ-VID-UPLOAD-013 |
 | Passo 7 | Disponibilização na biblioteca | REQ-VID-UPLOAD-010 |
 | FA1 | Vários carregamentos independentes | REQ-VID-UPLOAD-011 |
 | FA2 | Vídeo sem áudio | REQ-VID-UPLOAD-004 |

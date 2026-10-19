@@ -40,6 +40,8 @@ export interface ProjectImage {
   url: string;
   /** JPEG frame shown in the grid for videos; null for images and older videos without one. */
   thumbnailUrl?: string | null;
+  /** Number of saved editable subtitles (videos only); enables the SRT/WebVTT download options. */
+  subtitleCount?: number;
   mediaMetadata?: {
     duration?: number;
     width?: number;
@@ -276,13 +278,25 @@ export const deleteProject = async ({
   projectVersion: number;
 }) => {
   const query = buildQuery({ ownerId, shareId });
-
-  const response = await api.delete(`/projects/${uid}/${pid}${query}`, {
+  const remove = (version: number) => api.delete(`/projects/${uid}/${pid}${query}`, {
     headers: {
       Authorization: `Bearer ${token}`,
-      "X-Project-Version": String(projectVersion),
+      "X-Project-Version": String(version),
     },
   });
+
+  let response;
+  try {
+    response = await remove(projectVersion);
+  } catch (error) {
+    // The version known by the client may be outdated (e.g. the projects list); the user already
+    // confirmed the deletion, so it is retried once with the version reported by the server.
+    const serverVersion = axios.isAxiosError(error) && error.response?.status === 409
+      ? error.response.data?.serverVersion
+      : undefined;
+    if (typeof serverVersion !== "number") throw error;
+    response = await remove(serverVersion);
+  }
 
   if (response.status !== 204) throw new Error("Failed to delete project");
 
@@ -389,8 +403,9 @@ export const downloadProjectImage = async ({
   if (response.status !== 200 || !response.data)
     throw new Error("Failed to download project image");
 
-  const blob = new Blob([response.data], { type: "image/png" });
-  const file = new File([blob], imageName, { type: "image/png" });
+  const type = String(response.headers?.["content-type"] || "application/octet-stream");
+  const blob = new Blob([response.data], { type });
+  const file = new File([blob], imageName, { type });
 
   return {
     name: imageName,

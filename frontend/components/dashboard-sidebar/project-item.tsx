@@ -52,8 +52,9 @@ export default function ProjectItem({ p }: { p: Project }) {
 
   const projectKey = ["project", session.user._id, p._id, session.token, ownerId, shareId];
 
+  // The open project's cache has the most recent version; otherwise the projects list has it.
   const cached = qc.getQueryData<SingleProject>(projectKey);
-  const projectVersion = cached?.version; // versão REAL
+  const projectVersion = cached?.version ?? p.version;
 
   const deleteProject = useDeleteProject(
     session.user._id,
@@ -153,7 +154,7 @@ export default function ProjectItem({ p }: { p: Project }) {
           <DialogFooter>
             <Button
               onClick={() => {
-                if (!projectVersion) {
+                if (projectVersion == null) {
                   toast({
                     title: "Não foi possível obter a versão do projeto",
                     description: "Abre o projeto primeiro (ou aguarda carregar) e tenta novamente.",

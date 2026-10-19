@@ -1,6 +1,6 @@
 "use client";
 
-import { Captions, Plus, Save, Trash2, Download, Film, LoaderCircle, Sparkles, RotateCcw } from "lucide-react";
+import { Captions, ChevronDown, Plus, Save, Trash2, Download, Film, LoaderCircle, Sparkles, RotateCcw } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
@@ -12,6 +12,8 @@ import { useCanEditProject, useCurrentImage, useProjectInfo, useVideoTrim } from
 import { useSession } from "@/providers/session-provider";
 import { useToast } from "@/hooks/use-toast";
 import { api } from "@/lib/axios";
+import { downloadSubtitles, type SubtitleFormat } from "@/lib/subtitle-files";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu";
 
 type Segment = { id: string; start: number; end: number; text: string };
 type VideoTask = {
@@ -27,23 +29,6 @@ type VideoTask = {
   segments?: Omit<Segment, "id">[];
   completedAt?: string | null;
 };
-
-function formatStamp(seconds: number, separator: "," | ".") {
-  const ms = Math.max(0, Math.round(seconds * 1000));
-  const hh = Math.floor(ms / 3600000);
-  const mm = Math.floor((ms % 3600000) / 60000);
-  const ss = Math.floor((ms % 60000) / 1000);
-  return `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}:${String(ss).padStart(2, "0")}${separator}${String(ms % 1000).padStart(3, "0")}`;
-}
-
-function serializeSubtitles(segments: Segment[], format: "srt" | "vtt") {
-  const ordered = [...segments].sort((a, b) => a.start - b.start);
-  const cues = ordered.map((segment, index) => {
-    const timing = `${formatStamp(segment.start, format === "srt" ? "," : ".")} --> ${formatStamp(segment.end, format === "srt" ? "," : ".")}`;
-    return format === "srt" ? `${index + 1}\n${timing}\n${segment.text.trim()}` : `${timing}\n${segment.text.trim()}`;
-  });
-  return format === "srt" ? cues.join("\n\n") : `WEBVTT\n\n${cues.join("\n\n")}`;
-}
 
 function validateSegments(segments: Segment[], duration: number) {
   const ordered = [...segments].sort((a, b) => a.start - b.start);
@@ -290,16 +275,10 @@ export function VideoSubtitlesPanel({ disabled }: { disabled: boolean }) {
     }
   }
 
-  function download(format: "srt" | "vtt") {
+  function download(format: SubtitleFormat) {
     const error = validateSegments(segments, duration);
     if (!segments.length || error) { toast({ title: "Não é possível exportar", description: error || "Adiciona pelo menos uma legenda.", variant: "destructive" }); return; }
-    const blob = new Blob([serializeSubtitles(segments, format)], { type: format === "srt" ? "application/x-subrip;charset=utf-8" : "text/vtt;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `${currentImage?.name?.replace(/\.[^.]+$/, "") || "video"}.${format}`;
-    link.click();
-    URL.revokeObjectURL(url);
+    downloadSubtitles(segments, format, currentImage?.name || "video");
   }
 
   async function embed() {
@@ -408,8 +387,17 @@ export function VideoSubtitlesPanel({ disabled }: { disabled: boolean }) {
           <span className="text-xs text-muted-foreground">A transcrição é feita localmente pelo serviço de IA. A proposta só é guardada quando confirmares.</span>
           <Button type="button" variant="outline" size="sm" disabled={isDisabled || saving || generating || !dirty} onClick={save}><Save className="mr-1 size-4" />{saving ? "A guardar…" : "Guardar"}</Button>
           {dirty && <Button type="button" variant="ghost" size="sm" disabled={saving || generating} onClick={() => setSegments(savedSegments)}><RotateCcw className="mr-1 size-4" />Descartar alterações</Button>}
-          <Button type="button" variant="outline" size="sm" disabled={isDisabled || dirty || active || generating || !segments.length} onClick={() => download("srt")}><Download className="mr-1 size-4" />Descarregar SRT</Button>
-          <Button type="button" variant="outline" size="sm" disabled={isDisabled || dirty || active || generating || !segments.length} onClick={() => download("vtt")}><Download className="mr-1 size-4" />Descarregar WebVTT</Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button type="button" variant="outline" size="sm" disabled={isDisabled || dirty || active || generating || !segments.length}>
+                <Download className="mr-1 size-4" />Descarregar legendas<ChevronDown className="ml-1 size-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              <DropdownMenuItem onSelect={() => download("srt")}>SRT (.srt)</DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => download("vtt")}>WebVTT (.vtt)</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Button type="button" size="sm" disabled={isDisabled || dirty || active || generating || !segments.length} onClick={embed}><Film className="mr-1 size-4" />Incorporar no vídeo</Button>
           {dirty && <span className="text-xs text-amber-300">Alterações por guardar</span>}
         </div>

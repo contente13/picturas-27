@@ -171,6 +171,31 @@ router.get("/:user/:project/video/:imageId/subtitles", auth.checkToken, (req, re
     .catch((err) => forwardAxiosError(res, err, "Não foi possível carregar as legendas."));
 });
 
+// UC-VID-001 RN5: video with its subtitles as a track. Streamed, so large videos are not buffered.
+router.get("/:user/:project/video/:imageId/with-subtitles", auth.checkToken, (req, res) => {
+  const callerId = req.authUserId || req.params.user;
+  axios.get(projectsURL + `${req.params.user}/${req.params.project}/video/${req.params.imageId}/with-subtitles`, {
+    httpsAgent,
+    responseType: "stream",
+    params: req.query.share ? { share: req.query.share } : undefined,
+    headers: { Authorization: req.headers.authorization, "X-Caller-Id": callerId },
+  }).then((resp) => {
+    for (const header of ["content-type", "content-length", "content-disposition"]) {
+      if (resp.headers[header]) res.setHeader(header, resp.headers[header]);
+    }
+    resp.data.pipe(res);
+  }).catch(async (err) => {
+    // With a stream response the error body is a stream too: read it before forwarding.
+    if (err.response?.data?.on) {
+      const chunks = [];
+      for await (const chunk of err.response.data) chunks.push(chunk);
+      const text = Buffer.concat(chunks).toString("utf8");
+      try { err.response.data = JSON.parse(text); } catch { err.response.data = text; }
+    }
+    forwardAxiosError(res, err, "Não foi possível preparar o vídeo com legendas.");
+  });
+});
+
 router.put("/:user/:project/video/:imageId/subtitles", auth.checkToken, (req, res) => {
   const callerId = req.authUserId || req.params.user;
   axios.put(projectsURL + `${req.params.user}/${req.params.project}/video/${req.params.imageId}/subtitles`, req.body, {

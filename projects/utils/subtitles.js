@@ -20,4 +20,20 @@ function validateSubtitleSegments(segments, duration) {
   return null;
 }
 
-module.exports = { validateSubtitleSegments };
+function srtTimestamp(seconds) {
+  const ms = Math.round(Number(seconds) * 1000);
+  const hours = Math.floor(ms / 3600000);
+  const minutes = Math.floor((ms % 3600000) / 60000);
+  const secs = Math.floor((ms % 60000) / 1000);
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(secs).padStart(2, "0")},${String(ms % 1000).padStart(3, "0")}`;
+}
+
+// SRT text of the segments, in time order (used to burn them in and to add them as a track).
+function toSrt(segments) {
+  return [...segments]
+    .sort((a, b) => Number(a.start) - Number(b.start))
+    .map((segment, index) => `${index + 1}\n${srtTimestamp(segment.start)} --> ${srtTimestamp(segment.end)}\n${String(segment.text).trim()}\n`)
+    .join("\n");
+}
+
+module.exports = { toSrt, validateSubtitleSegments };

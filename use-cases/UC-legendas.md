@@ -6,8 +6,8 @@
 |---|---|
 | Grupo / Equipa | Grupo 1 |
 | Autores | Eduardo Freitas, Francisco Contente, Luís Pires, Rui Castro |
-| Data | 2026-10-18 |
-| Versão do documento | v1.2 |
+| Data | 2026-10-19 |
+| Versão do documento | v1.3 |
 | Unidade Curricular | Requisitos e Arquiteturas de Software - MEI, Universidade do Minho |
 
 ## 1.1 Funcionalidade 1 - Criar legendas para um vídeo
@@ -26,9 +26,9 @@
 |---|---|
 | ID do Caso de Uso | UC-VID-001 |
 | Nome | Criar legendas para um vídeo |
-| Versão | v1.2 |
+| Versão | v1.3 |
 | Autor | Luís Pires |
-| Data | 2026-10-18 |
+| Data | 2026-10-19 |
 | Objetivo | Permitir ao utilizador criar legendas manualmente ou, se for Premium, gerar uma proposta automática com IA, rever e editar o texto e os tempos, guardá-la e, opcionalmente, descarregá-la ou incorporá-la num novo vídeo com a fonte e a cor padrão, sem opções de personalização visual. |
 | Âmbito | PictuRAS - projetos e processamento de vídeo: leitor, editor de texto e tempos das legendas, geração automática por IA para Premium, persistência, exportação e incorporação assíncrona com estilo visual padrão não configurável. |
 | Ator Principal | Utilizador autenticado: Registado ou Premium. |
@@ -57,6 +57,7 @@
 | FA2 - Gerar proposta automática (Premium) | No passo 3, um utilizador Premium pede a geração automática. O sistema valida os limites Premium aplicáveis, o tempo máximo de processamento e a inexistência de outra operação de vídeo ativa no mesmo projeto (RN7), transcreve o áudio e apresenta segmentos com texto e tempos para revisão. A proposta não substitui as legendas guardadas até o utilizador a rever e guardar. O utilizador pode corrigir, adicionar ou apagar qualquer segmento usando o editor manual e prosseguir a partir do passo 5. |
 | FA3 - Usar a posição atual do leitor | No passo 4, o utilizador define início ou fim do segmento a partir do instante atual de reprodução. |
 | FA4 - Descarregar apenas o ficheiro | No passo 6, escolhe SRT ou WebVTT. Não é criada tarefa de vídeo nem consumida quota de processamento. |
+| FA4b - Descarregar o vídeo com legendas | Na vista do vídeo, com legendas guardadas, o utilizador escolhe "Vídeo com legendas". O sistema gera no momento uma cópia do vídeo com as legendas guardadas como faixa de legendas ativa por omissão (MP4: `mov_text`; WebM: WebVTT), sem recodificar, e entrega-a como `<nome>_com_legendas.<ext>`. Não é criada tarefa, não é consumida quota e o vídeo do projeto não é alterado. O utilizador pode também descarregar só o vídeo, ou só as legendas (FA4). |
 | FA5 - Retomar a edição | Depois de guardar, o utilizador sai do editor. Ao regressar, o sistema carrega os segmentos persistidos. Alterações por guardar são sinalizadas antes de sair. |
 | FA6 - Alterar legendas depois da incorporação | O utilizador edita e guarda os segmentos e pede nova incorporação. O sistema cria outro vídeo derivado, sem substituir os resultados anteriores. |
 | FA7 - Legendas após recorte | No recorte UC-VID-002, o novo vídeo recebe uma cópia independente dos segmentos que intersectem o intervalo, com tempos limitados e reajustados segundo UC-VID-002 - RN7. |
@@ -96,7 +97,7 @@
 | RN2 | A entrada é um vídeo disponível no projeto, em formato aceite pelo MVP conforme UC-VID-002 - RN6 e UC-VID-003 - RN17. Os vídeos gerados não voltam a estar sujeitos aos limites de carregamento externo; aplicam-se os limites da operação de processamento. |
 | RN3 | Cada segmento tem texto não vazio, `0 ≤ início < fim ≤ duração`, duração entre 0,5 e 10 s, no máximo duas linhas de 42 caracteres e não se sobrepõe a outro segmento. Segmentos inválidos não podem ser guardados nem exportados. |
 | RN4 | As legendas são dados do projeto associados à versão do vídeo. Editá-las não modifica o ficheiro de vídeo. |
-| RN5 | Os formatos de exportação são SRT e WebVTT. A exportação isolada não cria tarefa de processamento de vídeo. |
+| RN5 | As legendas guardadas podem ser exportadas como ficheiro SRT ou WebVTT, ou dentro de uma cópia do vídeo como faixa de legendas ativa por omissão (FA4b). Nenhuma destas exportações cria tarefa de processamento de vídeo, consome quota ou altera o vídeo do projeto. Gravar as legendas na imagem é a incorporação (RN6). |
 | RN6 | A incorporação cria um novo MP4 (H.264/AAC), aplica a fonte e a cor padrão definidas pelo sistema e nunca substitui o vídeo de origem. A fonte e a cor são fixas no MVP: o utilizador não pode configurá-las nem editá-las; apenas pode editar o texto e os tempos dos segmentos. |
 | RN7 | Concorrência por projeto (RNG-11). Cada projeto pode ter no máximo uma operação de processamento de vídeo Em Fila ou Em Processamento, independentemente da ferramenta (geração automática de legendas, incorporação, recorte ou concatenação), em conformidade com UC-VID-002 - RN5 e UC-VID-003 - RN18. O mesmo utilizador pode ter operações ativas em projetos diferentes; ficam em fila e a execução efetiva depende da disponibilidade dos workers, e a quota diária continua a ser por utilizador (RN8). A edição manual, a gravação e a exportação SRT/WebVTT não são operações de processamento de vídeo e não são bloqueadas. A verificação e a criação da tarefa são atómicas: de dois pedidos simultâneos para o mesmo projeto, no máximo um é aceite. Resultados tardios de tarefas canceladas ou falhadas não são consolidados. |
 | RN8 | Cada incorporação conta como uma operação para Registado e usa a quota diária partilhada entre ferramentas (UC-VID-002 - RN4; UC-VID-003 - RN16). A operação é reservada ao aceitar, consumida no sucesso e libertada em qualquer outro desfecho. Premium não tem limite diário. Editar, guardar ou exportar SRT/WebVTT não consome quota de processamento. |
@@ -115,12 +116,13 @@
 | A2 | A criação manual permanece disponível para Registado e Premium. A geração automática por IA é uma opção adicional exclusiva de Premium; produz uma proposta de transcrição no idioma falado, sem tradução, que o utilizador pode corrigir no mesmo editor. |
 | A3 | Os segmentos são guardados como dados do projeto, com texto, tempos e versão de vídeo; não é necessário carregar um ficheiro para começar. |
 | A4 | A pré-visualização ocorre no cliente. A incorporação é processada no servidor pelo mecanismo assíncrono das operações de vídeo. |
+| A5 | A transcrição é feita por um modelo Whisper local, sem enviar áudio para serviços externos. Para cumprir o tempo máximo de RN12 (900 s), o sistema usa um modelo mais preciso até 30 minutos de áudio e um modelo mais rápido acima disso. |
 ### 2.1.8 Questões em Aberto
 
 | ID | Questão em aberto |
 |---|---|
-| Q1 | Utilizadores com link de partilha podem editar legendas ou apenas visualizá-las? |
-| Q2 | Que idiomas e formatos de áudio são suportados pela geração automática no MVP? |
+| Q1 | ~~Utilizadores com link de partilha podem editar legendas ou apenas visualizá-las?~~ **Decidido (v1.3):** depende da permissão do link. Um link de edição permite criar, editar, guardar, gerar e incorporar (com o perfil e a quota do proprietário); um link de leitura permite ver e descarregar as legendas guardadas. |
+| Q2 | ~~Que idiomas e formatos de áudio são suportados pela geração automática no MVP?~~ **Decidido (v1.3):** o idioma falado é detetado automaticamente (sem tradução, RN12); é aceite qualquer pista de áudio dos formatos de vídeo suportados (AAC ou Vorbis), convertida internamente para a transcrição. |
 
 ## 4. Esboço de requisitos derivados
 
@@ -149,6 +151,7 @@
 | REQ-VID-LEG-019 | Incorporar as legendas com a fonte e a cor padrão do sistema, sem permitir ao utilizador configurá-las ou editá-las; manter editáveis o texto e os tempos segundo RN3. | F | Deve ter | NOVO | Ao incorporar, o vídeo apresenta o estilo padrão. A interface não disponibiliza controlos de fonte ou cor, mas permite editar texto e tempos antes de guardar ou incorporar. |
 | REQ-VID-LEG-020 | Disponibilizar a geração automática apenas para Premium e aplicar os limites Premium de entrada e de processamento definidos em RN12, sem quota diária adicional. | F | Deve ter | NOVO | Vídeos até 2 GB e 60 minutos podem ser processados; acima desses limites são recusados. A tarefa termina como Falhada se exceder 900 s de processamento, sem alterar as legendas guardadas; não existe quota diária adicional para Premium. |
 | REQ-VID-LEG-021 | Aplicar RN7 à geração automática e à incorporação: aceitar no máximo uma operação de processamento de vídeo Em Fila ou Em Processamento por projeto, independentemente da ferramenta, aceitar operações do mesmo utilizador noutros projetos e não bloquear a edição, a gravação nem a exportação SRT/WebVTT. | F | Deve ter | ALT | Com um recorte ativo no projeto A, pedir a incorporação em A é recusado e pedir a geração automática no projeto B do mesmo utilizador é aceite; dois pedidos simultâneos para A criam no máximo uma tarefa; durante a tarefa ativa em A, guardar e exportar legendas em A continua a funcionar; depois de a tarefa terminar, falhar ou ser cancelada, A volta a aceitar uma nova operação. |
+| REQ-VID-LEG-022 | Disponibilizar o download do vídeo com as legendas guardadas como faixa de legendas ativa por omissão, sem recodificar, sem criar tarefa nem consumir quota, e sem alterar o vídeo do projeto. | F | Deveria ter | NOVO | Num vídeo MP4 com legendas, o ficheiro descarregado tem vídeo, áudio e uma faixa `mov_text` predefinida com o texto e os tempos guardados (WebM: faixa WebVTT); num vídeo sem legendas o pedido é recusado com mensagem; o vídeo do projeto mantém o mesmo hash. |
 
 ### 4.2 Impacto no Sistema Existente
 
@@ -173,6 +176,7 @@
 | FA2 / RN12–RN13 | Gerar proposta automática Premium e rever antes de guardar | REQ-VID-LEG-015 a REQ-VID-LEG-017 |
 | RN12 / E13 | Aplicar limites Premium à geração automática | REQ-VID-LEG-020 |
 | Passo 6 / FA4 | Exportar SRT/WebVTT | REQ-VID-LEG-007 |
+| FA4b / RN5 | Descarregar o vídeo com as legendas como faixa | REQ-VID-LEG-022 |
 | Passos 6–8 / FA6, FA8–FA9, E5 | Validar limites, incorporar, monitorizar e cancelar | REQ-VID-LEG-008 a REQ-VID-LEG-011, REQ-VID-LEG-013, REQ-VID-LEG-018 |
 | FA7 / RN11 | Copiar legendas para o recorte | REQ-VID-LEG-012 |
 | RN6 | Incorporar com fonte e cor padrão não configuráveis | REQ-VID-LEG-009, REQ-VID-LEG-019 |

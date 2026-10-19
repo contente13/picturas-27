@@ -6,6 +6,7 @@ const path = require("path");
 const amqp = require("amqplib");
 const VideoTask = require("../models/videoTask");
 const { inspectVideo, validateVideoCodecs } = require("../utils/video");
+const { toSrt } = require("../utils/subtitles");
 const { generateSubtitleSegments } = require("./subtitlesAI");
 const {
   commitReservation,
@@ -40,14 +41,6 @@ async function getRabbitChannel() {
   rabbitChannel = await rabbitConnection.createChannel();
   await rabbitChannel.assertQueue(videoQueue, { durable: true });
   return rabbitChannel;
-}
-
-function srtTimestamp(seconds) {
-  const ms = Math.round(Number(seconds) * 1000);
-  const hours = Math.floor(ms / 3600000);
-  const minutes = Math.floor((ms % 3600000) / 60000);
-  const secs = Math.floor((ms % 60000) / 1000);
-  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(secs).padStart(2, "0")},${String(ms % 1000).padStart(3, "0")}`;
 }
 
 function ffmpegArgsFor(task, inputPath, outputPath) {
@@ -109,10 +102,7 @@ async function processSingleSourceTask(task) {
     const metadata = await inspectVideo(inputPath, requireRemainingProcessingTime(startedAt, task.maxProcessingMs));
     validateVideoCodecs(task.source_name, metadata);
     if (task.operation === "subtitles") {
-      const srt = task.subtitleSegments
-        .map((segment, index) => `${index + 1}\n${srtTimestamp(segment.start)} --> ${srtTimestamp(segment.end)}\n${segment.text}\n`)
-        .join("\n");
-      await fs.promises.writeFile(path.join(workDir, "captions.srt"), srt, "utf8");
+      await fs.promises.writeFile(path.join(workDir, "captions.srt"), toSrt(task.subtitleSegments), "utf8");
     }
     await spawnFfmpeg({
       ...task.toObject(),

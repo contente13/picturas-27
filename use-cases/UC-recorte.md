@@ -6,8 +6,8 @@
 |---|---|
 | Grupo / Equipa | Grupo 1 |
 | Autores | Eduardo Freitas, Francisco Contente, Luís Pires, Rui Castro |
-| Data | 2026-10-18 |
-| Versão do documento | v1.1 |
+| Data | 2026-10-19 |
+| Versão do documento | v1.2 |
 | Unidade Curricular | Requisitos e Arquiteturas de Software - MEI, Universidade do Minho |
 
 ## 1.2 Funcionalidade 2 - Recorte temporal de vídeo
@@ -26,7 +26,7 @@
 |---|---|
 | ID do Caso de Uso | UC-VID-002 |
 | Nome | Recortar Vídeo |
-| Versão | v1.1 |
+| Versão | v1.2 |
 | Autor | Francisco Contente |
 | Data | 2026-10-05 |
 | Objetivo | Permitir ao utilizador delimitar um intervalo temporal (início e fim) de um vídeo do projeto ativo, gerando um novo vídeo apenas com esse intervalo, sem alterar o original. |
@@ -115,7 +115,7 @@
 | Q5 | Os vídeos resultantes ficam guardados até o utilizador os apagar ou expiram após um prazo? |
 | Q6 | A conclusão do processamento deve gerar uma notificação (na aplicação ou por e-mail), em vez de apenas atualizar o estado da tarefa? |
 | Q7 | O tempo máximo do perfil Premium (900 s) é suficiente para recodificar um recorte de 600 s? A confirmar com um teste de recodificação. |
-| Q8 | Deve o recorte também admitir acesso por link de partilha, previsto para legendas em UC-VID-001 - RN10, ou manter acesso exclusivo do proprietário (RN9)? A política comum não está definida no PDF. |
+| Q8 | ~~Deve o recorte também admitir acesso por link de partilha?~~ **Decidido (v1.2):** sim, como nas restantes ferramentas de vídeo (RN9; UC-VID-001 - Q1): um link de edição permite recortar, com o perfil e a quota do proprietário; um link de leitura só permite ver. |
 
 ## 4. Esboço de requisitos derivados
 

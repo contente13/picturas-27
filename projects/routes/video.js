@@ -8,6 +8,7 @@ const { get_image_public_url } = require("../utils/imageStorage");
 const { checkSharePermission, requireEditPermission } = require("../middleware/shareAuth");
 const { requireVideoAccess } = require("../middleware/videoAccess");
 const { findActiveProjectTask, projectBusyMessage } = require("../controllers/videoTaskLock");
+const { muxSubtitles } = require("../controllers/videoDownload");
 const {
   cancelTask,
   enqueueTask,
@@ -36,6 +37,36 @@ router.get(
     } catch (error) {
       console.error("Could not load video subtitles:", error);
       return res.status(500).jsonp("Não foi possível carregar as legendas.");
+    }
+  },
+);
+
+// UC-VID-001 RN5: the video with its saved subtitles as a track inside the file.
+router.get(
+  "/:user/:project/video/:imageId/with-subtitles",
+  checkSharePermission,
+  requireVideoAccess,
+  async (req, res) => {
+    try {
+      const project = await Project.getOne(req.params.user, req.params.project);
+      if (!project) return res.status(404).jsonp("Project not found");
+      const video = project.imgs.id(req.params.imageId);
+      const duration = Number(video?.mediaMetadata?.duration);
+      if (!video || !Number.isFinite(duration)) return res.status(404).jsonp("O vídeo já não está disponível no projeto.");
+      if (!video.subtitles?.length) return res.status(404).jsonp("Este vídeo não tem legendas guardadas.");
+      const validationError = validateSubtitleSegments(video.subtitles, duration);
+      if (validationError) return res.status(400).jsonp(validationError);
+
+      const { outputPath, fileName, cleanup } = await muxSubtitles({
+        userId: req.params.user,
+        projectId: req.params.project,
+        video,
+        segments: video.subtitles,
+      });
+      return res.download(outputPath, fileName, () => cleanup());
+    } catch (error) {
+      console.error("Could not add the subtitles to the video download:", error);
+      return res.status(error.status || 500).jsonp("Não foi possível preparar o vídeo com legendas.");
     }
   },
 );

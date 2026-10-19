@@ -29,6 +29,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { ProjectImage as ProjectImageType } from "@/lib/projects";
 import { useSearchParams } from "next/navigation";
 import VideoThumbnail from "./video-thumbnail";
+import VideoDownloadMenu from "./video-download-menu";
 import { getErrorMessage } from "@/lib/error-messages";
 
 interface ImageItemProps {
@@ -68,6 +69,11 @@ export function ProjectImage({ image, animation = true }: ImageItemProps) {
     const sourceUrl = videoSourceOverride?.imageId === image._id
       ? videoSourceOverride.url
       : image.url;
+    // After a trim or an embedding the player shows the new video in place of the original;
+    // the download then refers to that video.
+    const derivedId = videoSourceOverride?.imageId === image._id ? videoSourceOverride.trimImageId : undefined;
+    const shown = (derivedId && projectInfo.imgs.find((item) => item._id === derivedId)) || image;
+    const shownName = videoSourceOverride?.imageId === image._id ? videoSourceOverride.name ?? shown.name : image.name;
 
     return (
       <div className="relative size-full flex flex-col items-center justify-center bg-black/95 rounded-xl p-4">
@@ -83,9 +89,10 @@ export function ProjectImage({ image, animation = true }: ImageItemProps) {
             {videoSubtitlePreview.text.split("\n").map((line, index) => <span className="block" key={index}>{line}</span>)}
           </div>
         )}
-        <div className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
+        <div className="mt-3 flex max-w-full flex-wrap items-center justify-center gap-2 text-sm text-muted-foreground">
           <span className="bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded font-bold uppercase">VIDEO</span>
-          <span>{videoSourceOverride?.imageId === image._id ? videoSourceOverride.name ?? image.name : image.name}</span>
+          <span className="min-w-0 truncate">{shownName}</span>
+          <VideoDownloadMenu imageId={shown._id} name={shownName} url={sourceUrl} subtitleCount={shown.subtitleCount ?? 0} />
         </div>
       </div>
     );

@@ -710,6 +710,7 @@ router.get("/share/:shareId/project", requireAuth,async (req, res) => {
             name: path.basename(img.og_uri),
             url,
             thumbnailUrl: await thumbnailUrl(project.user_id, project._id, img),
+            subtitleCount: img.subtitles?.length || 0,
             mediaMetadata: img.mediaMetadata || null,
           });
         } catch (err) {
@@ -905,6 +906,7 @@ router.get("/:user/:project/imgs", checkSharePermission, async (req, res, next) 
               name: path.basename(img.og_uri),
               url: url,
               thumbnailUrl: await thumbnailUrl(req.params.user, req.params.project, img),
+              subtitleCount: img.subtitles?.length || 0,
               mediaMetadata: img.mediaMetadata || null,
             });
           } catch (_) {
