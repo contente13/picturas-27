@@ -41,7 +41,7 @@
 | Passo | Ação do Ator | Resposta do Sistema |
 |---|---|---|
 | 1 | Seleciona um vídeo do projeto. | Apresenta o vídeo no leitor com nome, duração, formato e controlos de reprodução. |
-| 2 | Seleciona “Legendas”. | Abre o editor e carrega as legendas existentes para essa versão do vídeo ou apresenta uma lista vazia. |
+| 2 | Seleciona “Legendas”. | Abre o editor e carrega as legendas existentes para essa versão do vídeo ou apresenta uma lista vazia. Para o perfil Registado, apresenta as operações diárias restantes, que a incorporação consome (RN8). |
 | 3 | Escolhe “Criar manualmente” e “Adicionar legenda”. | Cria um segmento editável com campos para texto, início e fim. Em alternativa, um utilizador Premium pode escolher “Gerar automaticamente” e seguir FA2. |
 | 4 | Escreve o texto e define os tempos, usando a reprodução do vídeo para sincronizar o segmento. | Atualiza a lista e a sobreposição de pré-visualização e valida os valores segundo RN3. |
 | 5 | Repete os passos 3 e 4 até terminar e escolhe “Guardar”. | Valida e guarda os segmentos revistos no projeto, associados à versão do vídeo, e confirma a gravação. |

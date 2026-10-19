@@ -56,6 +56,7 @@
 | FA2 - Vídeo sem áudio | O vídeo é aceite se cumprir as restantes validações. Os metadados registam ausência de pista de áudio; ferramentas que necessitam de áudio, como a geração de legendas, aplicam as suas próprias regras. |
 | FA3 - Recuperação após falha de versão | Se a versão do projeto enviada pelo cliente estiver desatualizada, o sistema rejeita o carregamento, informa da versão atual e permite atualizar o projeto antes de tentar novamente. |
 | FA4 - Carregamento por projeto partilhado | Um colaborador com permissão de edição pode carregar o vídeo conforme as permissões de partilha do projeto. A associação do ficheiro continua a ser feita ao projeto proprietário. |
+| FA5 - Descarregar o vídeo | Na vista de um vídeo do projeto, o utilizador escolhe Descarregar. Sem legendas guardadas, o sistema entrega o ficheiro tal como está guardado, no formato original (MP4 ou WebM), sem conversão. Com legendas guardadas, apresenta as opções de UC-VID-001 - FA4b: vídeo com legendas, vídeo sem legendas, legendas em SRT ou WebVTT. O download não cria tarefa, não consome quota e não altera o vídeo. |
 
 ### 2.0.4 Exceções
 
@@ -133,6 +134,7 @@
 | REQ-VID-UPLOAD-012 | O carregamento de vídeo não deve consumir quota diária de processamento nem criar uma tarefa de processamento assíncrona. | F | Deve ter | NOVO | RN7 | Carregar um vídeo e confirmar que o saldo de operações não muda e que não é criada tarefa de vídeo. |
 | REQ-VID-UPLOAD-013 | O sistema deve gerar uma miniatura de cada vídeo carregado (ou produzido por uma ferramenta de vídeo) e apresentá-la na biblioteca com a duração, sem que uma falha na miniatura impeça o carregamento. | F | Deveria ter | NOVO | Passo 5; RN5 | Carregar um vídeo: a biblioteca mostra um fotograma do vídeo e a duração; apagar o vídeo remove também a miniatura. |
 | REQ-VID-UPLOAD-014 | O sistema deve preservar o nome original do ficheiro, incluindo acentos e caracteres não ASCII. | F | Deve ter | NOVO | RN4 | Carregar "São Paulo — ação.mp4": o projeto mostra exatamente esse nome. |
+| REQ-VID-UPLOAD-015 | O sistema deve permitir descarregar, a partir da vista do vídeo, o ficheiro original no formato em que foi guardado (MP4 ou WebM), sem conversão; se o vídeo tiver legendas guardadas, deve oferecer também as opções de UC-VID-001 - FA4b. | F | Deve ter | NOVO | FA5; RN7 | Num vídeo sem legendas, Descarregar entrega um ficheiro com o mesmo hash SHA-256 do guardado; num vídeo com legendas, o menu mostra vídeo com legendas, vídeo sem legendas, SRT e WebVTT; o saldo de operações não muda. |
 
 ### 3.2 Impacto no sistema existente
 
@@ -157,6 +159,7 @@
 | FA2 | Vídeo sem áudio | REQ-VID-UPLOAD-004 |
 | FA3 / E9 | Conflito de versão | REQ-VID-UPLOAD-007, REQ-VID-UPLOAD-009 |
 | FA4 / E8 | Permissões de projeto partilhado | REQ-VID-UPLOAD-008 |
+| FA5 | Descarregar o vídeo no formato original | REQ-VID-UPLOAD-015 |
 | E1 | Perfil sem acesso | REQ-VID-UPLOAD-002 |
 | E2–E6 | Formato, tamanho, codec, vídeo inválido ou duração | REQ-VID-UPLOAD-003, REQ-VID-UPLOAD-004 |
 | E7 | Nome duplicado | REQ-VID-UPLOAD-005 |

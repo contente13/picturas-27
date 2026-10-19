@@ -40,8 +40,8 @@
 
 | Passo | Ação do Ator | Resposta do Sistema |
 |---|---|---|
-| 1 | Seleciona um ou mais vídeos do projeto. | Valida a quantidade selecionada. Se forem pelo menos dois, disponibiliza a opção Juntar vídeos, caso contrário, segue para E1. |
-| 2 | Seleciona Juntar vídeos. | Apresenta os vídeos numa lista ordenada, com miniatura, nome, duração, resolução, formato e informação de áudio. |
+| 1 | Ativa a seleção de vídeos na biblioteca e seleciona um ou mais vídeos do projeto. | Mostra a ordem de seleção em cada vídeo e o número de vídeos selecionados. Valida a quantidade selecionada. Se forem pelo menos dois, disponibiliza a opção Juntar vídeos, caso contrário, segue para E1. O utilizador pode cancelar a seleção a qualquer momento, sem efeitos no projeto. |
+| 2 | Seleciona Juntar vídeos. | Apresenta os vídeos numa lista ordenada, com miniatura, nome, duração, resolução, formato e informação de áudio, e os limites do perfil (RN3, RN4). Para o perfil Registado, apresenta também as operações diárias restantes (RN16). |
 | 3 | Define a ordem dos vídeos por drag and drop ou pelos controlos de ordenação. | Atualiza imediatamente a sequência e calcula a duração total estimada do vídeo final. |
 | 4 | Confirma a sequência escolhida. | Valida o número de vídeos, a duração total, o tamanho total, a compatibilidade técnica entre os ficheiros e a disponibilidade de cada vídeo no armazenamento (E3). Esta confirmação não cria tarefa nem reserva quota. |
 | 5 | - | Determina o formato comum (resolução, taxa de fotogramas, codecs) e informa o utilizador dos ajustes que alteram o resultado: redimensionamento, barras, conversão de fotogramas, conversão de formato e silêncio nos clips sem áudio (FA4–FA7). |
