@@ -9,6 +9,7 @@ const { checkSharePermission, requireEditPermission } = require("../middleware/s
 const { requireVideoAccess } = require("../middleware/videoAccess");
 const { findActiveProjectTask, projectBusyMessage } = require("../controllers/videoTaskLock");
 const { muxSubtitles } = require("../controllers/videoDownload");
+const { validateTrimInterval, validateTrimProfileDuration } = require("../utils/videoTrim");
 const {
   cancelTask,
   enqueueTask,
@@ -255,16 +256,6 @@ router.post(
   },
 );
 
-function invalidInterval(start, end, duration) {
-  const hasTenthPrecision = (value) => Math.abs(value * 10 - Math.round(value * 10)) < 0.001;
-  if (!Number.isFinite(start) || !Number.isFinite(end)) return "Os tempos de início e fim têm de ser números válidos.";
-  if (!hasTenthPrecision(start) || !hasTenthPrecision(end)) return "Os tempos têm de ser múltiplos de 0,1 segundo.";
-  if (start < 0 || end > duration || start >= end) return "O intervalo tem de estar dentro da duração do vídeo e T_in tem de ser inferior a T_out.";
-  if (end - start < 1) return "A duração mínima do recorte é de 1 segundo.";
-  if (end - start >= duration) return "O recorte tem de ser mais curto do que o vídeo original.";
-  return null;
-}
-
 router.post(
   "/:user/:project/video/:imageId/trim",
   checkSharePermission,
@@ -290,17 +281,15 @@ router.post(
 
       const start = Number(req.body?.tempoInicio);
       const end = Number(req.body?.tempoFim);
-      const intervalError = invalidInterval(start, end, Number(source.mediaMetadata.duration));
+      const intervalError = validateTrimInterval(start, end, Number(source.mediaMetadata.duration));
       if (intervalError) return res.status(400).jsonp(intervalError);
 
       const userType = await getUserType(req.params.user);
       if (!["free", "premium"].includes(userType)) {
         return res.status(403).jsonp("O recorte de vídeo está disponível para contas Registadas e Premium.");
       }
-      const durationLimit = userType === "premium" ? 600 : 60;
-      if (end - start > durationLimit) {
-        return res.status(400).jsonp(`O recorte excede o limite de ${durationLimit} segundos do teu perfil.`);
-      }
+      const profileDurationError = validateTrimProfileDuration(start, end, userType);
+      if (profileDurationError) return res.status(400).jsonp(profileDurationError);
 
       const activeTask = await findActiveProjectTask(req.params.project);
       if (activeTask) return res.status(409).jsonp(projectBusyMessage(activeTask));

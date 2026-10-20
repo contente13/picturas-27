@@ -24,6 +24,7 @@ const {
   spawnFfmpeg,
 } = require("./videoPipeline");
 const { processConcatTask } = require("./videoConcat");
+const { trimSubtitleSegments } = require("../utils/videoTrim");
 
 const videoQueue = "video.trim.tasks";
 const rabbitUrl = process.env.RABBITMQ_URL || "amqp://user:password@rabbitmq:5672";
@@ -72,12 +73,7 @@ function resultSubtitlesFor(task, project) {
   if (!source) throw new Error("O vídeo original já não está disponível no projeto.");
   if (task.operation === "subtitles") return task.subtitleSegments;
   if (!source.subtitles?.length) return undefined;
-  return source.subtitles.flatMap((segment) => {
-    const start = Math.max(Number(segment.start), task.tempoInicio);
-    const end = Math.min(Number(segment.end), task.tempoFim);
-    if (end - start < 0.5) return [];
-    return [{ start: start - task.tempoInicio, end: end - task.tempoInicio, text: segment.text }];
-  });
+  return trimSubtitleSegments(source.subtitles, task.tempoInicio, task.tempoFim);
 }
 
 // Trim (UC-VID-002) and subtitle embedding (UC-VID-001): one source video, one ffmpeg run.
