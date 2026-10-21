@@ -33,7 +33,8 @@ function operationDayKey(value) {
 }
 
 function removeSensitiveInfo(user) {
-  const userObj = user.toObject ? user.toObject() : user; // Ensure it's a plain object
+  // Use the model's public serializer, which also removes encrypted email and reservations.
+  const userObj = user.toJSON ? user.toJSON() : user.toObject ? user.toObject() : user;
   const { password_hash, ...userWithoutPassword } = userObj; // Destructure to exclude password_hash
   return userWithoutPassword;
 }

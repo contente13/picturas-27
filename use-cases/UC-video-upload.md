@@ -1,65 +1,54 @@
-# UC-VID-000 - Carregar Vídeo para um Projeto
-
-## 0. Identificação
-
-| Campo | Valor |
-|---|---|
-| Grupo / Equipa | Grupo 1 |
-| Autores | Eduardo Freitas, Francisco Contente, Luís Pires, Rui Castro |
-| Data | 2026-10-19 |
-| Versão do documento | v1.2 |
-| Unidade Curricular | Requisitos e Arquiteturas de Software - MEI, Universidade do Minho |
-
-## 1.0 Funcionalidade - Carregamento de vídeo
-
-| Campo | Valor |
-|---|---|
-| Funcionalidade | Carregar um vídeo para um projeto PictuRAS, validar o ficheiro e os limites do perfil, e disponibilizá-lo na biblioteca do projeto para reprodução e utilização nas ferramentas de vídeo. |
-| Perfil(s) de utilizador abrangido(s) | Registado (gratuito) e Premium. O perfil anónimo pode carregar imagens, mas não vídeos. O Registado está sujeito aos limites de 200 MB e 10 minutos; o Premium, aos limites de 2 GB e 60 minutos. |
-| Justificação no contexto do MVP | O carregamento é o ponto de entrada comum às funcionalidades de vídeo. Legendas (UC-VID-001), recorte (UC-VID-002) e concatenação (UC-VID-003) dependem de vídeos disponíveis no projeto. Este caso de uso especifica a seleção, validação, armazenamento e disponibilização de um vídeo externo, incluindo os limites por perfil e a preservação dos ficheiros já existentes. |
-
-## 2.0 Caso de Uso 00 - Carregar um vídeo para um projeto
-
-### 2.0.1 Cabeçalho
-
+.1. UC-VID-000 - Carregar um vídeo para um projeto 
+## 4.1.1. Cabeçalho 
+ 
+**Tabela 5: Caso de uso UC-VID-000 - Carregar um vídeo para um projeto**
+ 
 | Secção | Detalhes |
 |---|---|
 | ID do Caso de Uso | UC-VID-000 |
 | Nome | Carregar um vídeo para um projeto |
 | Versão | v1.2 |
 | Autor | Luís Pires |
-| Data | 2026-10-15 |
+| Data | 2026-10-19 |
 | Objetivo | Permitir a um utilizador Registado ou Premium adicionar um vídeo suportado a um projeto, guardando-o de forma íntegra e apresentando-o na biblioteca para reprodução e utilização posterior. |
 | Âmbito | Interface de projetos do PictuRAS, API Gateway, Project Service, serviço de armazenamento de ficheiros (SeaweedFS / Image Storage), serviço de utilizadores para consulta do perfil e metadados de vídeo (ffprobe). |
 | Ator Principal | Utilizador autenticado com perfil Registado ou Premium e permissão para editar o projeto. |
-| Stakeholders e Interesses | - Utilizador Registado: carregar vídeos dentro dos limites do plano e utilizá-los nas ferramentas disponíveis.<br>- Utilizador Premium: carregar vídeos de maior dimensão e duração.<br>- Proprietário do projeto: manter os ficheiros e metadados corretos, sem substituir conteúdos existentes.<br>- Equipa de Desenvolvimento/DevOps: validar entradas, preservar a consistência do projeto e limpar ficheiros temporários.<br>- Administrador do sistema: proteger os ficheiros e impedir acesso ou alterações não autorizados. |
-| Pré-condições | - O utilizador tem sessão iniciada e pode editar o projeto.<br>- O projeto existe e a sua versão atual é conhecida pela interface.<br>- O serviço de utilizadores, o serviço de projetos e o armazenamento estão disponíveis.<br>- O perfil do utilizador é Registado ou Premium. |
-| Trigger | O utilizador seleciona ou arrasta um ficheiro de vídeo para a área de carregamento de um projeto e confirma o carregamento. |
-
-### 2.0.2 Fluxo Principal
-
+| Stakeholders e Interesses | Utilizador Registado: carregar vídeos dentro dos limites do plano e utilizá-los nas ferramentas disponíveis. Utilizador Premium: carregar vídeos de maior dimensão e duração. Proprietário do projeto: manter os ficheiros e metadados corretos, sem substituir conteúdos existentes. Equipa de Desenvolvimento/DevOps: validar entradas, preservar a consistência do projeto e limpar ficheiros temporários. Administrador do sistema: proteger os ficheiros e impedir acesso ou alterações não autorizados. |
+| Pré-condições | O utilizador tem sessão iniciada e pode editar o projeto; o projeto existe e a sua versão atual é conhecida pela interface; o serviço de utilizadores, o serviço de projetos e o armazenamento estão disponíveis; o perfil do utilizador é Registado ou Premium. |
+ 
+## 4.1.2. Fluxo Principal 
+ 
+**Tabela 6: UC-VID-000 - Fluxo principal**
+ 
 | Passo | Ação do Ator | Resposta do Sistema |
 |---|---|---|
-| 1 | Abre um projeto e seleciona um ficheiro de vídeo (`.mp4` ou `.webm`) na área de carregamento. | Apresenta o ficheiro na lista de itens a carregar, com o nome e uma pré-visualização. |
+| 1 | Abre um projeto e seleciona um ficheiro de vídeo (.mp4 ou .webm) na área de carregamento. | Apresenta o ficheiro na lista de itens a carregar, com o nome e uma pré-visualização. |
 | 2 | Confirma o carregamento. | Verifica a sessão, a permissão de edição e a versão do projeto. Recebe o ficheiro como multipart/form-data e guarda-o temporariamente para validação. |
-| 3 | - | Consulta o perfil do utilizador e valida a extensão, o tamanho máximo aplicável, a existência de uma pista de vídeo válida, a duração e os codecs permitidos (RN1–RN3). |
-| 4 | - | Verifica se já existe no projeto um ficheiro com o mesmo nome. Se os controlos forem válidos, calcula o hash SHA-256 e envia o vídeo para o armazenamento, associado ao projeto e à área de origem (`src`). |
-| 5 | - | Adiciona ao projeto a referência do ficheiro, o identificador no armazenamento, o hash e os metadados técnicos (duração, codecs, resolução, taxa de fotogramas, dimensão e formato). Gera e guarda uma miniatura do vídeo (um fotograma a 10 % da duração, no máximo a 1 s) para a biblioteca; se a miniatura não puder ser gerada, o carregamento continua. Atualiza a versão do projeto de forma consistente (RN4, RN5). |
+| 3 | - | Consulta o perfil do utilizador e valida a extensão, o tamanho máximo aplicável, a existência de uma pista de vídeo válida, a duração e os codecs permitidos (RN1-RN3). |
+| 4 | - | Verifica se já existe no projeto um ficheiro com o mesmo nome. Se os controlos forem válidos, calcula o hash SHA-256 e envia o vídeo para o armazenamento, associado ao projeto e à área de origem (src). |
+| 5 | - | Adiciona ao projeto a referência do ficheiro, o identificador no armazenamento, o hash e os metadados técnicos (duração, codecs, resolução, taxa de fotogramas, dimensão e formato). Gera e guarda uma miniatura do vídeo, correspondente a um fotograma a 10% da duração, no máximo a 1 segundo, para apresentação na biblioteca. Se a miniatura não puder ser gerada, o carregamento prossegue. Atualiza a versão do projeto de forma consistente (RN4, RN5). |
 | 6 | - | Elimina o ficheiro temporário local e responde com sucesso e a nova versão do projeto. |
 | 7 | Continua a utilizar o projeto. | Atualiza a biblioteca e disponibiliza o vídeo para reprodução e para as ferramentas de vídeo compatíveis. |
-
-### 2.0.3 Fluxos Alternativos
-
+ 
+## 4.1.3. Fluxos Alternativos
+ 
+**Tabela 7: UC-VID-000 - Fluxos alternativos**
+ 
 | Fluxo | Descrição |
 |---|---|
-| FA1 - Vários ficheiros selecionados | A interface envia cada ficheiro individualmente e em sequência, atualizando a versão do projeto após cada carregamento aceite. Se um ficheiro falhar, apresenta o erro associado a esse ficheiro; os carregamentos anteriores concluídos mantêm-se. |
-| FA2 - Vídeo sem áudio | O vídeo é aceite se cumprir as restantes validações. Os metadados registam ausência de pista de áudio; ferramentas que necessitam de áudio, como a geração de legendas, aplicam as suas próprias regras. |
-| FA3 - Recuperação após falha de versão | Se a versão do projeto enviada pelo cliente estiver desatualizada, o sistema rejeita o carregamento, informa da versão atual e permite atualizar o projeto antes de tentar novamente. |
-| FA4 - Carregamento por projeto partilhado | Um colaborador com permissão de edição pode carregar o vídeo conforme as permissões de partilha do projeto. A associação do ficheiro continua a ser feita ao projeto proprietário. |
-| FA5 - Descarregar o vídeo | Na vista de um vídeo do projeto, o utilizador escolhe Descarregar. Sem legendas guardadas, o sistema entrega o ficheiro tal como está guardado, no formato original (MP4 ou WebM), sem conversão. Com legendas guardadas, apresenta as opções de UC-VID-001 - FA4b: vídeo com legendas, vídeo sem legendas, legendas em SRT ou WebVTT. O download não cria tarefa, não consome quota e não altera o vídeo. |
-
-### 2.0.4 Exceções
-
+| FA1 - Vários ficheiros selecionados | No passo 1, o utilizador seleciona vários ficheiros. A interface envia cada ficheiro individualmente e em sequência, atualizando a versão do projeto após cada carregamento aceite. Se um ficheiro falhar, apresenta o erro associado a esse ficheiro e permite repetir apenas os ficheiros falhados. Os carregamentos concluídos mantêm-se e não são reenviados. |
+| FA2 - Vídeo sem áudio | No passo 3, o sistema deteta que o vídeo não possui pista de áudio. O vídeo é aceite se cumprir as restantes validações. Os metadados registam ausência de pista de áudio; ferramentas que necessitam de áudio, como a geração de legendas, aplicam as suas próprias regras. O carregamento prossegue no passo 4. |
+| FA3 - Recuperação após falha de versão | No passo 2, se a versão do projeto enviada pelo cliente estiver desatualizada, o sistema rejeita o carregamento, informa da versão atual e permite atualizar o projeto antes de tentar novamente a partir do passo 1. |
+| FA4 - Carregamento por projeto partilhado | Nos passos 1 e 2, um colaborador com permissão de edição pode carregar o vídeo conforme as permissões de partilha do projeto. A associação do ficheiro continua a ser feita ao projeto proprietário, prosseguindo o fluxo normal. |
+| FA5 - Descarregar o vídeo | Na vista de um vídeo do projeto, o utilizador escolhe «Descarregar». Sem legendas guardadas, o sistema entrega o ficheiro original no formato em que está armazenado (MP4 ou WebM), sem conversão. Com legendas guardadas, apresenta as opções de UC-VID-001/FA4b: vídeo com legendas, vídeo sem legendas, legendas SRT ou WebVTT. O descarregamento não cria tarefa, não consome quota e não modifica o vídeo. |
+ 
+## 4.1.4. Exceções 
+ 
+**Orientação (esconder antes de entregar)** 
+Incluam pelo menos uma exceção específica de vídeo (formato/codec não suportado, duração ou tamanho excedidos,  falha a meio do processamento, quota esgotada, …). 
+ 
+**Tabela 8: UC-VID-000 - Exceções**
+ 
 | Condição | Comportamento do Sistema |
 |---|---|
 | E1 - Utilizador anónimo ou perfil não elegível | Recusa o carregamento do vídeo, informa que é necessária uma conta Registada ou Premium e não altera o projeto. |
@@ -73,30 +62,36 @@
 | E9 - Conflito de versão do projeto | Não associa o vídeo ao projeto; se o ficheiro já tiver chegado ao armazenamento, elimina essa cópia. Devolve a versão atual para sincronização. |
 | E10 - Armazenamento indisponível ou erro ao guardar | Informa que o carregamento falhou, elimina o temporário e qualquer objeto incompleto, e mantém o projeto inalterado. |
 | E11 - Interrupção ou falha de rede durante o envio | Apresenta uma falha para o ficheiro afetado. O projeto não deve apresentar um item incompleto; o utilizador pode tentar novamente. |
-
-### 2.0.5 Pós-condições
-
+ 
+## 4.1.5. Pós-condições 
+ 
+**Tabela 9: UC-VID-000 - Pós-condições**
+ 
 | Tipo | Resultado |
 |---|---|
 | Garantia de Sucesso | O projeto contém uma nova referência ao vídeo validado, o objeto está guardado no armazenamento e os metadados e o hash correspondem ao ficheiro recebido. O vídeo aparece na biblioteca do projeto, disponível para reprodução e para as ferramentas de vídeo que aceitem o seu formato. A versão do projeto foi atualizada e o ficheiro temporário foi eliminado. |
 | Garantia Mínima | Em caso de rejeição ou falha, nenhum vídeo incompleto fica disponível no projeto. Os itens existentes não são modificados, os temporários e objetos parciais são removidos e o utilizador recebe uma indicação do motivo e da ação possível. |
-
-### 2.0.6 Regras de Negócio e Restrições
-
+ 
+## 4.1.6. Regras de Negócio e Restrições 
+ 
+**Tabela 10: UC-VID-000 - Regras de Negócio e Restrições**
+ 
 | ID | Regra |
 |---|---|
-| RN1 | O carregamento de vídeo está disponível apenas para utilizadores autenticados com perfil Registado (`free`) ou Premium. O perfil anónimo não pode carregar vídeos. |
+| RN1 | O carregamento de vídeo está disponível apenas para utilizadores autenticados com perfil Registado (free) ou Premium. O perfil anónimo não pode carregar vídeos. |
 | RN2 | Limites para vídeos externos: Registado - tamanho máximo de 200 MB e duração máxima de 10 minutos; Premium - tamanho máximo de 2 GB e duração máxima de 60 minutos. O ficheiro tem de cumprir ambos os limites. Estes limites são aplicados ao carregamento externo e não são reaplicados a vídeos gerados no projeto por outras operações. |
 | RN3 | Formatos e codecs aceites: MP4 com vídeo H.264 e áudio AAC, ou sem áudio; WebM com vídeo VP8 e áudio Vorbis, ou sem áudio. A extensão e os codecs têm de corresponder. Tem de existir uma pista de vídeo legível e uma duração válida. |
 | RN4 | Cada nome de ficheiro tem de ser único dentro do projeto. O sistema não substitui automaticamente ficheiros existentes. O nome original é preservado tal como foi enviado, incluindo acentos e outros caracteres não ASCII (UTF-8). |
 | RN5 | Cada carregamento associa o vídeo ao projeto e guarda os metadados identificados, incluindo hash SHA-256, tamanho, formato, duração, codecs, resolução e taxa de fotogramas. A atualização do projeto respeita a versão esperada, evitando perda de alterações concorrentes. Para cada vídeo é guardada uma miniatura, apresentada na biblioteca com a duração; é apagada com o vídeo ou com o projeto. |
 | RN6 | O acesso ao carregamento exige autenticação e permissão de edição no projeto, incluindo quando este é acedido através de partilha. Os vídeos ficam protegidos pelas regras de acesso do projeto e pela proteção de transporte e armazenamento definida para o sistema. |
-| RN7 | O carregamento não conta como operação diária de processamento de vídeo e não cria uma tarefa assíncrona de processamento. Por isso não está sujeito ao limite de uma operação de vídeo ativa por projeto (RNG-11) e é aceite mesmo com uma operação em curso no projeto. Cada ficheiro selecionado é carregado e validado individualmente. |
+| RN7 | O carregamento não conta como operação diária de processamento de vídeo e não cria uma tarefa assíncrona de processamento. Por isso, não está sujeito ao limite de uma operação de vídeo ativa por projeto (RNG-11) e é aceite mesmo com uma operação em curso no projeto. Cada ficheiro selecionado é carregado e validado individualmente. |
 | RN8 | Ficheiros temporários locais são eliminados após sucesso ou falha. Se a gravação no armazenamento tiver sucesso mas a atualização do projeto falhar, o objeto órfão é removido. |
 | RN9 | Um vídeo carregado com sucesso passa a poder ser selecionado pelas ferramentas de vídeo, que aplicam os seus próprios requisitos adicionais, limites e regras de acesso. |
-
-### 2.0.7 Assunções
-
+ 
+## 4.1.7. Assunções 
+ 
+**Tabela 11: UC-VID-000 - Assunções**
+ 
 | ID | Assunção |
 |---|---|
 | A1 | A interface de carregamento existente, que aceita imagens, vídeos MP4/WebM e ficheiros ZIP de imagens, será reutilizada; este caso de uso trata especificamente do ramo de vídeo. |
@@ -104,37 +99,17 @@
 | A3 | A inspeção técnica do vídeo é efetuada no servidor com uma ferramenta equivalente a ffprobe; o cliente não é fonte de autoridade para duração ou codecs. |
 | A4 | Os vídeos gerados por recorte, concatenação ou incorporação de legendas já são adicionados ao projeto pelas respetivas operações e não passam novamente pelo fluxo de carregamento externo. |
 | A5 | A interface pode permitir selecionar vários ficheiros de uma vez, mas a API processa cada ficheiro numa chamada individual; não existe garantia de atomicidade para o conjunto. |
-
-### 2.0.8 Questões em Aberto
-
-| ID | Questão em aberto |
-|---|---|
-| Q1 | Devem ser aceites outros formatos ou codecs de vídeo além de MP4 (H.264/AAC) e WebM (VP8/Vorbis)? |
-| Q2 | Deve o sistema permitir retomar envios interrompidos de ficheiros grandes, em particular até 2 GB no perfil Premium? |
-| Q3 | Deve existir uma quota de armazenamento por projeto ou utilizador além dos limites por ficheiro definidos por perfil? |
-| Q4 | Em carregamentos de vários ficheiros, deve a interface oferecer uma operação explícita para repetir apenas os ficheiros que falharam? |
-
-## 3. Esboço de requisitos derivados
-
-### 3.1 Requisitos de Sistema
-
-| ID | Requisito | Tipo | Prioridade | Novo/Alt | Origem | Como verificar |
-|---|---|---|---|---|---|---|
-| REQ-VID-UPLOAD-001 | O sistema deve permitir a um utilizador Registado ou Premium selecionar um ficheiro MP4 ou WebM e carregá-lo para um projeto que pode editar. | F | Deve ter | ALT | Trigger; Passos 1–2; RN1, RN6 | Dado um utilizador elegível com permissão de edição, quando seleciona um MP4/WebM válido, então o pedido de carregamento é aceite. |
-| REQ-VID-UPLOAD-002 | O sistema deve rejeitar o carregamento de vídeo por utilizador anónimo ou perfil não elegível, sem alterar o projeto. | F | Deve ter | ALT | E1; RN1 | Dado um utilizador anónimo, quando tenta carregar vídeo, então recebe uma mensagem de acesso requerido e o projeto mantém-se inalterado. |
-| REQ-VID-UPLOAD-003 | O sistema deve aceitar MP4 com H.264 e AAC (ou sem áudio) e WebM com VP8 e Vorbis (ou sem áudio), e rejeitar vídeos ilegíveis, sem pista de vídeo ou com codecs incompatíveis. | F | Deve ter | ALT | RN3; E2; E4; E5 | Submeter exemplos válidos e inválidos de cada formato e verificar que só os válidos são adicionados ao projeto. |
-| REQ-VID-UPLOAD-004 | O sistema deve aplicar os limites de tamanho e duração por perfil: 200 MB/10 minutos para Registado e 2 GB/60 minutos para Premium. | F | Deve ter | ALT | RN2; E3; E6 | Para cada perfil, submeter ficheiros no limite e acima de cada limite; os primeiros são aceites e os segundos rejeitados com o limite indicado. |
-| REQ-VID-UPLOAD-005 | O sistema deve validar no servidor o tamanho, a duração, a pista de vídeo, os codecs e a integridade técnica de cada ficheiro recebido. | F | Deve ter | ALT | Passo 3; RN3; E3–E6 | Dado um ficheiro com extensão válida, mas codec incompatível ou conteúdo corrompido, quando é inspecionado, então é rejeitado com uma mensagem adequada. |
-| REQ-VID-UPLOAD-006 | O sistema deve impedir nomes de ficheiro duplicados dentro do mesmo projeto, sem substituir o ficheiro existente. | F | Deve ter | ALT | RN4; E7 | Carregar um vídeo e repetir com o mesmo nome; o segundo pedido é recusado e o primeiro permanece disponível. |
-| REQ-VID-UPLOAD-007 | O sistema deve guardar o vídeo e os seus metadados no projeto, incluindo hash SHA-256, tamanho, formato, duração, codecs, resolução e taxa de fotogramas. | F | Deve ter | NOVO | Passos 4–5; RN5 | Após um carregamento válido, comparar os metadados apresentados/guardados com o ficheiro e verificar o hash. |
-| REQ-VID-UPLOAD-008 | O sistema deve atualizar a versão do projeto de forma consistente e rejeitar um carregamento baseado numa versão desatualizada, removendo qualquer objeto que não tenha sido associado ao projeto. | F | Deve ter | ALT | Passo 5; FA3; E9; RN5, RN8 | Enviar dois pedidos concorrentes com a mesma versão; apenas uma alteração é consolidada e o pedido em conflito não deixa objeto órfão. |
-| REQ-VID-UPLOAD-009 | Após um carregamento bem-sucedido, o vídeo deve aparecer na biblioteca do projeto e ficar disponível para reprodução e seleção pelas ferramentas de vídeo. | F | Deve ter | ALT | Passo 7; Garantia de Sucesso; RN9 | Carregar um vídeo válido, atualizar a biblioteca, reproduzi-lo e confirmar que pode ser selecionado numa ferramenta compatível. |
-| REQ-VID-UPLOAD-010 | O sistema deve permitir selecionar vários ficheiros e comunicar o resultado de cada carregamento individual, preservando os ficheiros cujo envio já terminou com sucesso. | F | Deveria ter | ALT | FA1; A5; RN7 | Selecionar vários ficheiros e provocar uma falha num deles; os restantes concluídos ficam no projeto e a falha é identificada pelo nome. |
-| REQ-VID-UPLOAD-012 | O carregamento de vídeo não deve consumir quota diária de processamento nem criar uma tarefa de processamento assíncrona. | F | Deve ter | NOVO | RN7 | Carregar um vídeo e confirmar que o saldo de operações não muda e que não é criada tarefa de vídeo. |
-| REQ-VID-UPLOAD-013 | O sistema deve gerar uma miniatura de cada vídeo carregado (ou produzido por uma ferramenta de vídeo) e apresentá-la na biblioteca com a duração, sem que uma falha na miniatura impeça o carregamento. | F | Deveria ter | NOVO | Passo 5; RN5 | Carregar um vídeo: a biblioteca mostra um fotograma do vídeo e a duração; apagar o vídeo remove também a miniatura. |
-| REQ-VID-UPLOAD-014 | O sistema deve preservar o nome original do ficheiro, incluindo acentos e caracteres não ASCII. | F | Deve ter | NOVO | RN4 | Carregar "São Paulo — ação.mp4": o projeto mostra exatamente esse nome. |
-| REQ-VID-UPLOAD-015 | O sistema deve permitir descarregar, a partir da vista do vídeo, o ficheiro original no formato em que foi guardado (MP4 ou WebM), sem conversão; se o vídeo tiver legendas guardadas, deve oferecer também as opções de UC-VID-001 - FA4b. | F | Deve ter | NOVO | FA5; RN7 | Num vídeo sem legendas, Descarregar entrega um ficheiro com o mesmo hash SHA-256 do guardado; num vídeo com legendas, o menu mostra vídeo com legendas, vídeo sem legendas, SRT e WebVTT; o saldo de operações não muda. |
-| REQ-VID-QUAL-001 | O sistema deve eliminar ficheiros temporários e objetos parciais após sucesso, rejeição ou falha do carregamento. | NF (Integridade) | Deve ter | NOVO | Passos 4–6; E4; E9–E11; RN8 | Simular sucesso, erro de validação, falha de armazenamento e conflito de versão; não ficam temporários nem objetos não referenciados. |
+ 
+## 4.1.8. Questões em Aberto 
+ 
+**Tabela 12: UC-VID-000 - Questões em Aberto**
+ 
+| ID | Questão | Resolução |
+|---|---|---|
+| Q1 | Devem ser aceites outros formatos ou codecs de vídeo além de MP4 (H.264/AAC) e WebM (VP8/Vorbis)? | Decisão do MVP já refletida em RN3: apenas MP4 e WebM com os codecs indicados. A eventual expansão de formatos fica por decidir. |
+| Q2 | Deve o sistema permitir retomar envios interrompidos de ficheiros grandes, em particular até 2 GB no perfil Premium? | Adiado.O UC atual prevê repetir o carregamento após uma falha de rede (E11), mas não define a recuperação parcial do envio. |
+| Q3 | Deve existir uma quota de armazenamento por projeto ou utilizador além dos limites por ficheiro definidos por perfil? | Adiado. RN2 define limites por ficheiro, mas não quotas de armazenamento acumulado. |
+| Q4 | A interface deve permitir carregar vídeos diretamente por arrasto para a área de carregamento? | Por decidir. O carregamento direto por arrasto não está especificado no MVP. A repetição seletiva dos ficheiros falhados está definida em FA1 e REQ-VID-UPLOAD-010. |
 
 ### 3.2 Impacto no sistema existente
 

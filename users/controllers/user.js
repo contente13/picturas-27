@@ -182,7 +182,8 @@ module.exports.getOne = async (user_id) => {
 module.exports.getOneEmail = async (email) => {
   const emailHash = hashEmail(email);
   const user = await User.findOne({ email_hash: emailHash }).exec();
-  return user ? user.toJSON() : null;
+  // Authentication needs the stored hash. Public API responses are serialized separately.
+  return user;
 };
 
 

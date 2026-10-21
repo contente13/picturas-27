@@ -1207,6 +1207,12 @@ router.post(
 
       const extension = path.extname(req.file.originalname).toLowerCase();
       const isVideo = isSupportedVideoName(req.file.originalname);
+      const filenameContentType = mime.lookup(req.file.originalname);
+      // This route also accepts images. Unsupported extensions must not bypass
+      // video validation by falling through to that branch, regardless of client MIME.
+      if (!isVideo && !String(filenameContentType || "").startsWith("image/")) {
+        return res.status(415).jsonp("Formato de ficheiro não suportado. Seleciona uma imagem ou um vídeo MP4 ou WebM.");
+      }
       let mediaMetadata = null;
       if (isVideo) {
         const userResponse = await axios.get(`${users_ms}${req.params.user}/type/`, { httpsAgent });
@@ -1229,7 +1235,7 @@ router.post(
         mediaMetadata = { ...mediaMetadata, sizeBytes: req.file.size, format: extension.slice(1) };
       }
 
-      const contentType = mime.lookup(req.file.originalname) || req.file.mimetype || "application/octet-stream";
+      const contentType = filenameContentType || req.file.mimetype || "application/octet-stream";
       const data = new FormData();
       data.append("file", createReadStream(req.file.path), {
         filename: req.file.originalname,

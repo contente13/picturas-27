@@ -1,0 +1,3 @@
+.generated/
+*.log
+run-results.json
