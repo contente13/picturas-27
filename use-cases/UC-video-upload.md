@@ -122,51 +122,51 @@
 |---|---|---|---|---|---|---|
 | REQ-VID-UPLOAD-001 | O sistema deve permitir a um utilizador Registado ou Premium selecionar um ficheiro MP4 ou WebM e carregá-lo para um projeto que pode editar. | F | Deve ter | ALT | Trigger; Passos 1–2; RN1, RN6 | Dado um utilizador elegível com permissão de edição, quando seleciona um MP4/WebM válido, então o pedido de carregamento é aceite. |
 | REQ-VID-UPLOAD-002 | O sistema deve rejeitar o carregamento de vídeo por utilizador anónimo ou perfil não elegível, sem alterar o projeto. | F | Deve ter | ALT | E1; RN1 | Dado um utilizador anónimo, quando tenta carregar vídeo, então recebe uma mensagem de acesso requerido e o projeto mantém-se inalterado. |
-| REQ-VID-UPLOAD-003 | O sistema deve aplicar os limites de tamanho e duração por perfil: 200 MB/10 minutos para Registado e 2 GB/60 minutos para Premium. | F | Deve ter | ALT | RN2; E3; E6 | Para cada perfil, submeter ficheiros no limite e acima de cada limite; os primeiros são aceites e os segundos rejeitados com o limite indicado. |
-| REQ-VID-UPLOAD-004 | O sistema deve aceitar MP4 com H.264 e AAC (ou sem áudio) e WebM com VP8 e Vorbis (ou sem áudio), e rejeitar vídeos ilegíveis, sem pista de vídeo ou com codecs incompatíveis. | F | Deve ter | ALT | RN3; E2; E4; E5 | Submeter exemplos válidos e inválidos de cada formato e verificar que só os válidos são adicionados ao projeto. |
-| REQ-VID-UPLOAD-005 | O sistema deve impedir nomes de ficheiro duplicados dentro do mesmo projeto, sem substituir o ficheiro existente. | F | Deve ter | ALT | RN4; E7 | Carregar um vídeo e repetir com o mesmo nome; o segundo pedido é recusado e o primeiro permanece disponível. |
-| REQ-VID-UPLOAD-006 | O sistema deve guardar o vídeo e os seus metadados no projeto, incluindo hash SHA-256, tamanho, formato, duração, codecs, resolução e taxa de fotogramas. | F | Deve ter | NOVO | Passos 4–5; RN5 | Após um carregamento válido, comparar os metadados apresentados/guardados com o ficheiro e verificar o hash. |
-| REQ-VID-UPLOAD-007 | O sistema deve atualizar a versão do projeto de forma consistente e rejeitar um carregamento baseado numa versão desatualizada, removendo qualquer objeto que não tenha sido associado ao projeto. | F | Deve ter | ALT | Passo 5; FA3; E9; RN5, RN8 | Enviar dois pedidos concorrentes com a mesma versão; apenas uma alteração é consolidada e o pedido em conflito não deixa objeto órfão. |
-| REQ-VID-UPLOAD-008 | O sistema deve verificar autenticação e permissão de edição antes de associar o vídeo ao projeto, respeitando as permissões de partilha. | F | Deve ter | ALT | Pré-condições; FA4; E8; RN6 | O proprietário e um colaborador com edição conseguem carregar; utilizador sem permissão é recusado sem alterar o projeto. |
-| REQ-VID-UPLOAD-009 | O sistema deve eliminar ficheiros temporários e objetos parciais após sucesso, rejeição ou falha do carregamento. | NF (Integridade) | Deve ter | NOVO | Passos 4–6; E4; E9–E11; RN8 | Simular sucesso, erro de validação, falha de armazenamento e conflito de versão; não ficam temporários nem objetos não referenciados. |
-| REQ-VID-UPLOAD-010 | Após um carregamento bem-sucedido, o vídeo deve aparecer na biblioteca do projeto e ficar disponível para reprodução e seleção pelas ferramentas de vídeo. | F | Deve ter | ALT | Passo 7; Garantia de Sucesso; RN9 | Carregar um vídeo válido, atualizar a biblioteca, reproduzi-lo e confirmar que pode ser selecionado numa ferramenta compatível. |
-| REQ-VID-UPLOAD-011 | O sistema deve permitir selecionar vários ficheiros e comunicar o resultado de cada carregamento individual, preservando os ficheiros cujo envio já terminou com sucesso. | F | Deveria ter | ALT | FA1; A5; RN7 | Selecionar vários ficheiros e provocar uma falha num deles; os restantes concluídos ficam no projeto e a falha é identificada pelo nome. |
+| REQ-VID-UPLOAD-003 | O sistema deve aceitar MP4 com H.264 e AAC (ou sem áudio) e WebM com VP8 e Vorbis (ou sem áudio), e rejeitar vídeos ilegíveis, sem pista de vídeo ou com codecs incompatíveis. | F | Deve ter | ALT | RN3; E2; E4; E5 | Submeter exemplos válidos e inválidos de cada formato e verificar que só os válidos são adicionados ao projeto. |
+| REQ-VID-UPLOAD-004 | O sistema deve aplicar os limites de tamanho e duração por perfil: 200 MB/10 minutos para Registado e 2 GB/60 minutos para Premium. | F | Deve ter | ALT | RN2; E3; E6 | Para cada perfil, submeter ficheiros no limite e acima de cada limite; os primeiros são aceites e os segundos rejeitados com o limite indicado. |
+| REQ-VID-UPLOAD-005 | O sistema deve validar no servidor o tamanho, a duração, a pista de vídeo, os codecs e a integridade técnica de cada ficheiro recebido. | F | Deve ter | ALT | Passo 3; RN3; E3–E6 | Dado um ficheiro com extensão válida, mas codec incompatível ou conteúdo corrompido, quando é inspecionado, então é rejeitado com uma mensagem adequada. |
+| REQ-VID-UPLOAD-006 | O sistema deve impedir nomes de ficheiro duplicados dentro do mesmo projeto, sem substituir o ficheiro existente. | F | Deve ter | ALT | RN4; E7 | Carregar um vídeo e repetir com o mesmo nome; o segundo pedido é recusado e o primeiro permanece disponível. |
+| REQ-VID-UPLOAD-007 | O sistema deve guardar o vídeo e os seus metadados no projeto, incluindo hash SHA-256, tamanho, formato, duração, codecs, resolução e taxa de fotogramas. | F | Deve ter | NOVO | Passos 4–5; RN5 | Após um carregamento válido, comparar os metadados apresentados/guardados com o ficheiro e verificar o hash. |
+| REQ-VID-UPLOAD-008 | O sistema deve atualizar a versão do projeto de forma consistente e rejeitar um carregamento baseado numa versão desatualizada, removendo qualquer objeto que não tenha sido associado ao projeto. | F | Deve ter | ALT | Passo 5; FA3; E9; RN5, RN8 | Enviar dois pedidos concorrentes com a mesma versão; apenas uma alteração é consolidada e o pedido em conflito não deixa objeto órfão. |
+| REQ-VID-UPLOAD-009 | Após um carregamento bem-sucedido, o vídeo deve aparecer na biblioteca do projeto e ficar disponível para reprodução e seleção pelas ferramentas de vídeo. | F | Deve ter | ALT | Passo 7; Garantia de Sucesso; RN9 | Carregar um vídeo válido, atualizar a biblioteca, reproduzi-lo e confirmar que pode ser selecionado numa ferramenta compatível. |
+| REQ-VID-UPLOAD-010 | O sistema deve permitir selecionar vários ficheiros e comunicar o resultado de cada carregamento individual, preservando os ficheiros cujo envio já terminou com sucesso. | F | Deveria ter | ALT | FA1; A5; RN7 | Selecionar vários ficheiros e provocar uma falha num deles; os restantes concluídos ficam no projeto e a falha é identificada pelo nome. |
 | REQ-VID-UPLOAD-012 | O carregamento de vídeo não deve consumir quota diária de processamento nem criar uma tarefa de processamento assíncrona. | F | Deve ter | NOVO | RN7 | Carregar um vídeo e confirmar que o saldo de operações não muda e que não é criada tarefa de vídeo. |
 | REQ-VID-UPLOAD-013 | O sistema deve gerar uma miniatura de cada vídeo carregado (ou produzido por uma ferramenta de vídeo) e apresentá-la na biblioteca com a duração, sem que uma falha na miniatura impeça o carregamento. | F | Deveria ter | NOVO | Passo 5; RN5 | Carregar um vídeo: a biblioteca mostra um fotograma do vídeo e a duração; apagar o vídeo remove também a miniatura. |
 | REQ-VID-UPLOAD-014 | O sistema deve preservar o nome original do ficheiro, incluindo acentos e caracteres não ASCII. | F | Deve ter | NOVO | RN4 | Carregar "São Paulo — ação.mp4": o projeto mostra exatamente esse nome. |
 | REQ-VID-UPLOAD-015 | O sistema deve permitir descarregar, a partir da vista do vídeo, o ficheiro original no formato em que foi guardado (MP4 ou WebM), sem conversão; se o vídeo tiver legendas guardadas, deve oferecer também as opções de UC-VID-001 - FA4b. | F | Deve ter | NOVO | FA5; RN7 | Num vídeo sem legendas, Descarregar entrega um ficheiro com o mesmo hash SHA-256 do guardado; num vídeo com legendas, o menu mostra vídeo com legendas, vídeo sem legendas, SRT e WebVTT; o saldo de operações não muda. |
+| REQ-VID-QUAL-001 | O sistema deve eliminar ficheiros temporários e objetos parciais após sucesso, rejeição ou falha do carregamento. | NF (Integridade) | Deve ter | NOVO | Passos 4–6; E4; E9–E11; RN8 | Simular sucesso, erro de validação, falha de armazenamento e conflito de versão; não ficam temporários nem objetos não referenciados. |
 
 ### 3.2 Impacto no sistema existente
 
 | Elemento existente afetado | Impacto (Manter / Estender / Alterar) | Descrição do impacto | Requisitos relacionados |
 |---|---|---|---|
-| Interface de carregamento do projeto | Manter | Reutiliza a área de seleção atual, que aceita vídeos MP4 e WebM e mostra pré-visualizações. | REQ-VID-UPLOAD-001, REQ-VID-UPLOAD-011 |
-| API do Project Service | Manter | Reutiliza o endpoint de carregamento multipart, permissões do projeto, controlo de versão e associação do item ao projeto. | REQ-VID-UPLOAD-001, REQ-VID-UPLOAD-005, REQ-VID-UPLOAD-007, REQ-VID-UPLOAD-008 |
-| Validação técnica e perfil de utilização | Manter | Reutiliza a consulta do perfil, limites por perfil, inspeção com ffprobe e validação de codecs. | REQ-VID-UPLOAD-002, REQ-VID-UPLOAD-003, REQ-VID-UPLOAD-004 |
-| Image Storage / SeaweedFS | Manter | Reutiliza o armazenamento de objetos na área de origem (`src`) e a referência do objeto guardada no projeto. | REQ-VID-UPLOAD-006, REQ-VID-UPLOAD-009 |
-| Ferramentas de vídeo | Estender | Passam a consumir vídeos externos após carregamento validado, mantendo os requisitos próprios de cada operação. | REQ-VID-UPLOAD-010 |
+| Interface de carregamento do projeto | Manter | Reutiliza a área de seleção atual, que aceita vídeos MP4 e WebM e mostra pré-visualizações. | REQ-VID-UPLOAD-001, REQ-VID-UPLOAD-010 |
+| API do Project Service | Manter | Reutiliza o endpoint de carregamento multipart, permissões do projeto, controlo de versão e associação do item ao projeto. | REQ-VID-UPLOAD-001, REQ-VID-UPLOAD-006, REQ-VID-UPLOAD-008, REQ-VID-UPLOAD-002 |
+| Validação técnica e perfil de utilização | Manter | Reutiliza a consulta do perfil, limites por perfil, inspeção com ffprobe e validação de codecs. | REQ-VID-UPLOAD-002, REQ-VID-UPLOAD-004, REQ-VID-UPLOAD-003 |
+| Image Storage / SeaweedFS | Manter | Reutiliza o armazenamento de objetos na área de origem (`src`) e a referência do objeto guardada no projeto. | REQ-VID-UPLOAD-007, REQ-VID-QUAL-001 |
+| Ferramentas de vídeo | Estender | Passam a consumir vídeos externos após carregamento validado, mantendo os requisitos próprios de cada operação. | REQ-VID-UPLOAD-009 |
 
 ### 3.3 Matriz de Rastreabilidade
 
 | Elemento do Caso de Uso | Descrição abreviada | Requisito(s) de Sistema |
 |---|---|---|
-| Trigger / Passos 1–2 | Seleção e envio do vídeo | REQ-VID-UPLOAD-001, REQ-VID-UPLOAD-008 |
-| Passo 3 | Perfil, formato, tamanho, codecs e duração | REQ-VID-UPLOAD-002, REQ-VID-UPLOAD-003, REQ-VID-UPLOAD-004 |
-| Passo 4 | Nome único e armazenamento do objeto | REQ-VID-UPLOAD-005, REQ-VID-UPLOAD-006, REQ-VID-UPLOAD-009, REQ-VID-UPLOAD-014 |
-| Passos 5–6 | Associação ao projeto, miniatura, versão e limpeza | REQ-VID-UPLOAD-006, REQ-VID-UPLOAD-007, REQ-VID-UPLOAD-009, REQ-VID-UPLOAD-013 |
-| Passo 7 | Disponibilização na biblioteca | REQ-VID-UPLOAD-010 |
-| FA1 | Vários carregamentos independentes | REQ-VID-UPLOAD-011 |
-| FA2 | Vídeo sem áudio | REQ-VID-UPLOAD-004 |
-| FA3 / E9 | Conflito de versão | REQ-VID-UPLOAD-007, REQ-VID-UPLOAD-009 |
-| FA4 / E8 | Permissões de projeto partilhado | REQ-VID-UPLOAD-008 |
+| Trigger / Passos 1–2 | Seleção e envio do vídeo | REQ-VID-UPLOAD-001, REQ-VID-UPLOAD-002 |
+| Passo 3 | Perfil, formato, tamanho, codecs e duração | REQ-VID-UPLOAD-002, REQ-VID-UPLOAD-004, REQ-VID-UPLOAD-003 |
+| Passo 4 | Nome único e armazenamento do objeto | REQ-VID-UPLOAD-006, REQ-VID-UPLOAD-007, REQ-VID-QUAL-001, REQ-VID-UPLOAD-014 |
+| Passos 5–6 | Associação ao projeto, miniatura, versão e limpeza | REQ-VID-UPLOAD-007, REQ-VID-UPLOAD-008, REQ-VID-QUAL-001, REQ-VID-UPLOAD-013 |
+| Passo 7 | Disponibilização na biblioteca | REQ-VID-UPLOAD-009 |
+| FA1 | Vários carregamentos independentes | REQ-VID-UPLOAD-010 |
+| FA2 | Vídeo sem áudio | REQ-VID-UPLOAD-003 |
+| FA3 / E9 | Conflito de versão | REQ-VID-UPLOAD-008, REQ-VID-QUAL-001 |
+| FA4 / E8 | Permissões de projeto partilhado | REQ-VID-UPLOAD-002 |
 | FA5 | Descarregar o vídeo no formato original | REQ-VID-UPLOAD-015 |
 | E1 | Perfil sem acesso | REQ-VID-UPLOAD-002 |
-| E2–E6 | Formato, tamanho, codec, vídeo inválido ou duração | REQ-VID-UPLOAD-003, REQ-VID-UPLOAD-004 |
-| E7 | Nome duplicado | REQ-VID-UPLOAD-005 |
-| E10–E11 | Falha de armazenamento ou rede | REQ-VID-UPLOAD-009 |
-| RN1–RN2 | Perfis e limites do carregamento externo | REQ-VID-UPLOAD-002, REQ-VID-UPLOAD-003 |
-| RN3–RN4 | Formatos e unicidade do nome | REQ-VID-UPLOAD-004, REQ-VID-UPLOAD-005 |
-| RN5–RN6 | Metadados, consistência e permissões | REQ-VID-UPLOAD-006, REQ-VID-UPLOAD-007, REQ-VID-UPLOAD-008 |
-| RN7–RN9 | Sem quota de processamento; vídeo disponível para ferramentas | REQ-VID-UPLOAD-010, REQ-VID-UPLOAD-012 |
-| Garantia de Sucesso | Vídeo íntegro e utilizável no projeto | REQ-VID-UPLOAD-006, REQ-VID-UPLOAD-010 |
-| Garantia Mínima | Sem ficheiros incompletos ou alterações indevidas | REQ-VID-UPLOAD-005, REQ-VID-UPLOAD-007, REQ-VID-UPLOAD-009 |
+| E2–E6 | Formato, tamanho, codec, vídeo inválido ou duração | REQ-VID-UPLOAD-004, REQ-VID-UPLOAD-003 |
+| E7 | Nome duplicado | REQ-VID-UPLOAD-006 |
+| E10–E11 | Falha de armazenamento ou rede | REQ-VID-QUAL-001 |
+| RN1–RN2 | Perfis e limites do carregamento externo | REQ-VID-UPLOAD-002, REQ-VID-UPLOAD-004 |
+| RN3–RN4 | Formatos e unicidade do nome | REQ-VID-UPLOAD-003, REQ-VID-UPLOAD-006 |
+| RN5–RN6 | Metadados, consistência e permissões | REQ-VID-UPLOAD-007, REQ-VID-UPLOAD-008, REQ-VID-UPLOAD-002 |
+| RN7–RN9 | Sem quota de processamento; vídeo disponível para ferramentas | REQ-VID-UPLOAD-009, REQ-VID-UPLOAD-012 |
+| Garantia de Sucesso | Vídeo íntegro e utilizável no projeto | REQ-VID-UPLOAD-007, REQ-VID-UPLOAD-009 |
+| Garantia Mínima | Sem ficheiros incompletos ou alterações indevidas | REQ-VID-UPLOAD-006, REQ-VID-UPLOAD-008, REQ-VID-QUAL-001 |

@@ -28,11 +28,11 @@
 | Nome | Recortar Vídeo |
 | Versão | v1.2 |
 | Autor | Francisco Contente |
-| Data | 2026-10-05 |
+| Data | 2026-10-19 |
 | Objetivo | Permitir ao utilizador delimitar um intervalo temporal (início e fim) de um vídeo do projeto ativo, gerando um novo vídeo apenas com esse intervalo, sem alterar o original. |
 | Âmbito | PictuRAS: módulo de processamento de vídeo (novo), gestão de quotas por perfil e lista de vídeos do projeto ativo. |
 | Ator Principal | Utilizador autenticado: Registado (gratuito) ou Premium. |
-| Stakeholders e Interesses | - Utilizador Registado: encurtar vídeos para partilha rápida, dentro da sua quota gratuita.<br>- Utilizador Premium: recortar vídeos mais longos, sem limite diário.<br>- Proprietário do Sistema: proteger os recursos de computação com limites por perfil e incentivar a subscrição Premium.<br>- Equipa DevOps/Arquitetura: processamento desacoplado da interface web, sem esgotar CPU ou memória do servidor web. |
+| Stakeholders e Interesses | - Utilizador Registado: encurtar vídeos para partilha rápida, dentro da sua quota gratuita.<br>- Utilizador Premium: recortar vídeos mais longos, sem limite diário.<br>- Proprietário do Sistema: proteger os recursos de computação com limites por perfil e incentivar a subscrição Premium.<br>- Equipa de Desenvolvimento/DevOps: processamento desacoplado da interface web, sem esgotar CPU ou memória do servidor web. |
 | Pré-condições | - O utilizador tem sessão iniciada com perfil Registado ou Premium.<br>- O vídeo de origem encontra-se no projeto ativo e disponível no armazenamento, tendo sido carregado com validação de RN2 ou gerado no projeto por outra operação; tem formato suportado (RN6).<br>- O serviço de processamento de vídeo está disponível. |
 | Trigger | O utilizador seleciona um vídeo do projeto ativo e aciona a opção Recortar vídeo. |
 
@@ -56,7 +56,7 @@
 | Fluxo | Descrição |
 |---|---|
 | FA1 – Cancelamento do processamento | Durante o passo 6 ou 7, o utilizador aciona Cancelar Processamento. O sistema interrompe a tarefa, elimina quaisquer resultados parciais, liberta a operação reservada (a quota não é consumida), marca a tarefa como Cancelada e devolve o utilizador ao passo 2, com o vídeo e o intervalo anteriores mantidos. |
-| FA2 – Utilizador abandona a página durante o processamento | Se, no passo 6, o utilizador fecha o separador ou termina a sessão, a tarefa continua no servidor. Ao concluir, o resultado fica no projeto e o utilizador é notificado no próximo acesso à aplicação. |
+| FA2 – Utilizador abandona a página durante o processamento | Se, no passo 6, o utilizador fecha o separador ou termina a sessão, a tarefa continua no servidor. Ao regressar, o painel de recorte mostra o estado atual da tarefa e, se já tiver terminado, o novo vídeo está na biblioteca do projeto. Não é enviada notificação específica (Q6). |
 
 ### 2.2.4 Exceções
 
@@ -100,7 +100,7 @@
 | A4 | O PictuRAS já dispõe de uma arquitetura assíncrona por workers, que este caso de uso reutiliza e estende. Os workers atuais não executam subprocessos de vídeo (por exemplo, FFmpeg) nem gerem a monitorização, o cancelamento ou a limpeza de processos em execução; esse mecanismo é trabalho novo. |
 | A5 | O recorte usa sempre recodificação, garantindo precisão ao fotograma (±1 fotograma). |
 | A6 | O PictuRAS já tem autenticação, perfis e contagem de operações diárias, com reposição à meia-noite (hora de Lisboa) (RNF48 e T-07 do DR anterior), que este caso de uso reutiliza. A quota diária é partilhada por todas as ferramentas do PictuRAS. |
-| A7 | Assume-se que o projeto passa a permitir exportar os vídeos nele existentes, funcionalidade fornecida pelo caso de uso de carregamento e gestão de vídeo e fora do âmbito deste; o recorte não acrescenta funcionalidade de exportação. |
+| A7 | Assume-se que o projeto passa a permitir exportar os vídeos nele existentes, funcionalidade fornecida por UC-VID-000/FA5 e fora do âmbito deste caso de uso; o recorte não acrescenta funcionalidade de exportação. |
 | A8 | O utilizador possui espaço de armazenamento suficiente para guardar o novo vídeo; a gestão de quotas de disco não é tratada neste caso de uso. |
 | A9 | Os limites numéricos (RN1, RN2, RN8), a confirmação do pedido em ≤ 2 s, o atraso máximo de 5 s na apresentação do progresso e o prazo de 5 s para terminar o processamento de uma tarefa cancelada ou excedida são valores de partida adequados ao MVP, sujeitos a validação (ver Q7). |
 

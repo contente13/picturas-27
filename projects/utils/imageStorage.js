@@ -23,7 +23,7 @@ async function delete_image(user, project, type, img) {
 }
 
 async function copy_image(userId, projectId, fromStage, toStage, fileName) {
-  // usa o mesmo serviÃ§o interno (docker network) tal como as outras
+  // usa o mesmo serviço interno (docker network) tal como as outras
   return axios.post(
     `${img_storage_ms}/copy/${userId}/${projectId}/${fromStage}/${toStage}/${fileName}`,
     {}

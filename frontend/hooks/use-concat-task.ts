@@ -17,7 +17,7 @@ export function isConcatActive(task: ConcatTask | null) {
 
 // State of the project's concatenation task: start, progress polling, cancellation, and recovery
 // of a task still running when the page is opened again (FA9). A finished task is not restored:
-// its result is already a new video in the library, and "Juntar vÃdeos" always starts a new one.
+// its result is already a new video in the library, and "Juntar vídeos" always starts a new one.
 export function useConcatTask(context: ConcatContext, onFinished: (task: ConcatTask) => void) {
   const [task, setTask] = useState<ConcatTask | null>(null);
   const taskRef = useRef<ConcatTask | null>(null);
