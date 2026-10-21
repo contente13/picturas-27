@@ -171,8 +171,8 @@
 | REQ-VID-CONCAT-022 | O sistema deve copiar para o vídeo resultante as legendas editáveis de cada clip, deslocadas pela duração dos clips anteriores e limitadas ao respetivo clip, sem alterar as legendas dos originais. | F | Deveria ter | NOVO | RN20; Passo 9 | Dados os clips A (3 s) e B com uma legenda em [0,5 s, 2 s], quando se juntam A-B, então o resultado tem a legenda em [3,5 s, 5 s] e as legendas de B ficam iguais. |
 | REQ-VID-CONCAT-024 | O sistema deve permitir acesso aos vídeos de entrada e ao resultado da concatenação ao proprietário ou através de um link de partilha válido, protegendo-os com encriptação em trânsito e em repouso. | NF (Segurança) | Deve ter | ALT | RN19 | O proprietário e quem apresenta um link válido conseguem aceder; outro utilizador sem autorização e quem apresenta link inválido, expirado ou revogado são recusados. A transferência e o armazenamento são cifrados. |
 | REQ-VID-CONCAT-026 | O sistema deve terminar como Falhada uma concatenação que exceda 600 s (Registado) ou 3600 s (Premium) de processamento, e terminar o processamento em ≤ 5 s após um cancelamento. | NF (Fiabilidade) | Deve ter | NOVO | RN21; FA8; Garantia Mínima | Cancelar uma concatenação em processamento: o processamento termina em ≤ 5 s, a tarefa fica Cancelada e não existe vídeo parcial nem temporários. |
-| REQ-VID-QUAL-007 | O sistema deve devolver a confirmação de aceitação da operação em ≤ 2 s e apresentar atualizações de progresso em ≤ 5 s, independentemente do tamanho da seleção. | NF (Desempenho) | Deve ter | Novo | A9, Passo 6, Passo 7 | Dado uma seleção válida, quando o utilizador confirma, então a resposta é devolvida em ≤ 2 s; durante a execução, as notificações de progresso chegam em ≤ 5 s. |
-| REQ-VID-QUAL-008 | Em caso de falha ou cancelamento, o sistema deve eliminar resultados parciais e ficheiros temporários, preservando todos os vídeos originais. | NF (Integridade) | Deve ter | Alterado | UC-VID-003 - E7–E9; Garantia Mínima; RN13; RN14 | Dado uma operação cancelada ou falhada, quando a execução termina, então não existem ficheiros temporários nem vídeo parcial e os originais permanecem intactos. |
+| REQ-VID-QUAL-009 | O sistema deve devolver a confirmação de aceitação da operação em ≤ 2 s e apresentar atualizações de progresso em ≤ 5 s, independentemente do tamanho da seleção. | NF (Desempenho) | Deve ter | Novo | A9, Passo 6, Passo 7 | Dado uma seleção válida, quando o utilizador confirma, então a resposta é devolvida em ≤ 2 s; durante a execução, as notificações de progresso chegam em ≤ 5 s. |
+| REQ-VID-QUAL-010 | Em caso de falha ou cancelamento, o sistema deve eliminar resultados parciais e ficheiros temporários, preservando todos os vídeos originais. | NF (Integridade) | Deve ter | Alterado | UC-VID-003 - E7–E9; Garantia Mínima; RN13; RN14 | Dado uma operação cancelada ou falhada, quando a execução termina, então não existem ficheiros temporários nem vídeo parcial e os originais permanecem intactos. |
 
 ### 4.2 Impacto no sistema existente
 
@@ -181,12 +181,12 @@
 | Frontend / interface de projetos | Estender | Adicionar seleção múltipla de vídeos, ordenação dos clips, apresentação de metadados, duração total, progresso, cancelamento, pré-visualização e download do resultado. | REQ-VID-CONCAT-001, REQ-VID-CONCAT-002, REQ-VID-CONCAT-004, REQ-VID-CONCAT-005, REQ-VID-CONCAT-012, REQ-VID-CONCAT-014, REQ-VID-CONCAT-015, REQ-VID-CONCAT-018 |
 | Serviço de gestão de projetos | Estender | Permitir associar vários vídeos a uma mesma operação, validar que pertencem ao mesmo projeto e registar o vídeo resultante como novo elemento do projeto. | REQ-VID-CONCAT-001, REQ-VID-CONCAT-006, REQ-VID-CONCAT-013 |
 | Serviço de processamento de vídeo | Estender | Implementar concatenação de múltiplos vídeos, incluindo normalização de formatos, codecs, áudio, resolução e FPS. | REQ-VID-CONCAT-008, REQ-VID-CONCAT-009, REQ-VID-CONCAT-010, REQ-VID-CONCAT-011, REQ-VID-CONCAT-013, REQ-VID-CONCAT-019 |
-| Sistema de filas / processamento assíncrono | Estender | Suportar tarefas de concatenação assíncronas, progresso, cancelamento e continuação do processamento quando o utilizador abandona a página. | REQ-VID-CONCAT-012, REQ-VID-CONCAT-015, REQ-VID-QUAL-007 |
-| Armazenamento de ficheiros | Estender | Armazenar o novo vídeo resultante e gerir/eliminar ficheiros temporários e intermédios usados durante a normalização e concatenação. | REQ-VID-CONCAT-013, REQ-VID-QUAL-008 |
+| Sistema de filas / processamento assíncrono | Estender | Suportar tarefas de concatenação assíncronas, progresso, cancelamento e continuação do processamento quando o utilizador abandona a página. | REQ-VID-CONCAT-012, REQ-VID-CONCAT-015, REQ-VID-QUAL-009 |
+| Armazenamento de ficheiros | Estender | Armazenar o novo vídeo resultante e gerir/eliminar ficheiros temporários e intermédios usados durante a normalização e concatenação. | REQ-VID-CONCAT-013, REQ-VID-QUAL-010 |
 | Sistema de quotas e perfis | Estender | Aplicar limites diferentes por perfil quanto ao número de vídeos, duração total e tamanho agregado, e contabilizar cada concatenação bem-sucedida como uma operação. | REQ-VID-CONCAT-003, REQ-VID-CONCAT-007, REQ-VID-CONCAT-016, REQ-VID-CONCAT-020 |
 | Mecanismo de validação de vídeo | Estender | Validar compatibilidade dos clips, formatos/codecs suportados, resolução, FPS, duração, tamanho e número de vídeos antes do processamento. | REQ-VID-CONCAT-006, REQ-VID-CONCAT-008, REQ-VID-CONCAT-009, REQ-VID-CONCAT-010 |
 | Controlo de concorrência de operações | Estender | Impedir operações de vídeo simultâneas no mesmo projeto, independentemente da ferramenta ou dos clips; ignorar resultados tardios de tarefas canceladas ou falhadas. | REQ-VID-CONCAT-017, REQ-VID-CONCAT-021 |
-| Mecanismos de recuperação e limpeza | Estender | Garantir que falhas e cancelamentos não deixam ficheiros parciais e não alteram os vídeos originais. | REQ-VID-QUAL-008 |
+| Mecanismos de recuperação e limpeza | Estender | Garantir que falhas e cancelamentos não deixam ficheiros parciais e não alteram os vídeos originais. | REQ-VID-QUAL-010 |
 | Funcionalidades existentes de autenticação/perfis | Manter | Reutilizar o mecanismo atual de autenticação e distinção entre Registado e Premium. | REQ-VID-CONCAT-003, REQ-VID-CONCAT-007, REQ-VID-CONCAT-016 |
 | Legendas editáveis (UC-VID-001) | Estender | Copiar e deslocar as legendas dos clips para o vídeo resultante. | REQ-VID-CONCAT-022 |
 | Segurança e partilha | Estender | Aplicar acesso pelo proprietário ou por link de partilha válido e encriptação aos vídeos de entrada e ao resultado. | REQ-VID-CONCAT-024 |
@@ -200,10 +200,10 @@
 | Passo 3 | Definir ordem e calcular duração total | REQ-VID-CONCAT-004, REQ-VID-CONCAT-005 |
 | Passo 4 | Validar quantidade, duração, tamanho e compatibilidade | REQ-VID-CONCAT-003, REQ-VID-CONCAT-006, REQ-VID-CONCAT-007, REQ-VID-CONCAT-019 |
 | Passo 5 | Determinar normalizações técnicas necessárias | REQ-VID-CONCAT-008, REQ-VID-CONCAT-009, REQ-VID-CONCAT-010 |
-| Passo 6 | Criar tarefa assíncrona de concatenação e reservar quota | REQ-VID-CONCAT-012, REQ-VID-CONCAT-016, REQ-VID-CONCAT-017, REQ-VID-QUAL-007, REQ-VID-CONCAT-020 |
-| Passo 7 | Apresentar progresso e permitir cancelamento | REQ-VID-CONCAT-012, REQ-VID-QUAL-007 |
+| Passo 6 | Criar tarefa assíncrona de concatenação e reservar quota | REQ-VID-CONCAT-012, REQ-VID-CONCAT-016, REQ-VID-CONCAT-017, REQ-VID-QUAL-009, REQ-VID-CONCAT-020 |
+| Passo 7 | Apresentar progresso e permitir cancelamento | REQ-VID-CONCAT-012, REQ-VID-QUAL-009 |
 | Passo 8 | Normalizar e concatenar segundo a ordem definida | REQ-VID-CONCAT-008, REQ-VID-CONCAT-009, REQ-VID-CONCAT-010, REQ-VID-CONCAT-011, REQ-VID-CONCAT-013 |
-| Passo 9 | Guardar resultado como novo vídeo sem alterar os originais | REQ-VID-CONCAT-013, REQ-VID-QUAL-008 |
+| Passo 9 | Guardar resultado como novo vídeo sem alterar os originais | REQ-VID-CONCAT-013, REQ-VID-QUAL-010 |
 | Passo 10 | Pré-visualizar e exportar/download do resultado | REQ-VID-CONCAT-014 |
 | FA1 | Reordenar clips antes da concatenação | REQ-VID-CONCAT-004 |
 | FA2 | Remover clips e impedir concatenação com apenas um vídeo | REQ-VID-CONCAT-002, REQ-VID-CONCAT-004 |
@@ -212,18 +212,18 @@
 | FA5 | Normalizar para a menor taxa de fotogramas | REQ-VID-CONCAT-010 |
 | FA6 | Efetuar conversão técnica intermédia quando necessário | REQ-VID-CONCAT-008 |
 | FA7 | Manter silêncio durante clips sem áudio | REQ-VID-CONCAT-011 |
-| FA8 | Interromper processamento e eliminar resultados parciais | REQ-VID-CONCAT-012, REQ-VID-QUAL-008, REQ-VID-CONCAT-016, REQ-VID-CONCAT-021 |
+| FA8 | Interromper processamento e eliminar resultados parciais | REQ-VID-CONCAT-012, REQ-VID-QUAL-010, REQ-VID-CONCAT-016, REQ-VID-CONCAT-021 |
 | FA9 | Continuar tarefa e recuperar estado posteriormente | REQ-VID-CONCAT-015 |
 | FA10 | Reutilizar vídeos do projeto numa nova operação | REQ-VID-CONCAT-004, REQ-VID-CONCAT-016 |
 | E1 | Impedir operação com seleção insuficiente | REQ-VID-CONCAT-002 |
 | E2 | Rejeitar vídeos tecnicamente não suportados | REQ-VID-CONCAT-006 |
-| E3 | Impedir ou interromper operação com vídeo indisponível | REQ-VID-CONCAT-006, REQ-VID-QUAL-008 |
+| E3 | Impedir ou interromper operação com vídeo indisponível | REQ-VID-CONCAT-006, REQ-VID-QUAL-010 |
 | E4 | Rejeitar seleção acima do limite de duração | REQ-VID-CONCAT-007 |
 | E5 | Rejeitar seleção acima do limite de tamanho | REQ-VID-CONCAT-007 |
 | E6 | Rejeitar clips que não possam ser normalizados | REQ-VID-CONCAT-008, REQ-VID-CONCAT-009, REQ-VID-CONCAT-010 |
-| E7 | Terminar tarefa e eliminar temporários | REQ-VID-QUAL-008, REQ-VID-CONCAT-016 |
-| E8 | Descartar resultado parcial e preservar originais | REQ-VID-QUAL-008, REQ-VID-CONCAT-016 |
-| E9 | Interromper sem produzir resultado parcial válido | REQ-VID-QUAL-008, REQ-VID-CONCAT-016 |
+| E7 | Terminar tarefa e eliminar temporários | REQ-VID-QUAL-010, REQ-VID-CONCAT-016 |
+| E8 | Descartar resultado parcial e preservar originais | REQ-VID-QUAL-010, REQ-VID-CONCAT-016 |
+| E9 | Interromper sem produzir resultado parcial válido | REQ-VID-QUAL-010, REQ-VID-CONCAT-016 |
 | E10 | Impedir outra operação de vídeo ativa no mesmo projeto | REQ-VID-CONCAT-017 |
 | E11 | Rejeitar quota diária esgotada | REQ-VID-CONCAT-016, REQ-VID-CONCAT-020 |
 | RN1 | Requer pelo menos 2 vídeos | REQ-VID-CONCAT-001, REQ-VID-CONCAT-002 |
@@ -234,16 +234,16 @@
 | RN6 | Resolução de referência | REQ-VID-CONCAT-009 |
 | RN7 | Preservação do aspect ratio | REQ-VID-CONCAT-009 |
 | RN8 | Menor taxa de fotogramas | REQ-VID-CONCAT-010 |
-| RN9 | Original inalterado | REQ-VID-CONCAT-013, REQ-VID-QUAL-008 |
+| RN9 | Original inalterado | REQ-VID-CONCAT-013, REQ-VID-QUAL-010 |
 | RN10 | Ordem do resultado | REQ-VID-CONCAT-013 |
 | RN11 | Silêncio em vídeos sem áudio | REQ-VID-CONCAT-011 |
 | RN12 | Processamento assíncrono e cancelamento | REQ-VID-CONCAT-012 |
-| RN13 | Limpeza de intermediários | REQ-VID-QUAL-008 |
-| RN14 | Sem resultado parcial válido | REQ-VID-QUAL-008 |
+| RN13 | Limpeza de intermediários | REQ-VID-QUAL-010 |
+| RN14 | Sem resultado parcial válido | REQ-VID-QUAL-010 |
 | RN15 | Novo vídeo no projeto | REQ-VID-CONCAT-013 |
 | RN16 | Reserva atómica e libertação imediata da quota | REQ-VID-CONCAT-016 |
 | Garantia de Sucesso | Novo vídeo criado, originais intactos e resultado disponível | REQ-VID-CONCAT-013, REQ-VID-CONCAT-014, REQ-VID-CONCAT-016 |
-| Garantia Mínima | Preservar originais e limpar ficheiros parciais em falha/cancelamento | REQ-VID-QUAL-008, REQ-VID-CONCAT-016 |
+| Garantia Mínima | Preservar originais e limpar ficheiros parciais em falha/cancelamento | REQ-VID-QUAL-010, REQ-VID-CONCAT-016 |
 | RN17 | Formatos de entrada e saída explícitos | REQ-VID-CONCAT-008, REQ-VID-CONCAT-019 |
 | RN18 | Uma operação ativa por projeto e proteção contra resultados tardios | REQ-VID-CONCAT-017, REQ-VID-CONCAT-021 |
 | RN19 | Acesso pelo proprietário ou por link de partilha válido e encriptação | REQ-VID-CONCAT-024 |
