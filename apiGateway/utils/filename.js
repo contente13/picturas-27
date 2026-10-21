@@ -14,4 +14,18 @@ function utf8FilenameFilter(_req, file, callback) {
   callback(null, true);
 }
 
-module.exports = { decodeUploadFilename, utf8FilenameFilter };
+// The project accepts images and MP4/WebM videos. ZIPs are extracted by the client.
+// Never trust the declared MIME: an unsupported video must not fall through as an image.
+function projectMediaUploadFilter(req, file, callback) {
+  file.originalname = decodeUploadFilename(file.originalname);
+  const extension = require("path").extname(file.originalname).toLowerCase();
+  if (![".png", ".jpg", ".jpeg", ".mp4", ".webm"].includes(extension)) {
+    const error = new Error("Formato não suportado. Usa imagens PNG/JPEG ou vídeos MP4/WebM.");
+    error.status = 415;
+    error.code = "UNSUPPORTED_MEDIA_EXTENSION";
+    return callback(error);
+  }
+  callback(null, true);
+}
+
+module.exports = { decodeUploadFilename, utf8FilenameFilter, projectMediaUploadFilter };

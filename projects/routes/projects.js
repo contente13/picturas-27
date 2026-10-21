@@ -54,7 +54,7 @@ const {
 } = require("../middleware/shareAuth");
 
 const { requireProjectVersion } = require("../middleware/projectVersion");
-const { utf8FilenameFilter } = require("../utils/filename");
+const { projectMediaUploadFilter } = require("../utils/filename");
 const { createVideoThumbnail, deleteThumbnail, thumbnailUrl } = require("../utils/videoThumbnail");
 
 const storage = multer.diskStorage({
@@ -63,7 +63,7 @@ const storage = multer.diskStorage({
     callback(null, `picturas-project-upload-${uuidv4()}${path.extname(file.originalname)}`);
   },
 });
-var upload = multer({ storage, fileFilter: utf8FilenameFilter, limits: { fileSize: 2 * 1024 * 1024 * 1024 } });
+var upload = multer({ storage, fileFilter: projectMediaUploadFilter, limits: { fileSize: 2 * 1024 * 1024 * 1024 } });
 
 const key = fs.readFileSync(__dirname + "/../certs/selfsigned.key");
 const cert = fs.readFileSync(__dirname + "/../certs/selfsigned.crt");
