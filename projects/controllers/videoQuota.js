@@ -5,9 +5,19 @@ const VideoTask = require("../models/videoTask");
 const { httpsAgent } = require("../utils/httpsAgent");
 
 const usersUrl = "https://users:10001/";
+const USER_SERVICE_TIMEOUT_MS = 5000;
+
+function userServiceOptions() {
+  return {
+    httpsAgent,
+    timeout: USER_SERVICE_TIMEOUT_MS,
+    // Also bound connection establishment and responses that never finish.
+    signal: AbortSignal.timeout(USER_SERVICE_TIMEOUT_MS),
+  };
+}
 
 function getUserType(userId) {
-  return axios.get(`${usersUrl}${userId}/type/`, { httpsAgent })
+  return axios.get(`${usersUrl}${userId}/type/`, userServiceOptions())
     .then((response) => response.data?.type);
 }
 
@@ -16,23 +26,19 @@ async function reserveOperation(userId, amount, reservationId) {
   const response = await axios.post(
     `${usersUrl}${userId}/process/${amount}/reserve/${encodeURIComponent(reservationId)}`,
     {},
-    { httpsAgent },
+    userServiceOptions(),
   );
   return response.data;
 }
 
 async function refundOperation(userId, amount, reservationId) {
   if (!amount) return;
-  await axios.post(`${usersUrl}${userId}/process/refund/${amount}`, reservationId ? { reservationId } : {}, {
-    httpsAgent,
-  });
+  await axios.post(`${usersUrl}${userId}/process/refund/${amount}`, reservationId ? { reservationId } : {}, userServiceOptions());
 }
 
 async function commitOperation(userId, reservationId) {
   if (!reservationId) return;
-  await axios.post(`${usersUrl}${userId}/process/commit/${encodeURIComponent(reservationId)}`, {}, {
-    httpsAgent,
-  });
+  await axios.post(`${usersUrl}${userId}/process/commit/${encodeURIComponent(reservationId)}`, {}, userServiceOptions());
 }
 
 async function releaseReservation(taskId) {
