@@ -30,7 +30,6 @@ const {
 const DOWNLOAD_END = 10;
 const NORMALIZE_END = 88;
 const CONCAT_END = 95;
-const LOW_SPACE_BYTES = 50 * 1024 * 1024;
 
 class ConcatError extends Error {}
 
@@ -64,14 +63,14 @@ async function fetchClips(task, workDir, startedAt) {
     try {
       await downloadSource(task, inputPath, startedAt, source.source_key);
     } catch (error) {
-      if (error.message === PROCESSING_TIMEOUT_MESSAGE || await isCancelled(task.taskId)) throw error;
+      if (error.code === "ENOSPC" || error.message === PROCESSING_TIMEOUT_MESSAGE || await isCancelled(task.taskId)) throw error;
       throw clipError(source, "deixou de estar disponível no armazenamento");
     }
     let metadata;
     try {
       metadata = await inspectVideo(inputPath, requireRemainingProcessingTime(startedAt, task.maxProcessingMs));
     } catch (error) {
-      if (error.killed) throw error;
+      if (error.code === "ENOSPC" || error.killed) throw error;
       throw clipError(source, "está corrompido ou não pode ser lido");
     }
     const described = describeClip(source.source_name, metadata);
@@ -101,7 +100,7 @@ async function normalizeClips(task, clips, plan, workDir, startedAt) {
       );
     } catch (error) {
       // Timeouts and cancellations keep their own message; any other ffmpeg exit is E7.
-      if (await isCancelled(task.taskId) || !/^O FFmpeg terminou/.test(error.message)) throw error;
+      if (error.code === "ENOSPC" || await isCancelled(task.taskId) || !/^O FFmpeg terminou/.test(error.message)) throw error;
       throw new ConcatError(`Falhou a conversão do vídeo «${clip.name}» para o formato comum. Os vídeos originais não foram alterados.`);
     }
     const converted = await inspectVideo(outputPath, requireRemainingProcessingTime(startedAt, task.maxProcessingMs));
@@ -126,10 +125,13 @@ async function joinClips(task, intermediates, workDir, startedAt) {
       { duration: expectedDuration, from: NORMALIZE_END, to: CONCAT_END },
     );
   } catch (error) {
-    if (await isCancelled(task.taskId) || !/^O FFmpeg terminou/.test(error.message)) throw error;
+    if (error.code === "ENOSPC" || await isCancelled(task.taskId) || !/^O FFmpeg terminou/.test(error.message)) throw error;
     throw new ConcatError("Falhou a junção dos vídeos. O resultado parcial foi descartado e os originais não foram alterados.");
   }
-  const result = await inspectVideo(outputPath, requireRemainingProcessingTime(startedAt, task.maxProcessingMs)).catch(() => null);
+  const result = await inspectVideo(outputPath, requireRemainingProcessingTime(startedAt, task.maxProcessingMs)).catch((error) => {
+    if (error.code === "ENOSPC") throw error;
+    return null;
+  });
   const tolerance = Math.max(1, 0.05 * intermediates.length);
   if (!result || result.videoCodec !== "h264" || result.audioCodec !== "aac" || Math.abs(result.duration - expectedDuration) > tolerance) {
     throw new ConcatError("O vídeo produzido pela junção não é válido. O resultado foi descartado e os originais não foram alterados.");
@@ -139,7 +141,7 @@ async function joinClips(task, intermediates, workDir, startedAt) {
 
 async function processConcatTask(task) {
   const taskId = task.taskId;
-  const workDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "picturas-concat-"));
+  let workDir;
   const state = { outputKey: null, thumbKey: null, resultAddedToProject: false };
   const startedAt = Date.now();
   const plainTask = task.toObject();
@@ -149,6 +151,7 @@ async function processConcatTask(task) {
       { $set: { state: "EM_PROCESSAMENTO", progress: 1, startedAt: new Date() } },
     );
     if (!started.matchedCount) return;
+    workDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "picturas-concat-"));
     await ensureWorkspace(workDir, plainTask.sources);
 
     const clips = await fetchClips(plainTask, workDir, startedAt);
@@ -169,13 +172,12 @@ async function processConcatTask(task) {
     }, state);
   } catch (error) {
     // E9: a write that ran out of space surfaces as an ffmpeg or file-system error.
-    const outOfSpace = error.code === "ENOSPC" || (await freeBytes(workDir).catch(() => Infinity)) < LOW_SPACE_BYTES;
-    const reported = outOfSpace && !(error instanceof ConcatError)
+    const reported = error.code === "ENOSPC"
       ? new ConcatError("Não existe espaço de armazenamento suficiente para concluir a junção. O resultado parcial foi descartado.")
       : error;
     await handleTaskFailure(task, reported, startedAt, state);
   } finally {
-    await fs.promises.rm(workDir, { recursive: true, force: true }).catch(() => {});
+    if (workDir) await fs.promises.rm(workDir, { recursive: true, force: true }).catch(() => {});
     await releaseCancelledLock(taskId);
   }
 }

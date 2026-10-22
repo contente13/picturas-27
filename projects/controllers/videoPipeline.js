@@ -103,6 +103,8 @@ function spawnFfmpeg(task, args, cwd, progress = {}) {
       return;
     }
     let stdoutBuffer = "";
+    let stderrTail = "";
+    let outOfSpace = false;
     let lastProgressWrite = 0;
     let timedOut = false;
     let killTimer = null;
@@ -137,7 +139,12 @@ function spawnFfmpeg(task, args, cwd, progress = {}) {
       }
     });
 
-    child.stderr.on("data", () => {});
+    child.stderr.on("data", (chunk) => {
+      // Keep a bounded tail so a message split across chunks is still recognized.
+      const diagnostic = stderrTail + chunk.toString("utf8");
+      outOfSpace ||= /no space left on device|not enough space on (?:the )?disk|ENOSPC/i.test(diagnostic);
+      stderrTail = diagnostic.slice(-256);
+    });
     child.on("error", (error) => {
       clearTimeout(timeout);
       clearInterval(cancellationPoll);
@@ -148,6 +155,9 @@ function spawnFfmpeg(task, args, cwd, progress = {}) {
       clearTimeout(timeout);
       clearInterval(cancellationPoll);
       if (killTimer) clearTimeout(killTimer);
+      if (outOfSpace && !timedOut) {
+        return reject(Object.assign(new Error("O FFmpeg ficou sem espaço de armazenamento."), { code: "ENOSPC" }));
+      }
       if (code === 0) return resolve();
       reject(new Error(timedOut ? timeoutMessageFor(task.operation) : `O FFmpeg terminou com o código ${code}.`));
     });
