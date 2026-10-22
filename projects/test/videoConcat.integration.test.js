@@ -111,6 +111,7 @@ function request(method, path, userId, body) {
 const validate = (user, project, imageIds) => request("POST", `/${user}/${project.id}/video/concat/validate`, user, { imageIds });
 const concat = (user, project, imageIds) => request("POST", `/${user}/${project.id}/video/concat`, user, { imageIds });
 const trim = (user, project) => request("POST", `/${user}/${project.id}/video/${project.imageIds[0]}/trim`, user, { tempoInicio: 0, tempoFim: 5 });
+const trimImage = (user, project, imageId, tempoFim = 5) => request("POST", `/${user}/${project.id}/video/${imageId}/trim`, user, { tempoInicio: 0, tempoFim });
 const tasksOf = (project) => VideoTask.find({ project_id: project.id }).lean();
 
 test.describe("UC-VID-003 routes", { skip }, () => {
@@ -185,6 +186,33 @@ test.describe("UC-VID-003 routes", { skip }, () => {
     const trimBlocked = await trim(user, second);
     assert.equal(trimBlocked.status, 409);
     assert.match(trimBlocked.body, /já tem uma junção de vídeos em curso/);
+  });
+
+  test("REQ-VID-TRIM-014: trims an oversized project-generated video but still rejects unsupported formats", async () => {
+    const user = newUser("free", 5);
+    const projectDoc = await ProjectModel.create({
+      name: "vídeo gerado",
+      user_id: user,
+      imgs: [
+        videoItem("resultado_juncao.mp4", { duration: 601, sizeBytes: 201 * MB }),
+        videoItem("resultado_juncao.mov", { duration: 20, sizeBytes: 5 * MB }),
+      ],
+    });
+    const project = {
+      id: String(projectDoc._id),
+      imageIds: projectDoc.imgs.map((image) => String(image._id)),
+    };
+
+    const accepted = await trimImage(user, project, project.imageIds[0], 60);
+    assert.equal(accepted.status, 202, JSON.stringify(accepted.body));
+    const task = await VideoTask.findOne({ taskId: accepted.body.tarefaId }).lean();
+    assert.equal(task.source_name, "resultado_juncao.mp4");
+    assert.equal(task.state, "EM_FILA");
+
+    const unsupported = await trimImage(user, project, project.imageIds[1], 5);
+    assert.equal(unsupported.status, 415);
+    assert.match(unsupported.body, /Formato não suportado/);
+    assert.equal((await tasksOf(project)).length, 1, "unsupported format must not create a trim task");
   });
 
   test("simultaneous concatenations in the same project: only one task, only one reservation", async () => {
