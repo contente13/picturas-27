@@ -144,6 +144,7 @@ services:
       RABBITMQ_PASS: password
       RABBITMQ_URL: amqp://user:password@rabbitmq:5672
       SUBTITLE_AI_URL: http://subtitles-ai:9100
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-lisan_al_gaib}
       ALLOW_FREE_SUBTITLE_AI_TESTING: ${ALLOW_FREE_SUBTITLE_AI_TESTING:-false}
     networks:
       - elk
@@ -217,7 +218,7 @@ services:
     restart: on-failure
     environment:
       - FREE_DAILY_OP=5
-      - JWT_SECRET_KEY=lisan_al_gaib
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-lisan_al_gaib}
       - FIELD_ENCRYPTION_KEY=uma-frase-secreta-bem-grande-ou-64-hex
     networks:
       - elk
@@ -261,7 +262,7 @@ services:
       - users
     restart: on-failure
     environment:
-      - JWT_SECRET_KEY=lisan_al_gaib
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-lisan_al_gaib}
     networks:
       - elk
     volumes:
@@ -531,7 +532,7 @@ services:
       - RABBITMQ_PORT=5672
       - RABBITMQ_USER=user
       - RABBITMQ_PASS=password
-      - JWT_SECRET_KEY=lisan_al_gaib
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-lisan_al_gaib}
 
   mongo-backup:
     image: mongo:4.4

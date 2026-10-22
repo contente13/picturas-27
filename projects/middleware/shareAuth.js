@@ -1,15 +1,16 @@
 // projects/middleware/shareAuth.js
 const Project = require("../controllers/project");
+const { getCallerId } = require("../utils/caller");
 
 async function checkSharePermission(req, res, next) {
+  const callerId = getCallerId(req);
+  if (!callerId) return res.status(401).jsonp("Authentication required");
+
   const shareId = req.query.share;
 
-  if (!shareId) return next(); // acesso normal (dono / rotas sem share)
-
-  //  share link exige autenticação
-  const auth = req.headers.authorization;
-  if (!auth || !auth.startsWith("Bearer ")) {
-    return res.status(401).jsonp("Authentication required for share links");
+  if (!shareId) {
+    if (callerId !== String(req.params.user)) return res.status(403).jsonp("Not allowed");
+    return next();
   }
 
   const project = await Project.getOneByShareId(shareId);

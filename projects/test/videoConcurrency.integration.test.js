@@ -8,6 +8,7 @@
 // Skipped when MONGO_TEST_URL is not set.
 const test = require("node:test");
 const assert = require("node:assert/strict");
+const { tokenFor } = require("./helpers/auth");
 const mongoose = require("mongoose");
 
 // Each integration file uses its own database: node --test runs the files in parallel.
@@ -95,7 +96,7 @@ async function newProject(userId, duration = 30) {
 function request(method, path, userId, body) {
   return fetch(`${baseUrl}${path}`, {
     method,
-    headers: { "content-type": "application/json", "x-caller-id": userId },
+    headers: { "content-type": "application/json", authorization: `Bearer ${tokenFor(userId)}` },
     body: body ? JSON.stringify(body) : undefined,
   }).then(async (response) => ({ status: response.status, body: await response.json().catch(() => null) }));
 }

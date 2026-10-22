@@ -320,7 +320,7 @@ All configuration currently lives as `environment:` entries in `docker-compose.y
 
 | Variable                                      | Default                       | Service(s)             | Purpose                                      |
 | --------------------------------------------- | ----------------------------- | ---------------------- | -------------------------------------------- |
-| `JWT_SECRET_KEY`                              | `lisan_al_gaib`               | users, gateway, ws     | JWT signing key — **must match everywhere**  |
+| `JWT_SECRET_KEY`                              | `lisan_al_gaib`               | users, gateway, projects, ws | JWT signing key — **must match everywhere**  |
 | `FIELD_ENCRYPTION_KEY`                        | `uma-frase-secreta-...`       | users                  | Key for field-level encryption in MongoDB    |
 | `FREE_DAILY_OP`                               | `5`                           | users                  | Daily operation limit for free accounts      |
 | `SECRET_KEY`                                  | `card_secret_key`             | subscriptions          | Payment-data encryption key                  |
@@ -341,8 +341,22 @@ All configuration currently lives as `environment:` entries in `docker-compose.y
 
 Automatic subtitle generation uses a local CPU Whisper model in the `subtitles-ai` container; it needs no API key and sends no audio to an external transcription provider. Generation is queued in RabbitMQ and its state and result are stored in MongoDB, so the API can respond immediately while the editor checks progress. The model is downloaded from Hugging Face on the first startup and kept in the `subtitles_model_cache` Docker volume, so first startup requires internet access. The default `large-v3-turbo` model gives the best accuracy on CPU; audio longer than `SUBTITLE_LONG_AUDIO_SECONDS` uses `SUBTITLE_FAST_MODEL` so that a 60-minute video stays within the 900 s limit. Automatic generation is Premium-only, as required by UC-VID-001; set `ALLOW_FREE_SUBTITLE_AI_TESTING=true` to let registered accounts try it while testing.
 
-⚠️ If you change `JWT_SECRET_KEY`, change it in **all three** services (`users`, `api_gateway`,
-`ws_gateway`) or authentication silently breaks.
+`JWT_SECRET_KEY` is read from `.env` by all four services (`users`, `api_gateway`,
+`projects`, `ws_gateway`). Recreate those services after changing it.
+
+The Project Service verifies JWT signatures (HS256) and expiration itself, including
+requests made directly to port 9002. `X-Caller-Id` does not establish an identity.
+Access to an owner's project requires that owner's signed token or an authenticated
+collaborator with a valid share link; read links cannot authorize edits or processing.
+The public share-link resolver only returns link metadata, not project media.
+
+Direct-service authorization regression tests run without MongoDB or the gateway:
+
+```bash
+cd projects
+npm install
+node --test test/videoAccess.integration.test.js
+```
 
 ### Persistent data
 
@@ -485,7 +499,8 @@ It depends on `generative-mock` being healthy. Check <http://localhost:7860> and
 `docker compose logs generative-mock`.
 
 **Login works, then every request returns 401**
-`JWT_SECRET_KEY` differs between `users`, `api_gateway` and `ws_gateway`.
+Check that `users`, `api_gateway`, `projects` and `ws_gateway` use the same
+`JWT_SECRET_KEY` and recreate them after changing it in `.env`.
 
 **Everything is broken after pulling new code**
 Rebuild from a clean slate:

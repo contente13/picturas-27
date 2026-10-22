@@ -33,7 +33,6 @@ const Project = require("../controllers/project");
 const Process = require("../controllers/process");
 const Result = require("../controllers/result");
 const Preview = require("../controllers/preview");
-const jwt = require("jsonwebtoken");
 const { getCallerId } = require("../utils/caller");
 const { ensureEditorSlot, releaseEditorSlot } = require("../utils/presence");
 const { extractImageFeatures } = require("../utils/imageFeatures");
@@ -97,6 +96,7 @@ function count_advanced_tools(project) {
 
 function requireOwner(req, res, next) {
   const caller = getCallerId(req);
+  if (!caller) return res.status(401).jsonp("Authentication required");
   if (String(caller) !== String(req.params.user)) {
     return res.status(403).jsonp("Not allowed");
   }
@@ -768,7 +768,7 @@ router.delete("/:user/:project/share/:shareId", requireOwner, enforcePresenceLim
 // ================== FIM SHARING ==================
 
 // Get list of all projects from a user
-router.get("/:user", (req, res, next) => {
+router.get("/:user", requireOwner, (req, res, next) => {
   Project.getAll(req.params.user)
     .then((projects) => {
       const ans = [];
@@ -1019,7 +1019,7 @@ router.get("/:user/:project/advanced_tools", checkSharePermission, (req, res, ne
 });
 
 // Create new project
-router.post("/:user", (req, res, next) => {
+router.post("/:user", requireOwner, (req, res, next) => {
   const project = {
     name: req.body.name,
     user_id: req.params.user,
@@ -1419,7 +1419,7 @@ router.post(
 // Process a specific project
 router.post("/:user/:project/process", checkSharePermission, requireEditPermission, enforcePresenceLimit, requireProjectVersion, (req, res) => {
   const ownerId = req.params.user;
-  const runnerUserId = getCallerId(req); // <-- agora pode vir do body
+  const runnerUserId = getCallerId(req);
   
   console.log("[CALLER]", {
   userParam: req.params.user,
@@ -1803,7 +1803,7 @@ router.delete( "/:user/:project", checkSharePermission, requireEditPermission, e
 
 
 // Delete ALL projects from a user (used when deleting an account)
-router.delete("/:user", async (req, res, next) => {
+router.delete("/:user", requireOwner, async (req, res, next) => {
   const userId = req.params.user;
 
   try {
@@ -2533,35 +2533,6 @@ router.delete(
     }
   }
 );
-
-// heartbeat (cria/refresh presença)
-router.post("/:owner/:project/presence", async (req, res) => {
-  const ownerId = req.params.owner;
-  const projectId = req.params.project;
-  const callerId = req.headers["x-caller-id"] || ownerId;
-
-  const result = await ensureEditorSlot({ ownerId, projectId, callerId });
-
-  if (!result.ok) {
-    return res.status(429).jsonp({
-      message: "Too many active editors for this project",
-      active: result.active,
-      limit: result.limit,
-    });
-  }
-
-  return res.sendStatus(204);
-});
-
-// libertar presença
-router.delete("/:owner/:project/presence", async (req, res) => {
-  const ownerId = req.params.owner;
-  const projectId = req.params.project;
-  const callerId = req.headers["x-caller-id"] || ownerId;
-
-  await releaseEditorSlot({ ownerId, projectId, callerId });
-  return res.sendStatus(204);
-});
 
 // marcar projeto como dirty/clean (server-side)
 router.post(

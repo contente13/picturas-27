@@ -3,6 +3,7 @@
 // Run: MONGO_TEST_URL=mongodb://projects_mongoDB:27018/picturas_test npm test
 const test = require("node:test");
 const assert = require("node:assert/strict");
+const { tokenFor } = require("./helpers/auth");
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
@@ -89,7 +90,7 @@ test.describe("UC-VID-000 upload route / controlled service failures", { skip: !
   }
   async function upload(p, data = {}, version = p.version) {
     const response = await fetch(`${base}/${p.user_id}/${p._id}/img`, {
-      method: "POST", headers: { "content-type": "application/json", "x-caller-id": String(p.user_id), "x-project-version": String(version) }, body: JSON.stringify(data),
+      method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${tokenFor(p.user_id)}`, "x-project-version": String(version) }, body: JSON.stringify(data),
     });
     const body = await response.text();
     return { status: response.status, body, version: response.headers.get("x-project-version") };

@@ -6,6 +6,7 @@
 //   MONGO_TEST_URL=mongodb://projects_mongoDB:27018/picturas_test npm test
 const test = require("node:test");
 const assert = require("node:assert/strict");
+const { tokenFor } = require("./helpers/auth");
 const mongoose = require("mongoose");
 const fs = require("node:fs/promises");
 const path = require("node:path");
@@ -103,7 +104,7 @@ async function newProject(userId, count = 3, metadata = {}) {
 function request(method, path, userId, body) {
   return fetch(`${baseUrl}${path}`, {
     method,
-    headers: { "content-type": "application/json", "x-caller-id": userId },
+    headers: { "content-type": "application/json", authorization: `Bearer ${tokenFor(userId)}` },
     body: body ? JSON.stringify(body) : undefined,
   }).then(async (response) => ({ status: response.status, body: await response.json().catch(() => null) }));
 }
