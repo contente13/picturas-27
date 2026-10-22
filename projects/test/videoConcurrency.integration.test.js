@@ -18,6 +18,20 @@ const skip = !mongoUrl && "MONGO_TEST_URL not set";
 const userTypes = new Map();
 const quota = new Map();
 const reservations = new Set();
+const VideoTask = require("../models/videoTask");
+const videoQuota = require("../controllers/videoQuota");
+videoQuota.releaseReservation = async (taskId) => {
+  const task = await VideoTask.findOne({ taskId, reservedOperation: true }).lean();
+  if (!task || !reservations.delete(taskId)) return;
+  const id = String(task.user_id);
+  quota.set(id, (quota.get(id) ?? 5) + 1);
+  await VideoTask.updateOne({ taskId, reservedOperation: true }, { $set: { reservedOperation: false } });
+};
+const videoUtils = require("../utils/video");
+let inspectVideoImpl = videoUtils.inspectVideo;
+videoUtils.inspectVideo = (...args) => inspectVideoImpl(...args);
+const videoPipeline = require("../controllers/videoPipeline");
+videoPipeline.downloadSource = async () => {};
 const subtitlesAI = require("../controllers/subtitlesAI");
 let generateImpl = async () => [{ start: 0, end: 2, text: "olá" }];
 subtitlesAI.generateSubtitleSegments = (...args) => generateImpl(...args);
@@ -49,7 +63,6 @@ videoTasks.refundOperation = async (userId, amount, reservationId) => {
 
 const express = require("express");
 const ProjectModel = require("../models/project");
-const VideoTask = require("../models/videoTask");
 const { processTask, migrateTaskLocks } = require("../controllers/videoTasks");
 const videoRouter = require("../routes/video");
 
@@ -63,7 +76,7 @@ function newUser(type, operationsLeft = 5) {
   return id;
 }
 
-async function newProject(userId) {
+async function newProject(userId, duration = 30) {
   const project = await ProjectModel.create({
     name: "teste",
     user_id: userId,
@@ -72,7 +85,7 @@ async function newProject(userId) {
       new_uri: "./images/x/out/clip.mp4",
       og_img_key: "missing-object.mp4",
       og_sha256: "0",
-      mediaMetadata: { duration: 30, sizeBytes: 1_000_000, audioCodec: "aac", videoCodec: "h264", format: "mp4" },
+      mediaMetadata: { duration, sizeBytes: 1_000_000, audioCodec: "aac", videoCodec: "h264", format: "mp4" },
       subtitles: [{ start: 1, end: 3, text: "legenda" }],
     }],
   });
@@ -172,6 +185,50 @@ test.describe("RNG-11: one active video operation per project", { skip }, () => 
     const projects = [await newProject(user), await newProject(user), await newProject(user)];
     const statuses = (await Promise.all(projects.map((project) => trim(user, project)))).map((result) => result.status);
     assert.deepEqual(statuses, [202, 202, 202]);
+  });
+
+  test("MAN-17 / REQ-VID-LEG-016: subtitle embedding enforces each profile duration boundary", async () => {
+    for (const [type, allowedDuration, rejectedDuration] of [
+      ["free", 60, 61],
+      ["premium", 600, 601],
+    ]) {
+      const user = newUser(type, 5);
+      const allowedProject = await newProject(user, allowedDuration);
+      const accepted = await embed(user, allowedProject);
+      assert.equal(accepted.status, 202, `${type}: exact limit must be accepted`);
+      assert.equal(quota.get(user), type === "free" ? 4 : 5);
+
+      const rejectedProject = await newProject(user, rejectedDuration);
+      const rejected = await embed(user, rejectedProject);
+      assert.equal(rejected.status, 400, `${type}: duration above limit must be refused`);
+      assert.match(rejected.body, /limite de/);
+      assert.equal(await activeTasks(rejectedProject), 0, "a rejected duration must not create a task");
+      assert.equal(quota.get(user), type === "free" ? 4 : 5, "a rejected duration must not reserve quota");
+    }
+  });
+
+  test("MAN-20 / REQ-VID-TRIM-013: an unreadable source fails without a result and refunds quota", async () => {
+    const user = newUser("free", 1);
+    const project = await newProject(user);
+    const accepted = await trim(user, project);
+    assert.equal(accepted.status, 202);
+    assert.equal(quota.get(user), 0);
+
+    const originalInspectVideo = inspectVideoImpl;
+    inspectVideoImpl = async () => { throw new Error("O ficheiro de vídeo está corrompido ou não pode ser lido."); };
+    try {
+      await processTask(accepted.body.tarefaId);
+    } finally {
+      inspectVideoImpl = originalInspectVideo;
+    }
+
+    const task = await VideoTask.findOne({ taskId: accepted.body.tarefaId }).lean();
+    assert.equal(task.state, "FALHADA");
+    assert.match(task.error, /corrompido|não pode ser lido/);
+    assert.equal(task.reservedOperation, false);
+    assert.equal(quota.get(user), 1, "a failed task must refund the reserved operation");
+    assert.equal(await activeTasks(project), 0);
+    assert.equal((await ProjectModel.findById(project.id).lean()).imgs.length, 1, "no result video may be published");
   });
 
   test("a cancelled queued task frees the project", async () => {

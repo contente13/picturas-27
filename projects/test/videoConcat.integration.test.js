@@ -7,6 +7,8 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const mongoose = require("mongoose");
+const fs = require("node:fs/promises");
+const path = require("node:path");
 
 // Each integration file uses its own database: node --test runs the files in parallel.
 const mongoUrl = process.env.MONGO_TEST_URL;
@@ -17,9 +19,31 @@ const userTypes = new Map();
 const quota = new Map();
 const reservations = new Set();
 const unreadableKeys = new Set();
+const VideoTask = require("../models/videoTask");
+const videoQuota = require("../controllers/videoQuota");
+videoQuota.refundOperation = async (userId, amount, reservationId) => {
+  if (!reservations.delete(reservationId)) return;
+  const id = String(userId);
+  quota.set(id, (quota.get(id) ?? 5) + amount);
+};
+videoQuota.releaseReservation = async (taskId) => {
+  const task = await VideoTask.findOne({ taskId, reservedOperation: true }).lean();
+  if (!task || !reservations.has(taskId)) return;
+  await videoQuota.refundOperation(task.user_id, 1, taskId);
+  await VideoTask.updateOne({ taskId, reservedOperation: true }, { $set: { reservedOperation: false } });
+};
+const videoUtils = require("../utils/video");
+let inspectVideoImpl = videoUtils.inspectVideo;
+videoUtils.inspectVideo = (...args) => inspectVideoImpl(...args);
+const videoPipeline = require("../controllers/videoPipeline");
+let downloadSourceImpl = videoPipeline.downloadSource;
+videoPipeline.downloadSource = (...args) => downloadSourceImpl(...args);
+let spawnFfmpegImpl = videoPipeline.spawnFfmpeg;
+videoPipeline.spawnFfmpeg = (...args) => spawnFfmpegImpl(...args);
 const imageStorage = require("../utils/imageStorage");
 imageStorage.is_object_readable = async (_user, _project, _type, key) => !unreadableKeys.has(key);
 const videoTasks = require("../controllers/videoTasks");
+const { processTask } = videoTasks;
 videoTasks.getUserType = async (userId) => userTypes.get(String(userId));
 videoTasks.enqueueTask = async () => {};
 videoTasks.reserveOperation = async (userId, amount, reservationId) => {
@@ -41,7 +65,6 @@ videoTasks.refundOperation = async (userId, amount, reservationId) => {
 
 const express = require("express");
 const ProjectModel = require("../models/project");
-const VideoTask = require("../models/videoTask");
 const videoRouter = require("../routes/video");
 const videoConcatRouter = require("../routes/videoConcat");
 
@@ -213,6 +236,75 @@ test.describe("UC-VID-003 routes", { skip }, () => {
     const cancelled = await request("POST", `/${user}/${project.id}/video/tasks/${body.tarefaId}/cancel`, user);
     assert.equal(cancelled.status, 200);
     assert.equal((await concat(user, project, [project.imageIds[1], project.imageIds[0]])).status, 202);
+  });
+
+  test("MAN-22 / REQ-VID-CONCAT-021: a delayed concat result after cancellation is discarded", async () => {
+    const user = newUser("free", 5);
+    const project = await newProject(user);
+    const originalImageCount = (await ProjectModel.findById(project.id).lean()).imgs.length;
+    const first = await concat(user, project, project.imageIds);
+    assert.equal(first.status, 202);
+    assert.equal(quota.get(user), 4);
+
+    let joinStartedResolve;
+    const joinStarted = new Promise((resolve) => { joinStartedResolve = resolve; });
+    let releaseJoin;
+    const joinGate = new Promise((resolve) => { releaseJoin = resolve; });
+    const previousDownload = downloadSourceImpl;
+    const previousInspect = inspectVideoImpl;
+    const previousSpawn = spawnFfmpegImpl;
+    downloadSourceImpl = async (_task, destination) => fs.writeFile(destination, "source fixture");
+    inspectVideoImpl = async (filePath) => {
+      const webm = path.extname(filePath) === ".webm";
+      return {
+        duration: path.basename(filePath) === "output.mp4" ? 60 : 20,
+        width: 1280, height: 720, frameRate: "30/1", avgFrameRate: "30/1",
+        videoCodec: webm ? "vp8" : "h264", audioCodec: webm ? "vorbis" : "aac",
+        format: webm ? "webm" : "mp4", sizeBytes: 16,
+      };
+    };
+    spawnFfmpegImpl = async (_task, args) => {
+      const outputPath = args.at(-1);
+      if (path.basename(outputPath) === "output.mp4") {
+        joinStartedResolve();
+        await joinGate;
+      }
+      await fs.writeFile(outputPath, "processed fixture");
+    };
+
+    try {
+      const processing = processTask(first.body.tarefaId);
+      await joinStarted;
+      const cancelled = await request("POST", `/${user}/${project.id}/video/tasks/${first.body.tarefaId}/cancel`, user);
+      assert.equal(cancelled.status, 200);
+      assert.equal(quota.get(user), 5, "cancellation refunds the first reservation");
+      releaseJoin();
+      await processing;
+
+      const second = await concat(user, project, [project.imageIds[1], project.imageIds[0]]);
+      assert.equal(second.status, 202, "a new concat can start after the cancelled worker releases its lock");
+      assert.equal(quota.get(user), 4, "only the new task keeps a reservation");
+
+      const oldTask = await VideoTask.findOne({ taskId: first.body.tarefaId }).lean();
+      const newTask = await VideoTask.findOne({ taskId: second.body.tarefaId }).lean();
+      assert.equal(oldTask.state, "CANCELADA");
+      assert.equal(oldTask.resultImageId, null);
+      assert.equal(newTask.state, "EM_FILA", "the late result must not alter the new execution");
+      const lateResultAccepted = await videoPipeline.consolidateResult(oldTask, {
+        outputPath: "/tmp/late-concat-result.mp4", startedAt: Date.now(), buildSubtitles: () => [],
+      }, { outputKey: null, thumbKey: null, resultAddedToProject: false });
+      assert.equal(lateResultAccepted, false, "a result arriving after cancellation is rejected by task state");
+      assert.equal(await VideoTask.countDocuments({ project_id: project.id, state: { $in: ["EM_FILA", "EM_PROCESSAMENTO", "A_FINALIZAR"] } }), 1);
+      assert.equal((await ProjectModel.findById(project.id).lean()).imgs.length, originalImageCount, "the late output is not attached to the project");
+      assert.equal(quota.get(user), 4);
+      assert.ok(reservations.has(second.body.tarefaId));
+      assert.ok(!reservations.has(first.body.tarefaId));
+    } finally {
+      releaseJoin();
+      downloadSourceImpl = previousDownload;
+      inspectVideoImpl = previousInspect;
+      spawnFfmpegImpl = previousSpawn;
+    }
   });
 
   test("anonymous users cannot concatenate", async () => {
