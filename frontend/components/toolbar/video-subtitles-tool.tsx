@@ -89,6 +89,7 @@ export function VideoSubtitlesPanel({ disabled }: { disabled: boolean }) {
   const isDisabled = disabled || !canEdit;
   const [segments, setSegments] = useState<Segment[]>([]);
   const [savedSegments, setSavedSegments] = useState<Segment[]>([]);
+  const [proposal, setProposal] = useState<Segment[] | null>(null);
   const [duration, setDuration] = useState(Number(currentImage?.mediaMetadata?.duration) || 0);
   const [projectVersion, setProjectVersion] = useState(Number(project.version) || 0);
   const [loading, setLoading] = useState(false);
@@ -113,6 +114,7 @@ export function VideoSubtitlesPanel({ disabled }: { disabled: boolean }) {
     setLoading(true);
     setSegments([]);
     setSavedSegments([]);
+    setProposal(null);
     setProjectVersion(Number(project.version) || 0);
     setTask(null);
     setProgress(0);
@@ -172,6 +174,7 @@ export function VideoSubtitlesPanel({ disabled }: { disabled: boolean }) {
   useEffect(() => {
     if (!task?.tarefaId || !["EM_FILA", "EM_PROCESSAMENTO"].includes(task.estado)) return;
     let busy = false;
+    let cancelled = false;
     const poll = async () => {
       if (busy) return;
       busy = true;
@@ -179,15 +182,18 @@ export function VideoSubtitlesPanel({ disabled }: { disabled: boolean }) {
         const { data } = await api.get<VideoTask>(taskPath(task.tarefaId), {
           headers: { Authorization: `Bearer ${session.token}` }, params: shareParams,
         });
+        if (cancelled) return;
         setTask(data);
         setProgress(data.progresso ?? 0);
         if (data.estado === "CONCLUIDA") {
           if (pollRef.current) clearInterval(pollRef.current);
           if (data.operation === "generate_subtitles") {
-            const proposal = (data.segments || []).map((segment) => ({ ...segment, id: crypto.randomUUID() }));
-            if (proposal.length) {
-              setSegments(proposal);
-              toast({ title: "Proposta automática pronta", description: "Revê e corrige as legendas antes de as guardar." });
+            const generated = (data.segments || []).map((segment) => ({ ...segment, id: crypto.randomUUID() }));
+            if (generated.length) {
+              // Manual editing and saving remain available while this task runs (RN7).
+              // Keep its result separate until the user explicitly replaces their draft.
+              setProposal(generated);
+              toast({ title: "Proposta automática pronta", description: "Podes aplicá-la para revisão sem perder automaticamente a tua edição manual." });
             } else {
               setTaskError("Não foram encontrados segmentos de fala neste vídeo.");
             }
@@ -210,7 +216,7 @@ export function VideoSubtitlesPanel({ disabled }: { disabled: boolean }) {
     };
     pollRef.current = setInterval(() => void poll(), 1500);
     void poll();
-    return () => { if (pollRef.current) clearInterval(pollRef.current); pollRef.current = null; };
+    return () => { cancelled = true; if (pollRef.current) clearInterval(pollRef.current); pollRef.current = null; };
   }, [task?.tarefaId, task?.estado, taskPath, session.token, shareId, imageId, queryClient, setVideoSourceOverride, toast]);
 
   useEffect(() => () => {
@@ -228,7 +234,8 @@ export function VideoSubtitlesPanel({ disabled }: { disabled: boolean }) {
   }
 
   async function save() {
-    if (!imageId) return;
+    if (!imageId || isDisabled || saving) return;
+    const requestedImageId = imageId;
     const error = validateSegments(segments, duration);
     if (error) { toast({ title: "Verifica as legendas", description: error, variant: "destructive" }); return; }
     setSaving(true);
@@ -236,6 +243,7 @@ export function VideoSubtitlesPanel({ disabled }: { disabled: boolean }) {
       const { data } = await api.put<{ segments: Segment[]; projectVersion: number }>(`${basePath}/${imageId}/subtitles`, {
         segments: segments.map(({ start, end, text }) => ({ start, end, text })), projectVersion,
       }, { headers: { Authorization: `Bearer ${session.token}` }, params: shareParams });
+      if (currentImageIdRef.current !== requestedImageId) return;
       const normalized = data.segments.map((segment, index) => ({ ...segment, id: segments[index]?.id || crypto.randomUUID() }));
       setSegments(normalized);
       setSavedSegments(normalized);
@@ -248,18 +256,20 @@ export function VideoSubtitlesPanel({ disabled }: { disabled: boolean }) {
       );
       toast({ title: "Legendas guardadas", description: "As legendas foram associadas a este vídeo." });
     } catch (error: any) {
+      if (currentImageIdRef.current !== requestedImageId) return;
       toast({ title: "Não foi possível guardar", description: error?.response?.data || "Atualiza o projeto e tenta novamente.", variant: "destructive" });
     } finally { setSaving(false); }
   }
 
   async function generateAutomatically() {
-    if (!imageId || !policy) return;
+    if (!imageId || !policy || isDisabled || active || generating || saving) return;
     const requestedImageId = imageId;
     if (dirty) {
       toast({ title: "Guarda primeiro", description: "Guarda as alterações atuais antes de gerar uma proposta automática." });
       return;
     }
     setTaskError(null);
+    setGenerating(true);
     try {
       const { data } = await api.post<{ tarefaId: string; estado: VideoTask["estado"] }>(`${basePath}/${imageId}/subtitles/generate`, {}, {
         headers: { Authorization: `Bearer ${session.token}` }, params: shareParams,
@@ -267,7 +277,7 @@ export function VideoSubtitlesPanel({ disabled }: { disabled: boolean }) {
       if (currentImageIdRef.current !== requestedImageId) return;
       setTask({ tarefaId: data.tarefaId, operation: "generate_subtitles", estado: data.estado });
       setProgress(0);
-      setGenerating(true);
+      setProposal(null);
       toast({ title: "Geração em fila", description: "O modelo local vai preparar uma proposta de legendas." });
     } catch (error: any) {
       if (currentImageIdRef.current !== requestedImageId) return;
@@ -359,14 +369,15 @@ export function VideoSubtitlesPanel({ disabled }: { disabled: boolean }) {
         ? Number.isFinite(completedAt) && completedAt > Date.parse(savedAt)
         : !hasSaved;
       if (!pending) return;
-      setSegments(latest.segments.map((segment) => ({ ...segment, id: crypto.randomUUID() })));
+      setProposal(latest.segments.map((segment) => ({ ...segment, id: crypto.randomUUID() })));
       setTask(latest);
-      toast({ title: "Proposta automática por rever", description: "Revê as legendas geradas e guarda-as, ou descarta as alterações." });
+      toast({ title: "Proposta automática por rever", description: "Podes aplicar a proposta ou continuar com as tuas legendas manuais." });
     } catch { /* the editor can still be used if task restoration fails */ }
   }
 
   if (!currentImage || !imageId) return null;
   const active = Boolean(task && ["EM_FILA", "EM_PROCESSAMENTO"].includes(task.estado));
+  const manualDisabled = isDisabled || saving;
   const resolution = currentImage.mediaMetadata?.width && currentImage.mediaMetadata?.height ? `${currentImage.mediaMetadata.width} × ${currentImage.mediaMetadata.height}` : "—";
   const format = currentImage.mediaMetadata?.format?.toUpperCase() || currentImage.name.split(".").pop()?.toUpperCase() || "—";
   const sourceIsDerived = videoSourceOverride?.imageId === imageId && Boolean(videoSourceOverride.trimImageId);
@@ -382,17 +393,17 @@ export function VideoSubtitlesPanel({ disabled }: { disabled: boolean }) {
       {policy?.userType === "free" && <p className="mb-3 text-xs text-muted-foreground">Operações diárias restantes do proprietário: {policy.remainingOperations}</p>}
       {loading ? <p className="text-sm text-muted-foreground">A carregar legendas…</p> : <>
         <div className="mb-3 flex flex-wrap items-center gap-2">
-          <Button type="button" variant="outline" size="sm" disabled={isDisabled || active || generating || !duration} onClick={addSegment}><Plus className="mr-1 size-4" />Adicionar legenda na posição atual ({playhead.toFixed(1)} s)</Button>
+          <Button type="button" variant="outline" size="sm" disabled={manualDisabled || !duration} onClick={addSegment}><Plus className="mr-1 size-4" />Adicionar legenda na posição atual ({playhead.toFixed(1)} s)</Button>
           <Button type="button" variant="outline" size="sm" disabled={isDisabled || !policy || active || generating || saving || dirty} onClick={generateAutomatically}>
             {generating ? <LoaderCircle className="mr-1 size-4 animate-spin" /> : <Sparkles className="mr-1 size-4" />}
             {generating ? "A gerar proposta…" : "Gerar automaticamente"}
           </Button>
           <span className="text-xs text-muted-foreground">A transcrição é feita localmente pelo serviço de IA. A proposta só é guardada quando confirmares.</span>
-          <Button type="button" variant="outline" size="sm" disabled={isDisabled || saving || generating || !dirty} onClick={save}><Save className="mr-1 size-4" />{saving ? "A guardar…" : "Guardar"}</Button>
-          {dirty && <Button type="button" variant="ghost" size="sm" disabled={saving || generating} onClick={() => setSegments(savedSegments)}><RotateCcw className="mr-1 size-4" />Descartar alterações</Button>}
+          <Button type="button" variant="outline" size="sm" disabled={manualDisabled || !dirty} onClick={save}><Save className="mr-1 size-4" />{saving ? "A guardar…" : "Guardar"}</Button>
+          {dirty && <Button type="button" variant="ghost" size="sm" disabled={manualDisabled} onClick={() => setSegments(savedSegments)}><RotateCcw className="mr-1 size-4" />Descartar alterações</Button>}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button type="button" variant="outline" size="sm" disabled={isDisabled || dirty || active || generating || !segments.length}>
+              <Button type="button" variant="outline" size="sm" disabled={isDisabled || dirty || !segments.length}>
                 <Download className="mr-1 size-4" />Descarregar legendas<ChevronDown className="ml-1 size-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -404,15 +415,22 @@ export function VideoSubtitlesPanel({ disabled }: { disabled: boolean }) {
           <Button type="button" size="sm" disabled={isDisabled || !policy || dirty || active || generating || !segments.length} onClick={embed}><Film className="mr-1 size-4" />Incorporar no vídeo</Button>
           {dirty && <span className="text-xs text-amber-300">Alterações por guardar</span>}
         </div>
+        {proposal && <div role="status" className="mb-3 rounded-lg border border-primary/20 bg-primary/5 p-3 text-sm">
+          <p>A proposta automática está pronta. Aplicá-la substitui a edição atual neste painel; as legendas do projeto só mudam quando escolheres Guardar.</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <Button type="button" variant="outline" size="sm" disabled={manualDisabled} onClick={() => { setSegments(proposal); setProposal(null); }}>Substituir edição pela proposta</Button>
+            <Button type="button" variant="ghost" size="sm" disabled={manualDisabled} onClick={() => setProposal(null)}>Manter edição manual</Button>
+          </div>
+        </div>}
         <div className="max-h-64 space-y-2 overflow-y-auto pr-1">
           {segments.length === 0 && <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">Ainda não há legendas. Reproduz o vídeo e adiciona o primeiro segmento.</p>}
           {segments.map((segment, index) => <div key={segment.id} className="grid grid-cols-1 items-end gap-2 rounded-lg border border-white/10 bg-background/30 p-3 md:grid-cols-[minmax(180px,1fr)_100px_100px_40px]">
-            <div className="space-y-1"><Label htmlFor={`subtitle-text-${segment.id}`}>Legenda {index + 1}</Label><textarea id={`subtitle-text-${segment.id}`} maxLength={85} rows={2} value={segment.text} disabled={isDisabled || active || generating}
+            <div className="space-y-1"><Label htmlFor={`subtitle-text-${segment.id}`}>Legenda {index + 1}</Label><textarea id={`subtitle-text-${segment.id}`} maxLength={85} rows={2} value={segment.text} disabled={manualDisabled}
               onChange={(event) => updateSegment(segment.id, { text: event.target.value })}
               className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50" placeholder="Escreve o texto da legenda" /></div>
-            <div className="space-y-1"><div className="flex items-center justify-between"><Label htmlFor={`subtitle-start-${segment.id}`}>Início (s)</Label><button type="button" className="text-[10px] text-primary underline underline-offset-2" disabled={isDisabled || active || generating} onClick={() => updateSegment(segment.id, { start: Number(playhead.toFixed(1)) })}>Usar atual</button></div><Input id={`subtitle-start-${segment.id}`} type="number" min={0} max={duration} step="0.1" value={segment.start} disabled={isDisabled || active || generating} onChange={(event) => updateSegment(segment.id, { start: Number(event.target.value) })} /></div>
-            <div className="space-y-1"><div className="flex items-center justify-between"><Label htmlFor={`subtitle-end-${segment.id}`}>Fim (s)</Label><button type="button" className="text-[10px] text-primary underline underline-offset-2" disabled={isDisabled || active || generating} onClick={() => updateSegment(segment.id, { end: Number(playhead.toFixed(1)) })}>Usar atual</button></div><Input id={`subtitle-end-${segment.id}`} type="number" min={0} max={duration} step="0.1" value={segment.end} disabled={isDisabled || active || generating} onChange={(event) => updateSegment(segment.id, { end: Number(event.target.value) })} /></div>
-            <Button type="button" variant="ghost" size="icon" aria-label={`Apagar legenda ${index + 1}`} disabled={isDisabled || active || generating} onClick={() => setSegments((current) => current.filter((item) => item.id !== segment.id))}><Trash2 className="size-4 text-destructive" /></Button>
+            <div className="space-y-1"><div className="flex items-center justify-between"><Label htmlFor={`subtitle-start-${segment.id}`}>Início (s)</Label><button type="button" className="text-[10px] text-primary underline underline-offset-2" disabled={manualDisabled} onClick={() => updateSegment(segment.id, { start: Number(playhead.toFixed(1)) })}>Usar atual</button></div><Input id={`subtitle-start-${segment.id}`} type="number" min={0} max={duration} step="0.1" value={segment.start} disabled={manualDisabled} onChange={(event) => updateSegment(segment.id, { start: Number(event.target.value) })} /></div>
+            <div className="space-y-1"><div className="flex items-center justify-between"><Label htmlFor={`subtitle-end-${segment.id}`}>Fim (s)</Label><button type="button" className="text-[10px] text-primary underline underline-offset-2" disabled={manualDisabled} onClick={() => updateSegment(segment.id, { end: Number(playhead.toFixed(1)) })}>Usar atual</button></div><Input id={`subtitle-end-${segment.id}`} type="number" min={0} max={duration} step="0.1" value={segment.end} disabled={manualDisabled} onChange={(event) => updateSegment(segment.id, { end: Number(event.target.value) })} /></div>
+            <Button type="button" variant="ghost" size="icon" aria-label={`Apagar legenda ${index + 1}`} disabled={manualDisabled} onClick={() => setSegments((current) => current.filter((item) => item.id !== segment.id))}><Trash2 className="size-4 text-destructive" /></Button>
           </div>)}
         </div>
       </>}
