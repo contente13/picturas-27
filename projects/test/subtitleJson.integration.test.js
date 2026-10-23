@@ -2,6 +2,11 @@
 // persistence and no MongoDB/RabbitMQ startup. Both services declare Express ~4.16.1;
 // the gateway loader uses projects' installed dependencies so this test needs no
 // second npm installation. Unrelated routes, CORS and request logging are stubbed.
+// The projects image contains only projects/. Run its cases there as usual;
+// gateway cases explicitly skip unless apiGateway/ is also available/mounted.
+// To include gateway cases in a rebuilt projects image, from the repository root:
+// docker compose run --rm --no-deps -v ./apiGateway:/apiGateway:ro projects node --test test/subtitleJson.integration.test.js
+// A different source location can be supplied via PICTURAS_GATEWAY_DIR.
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
@@ -14,6 +19,11 @@ const { tokenFor } = require("./helpers/auth");
 const Project = require("../controllers/project");
 const ProjectModel = require("../models/project");
 const { validateSubtitleSegments } = require("../utils/subtitles");
+const gatewayDirectory = process.env.PICTURAS_GATEWAY_DIR
+  ? path.resolve(process.env.PICTURAS_GATEWAY_DIR)
+  : path.resolve(__dirname, "../../apiGateway");
+const gatewayAppPath = path.join(gatewayDirectory, "app.js");
+const gatewayAvailable = fs.existsSync(gatewayAppPath);
 
 const owner = "507f1f77bcf86cd799439011";
 const collaborator = "507f1f77bcf86cd799439012";
@@ -47,7 +57,7 @@ function load(filename, overrides = {}) {
 }
 
 function loadGatewayRouter() {
-  const filename = path.resolve(__dirname, "../../apiGateway/routes/projects.js");
+  const filename = path.join(gatewayDirectory, "routes/projects.js");
   const commonRequire = createRequire(path.resolve(__dirname, "../package.json"));
   const gatewayAxios = Object.create(axios);
   gatewayAxios.put = (url, body, options) => {
@@ -92,7 +102,8 @@ test.before(async () => {
   });
   projectServer = await listen(projectApp);
   projectBase = `http://127.0.0.1:${projectServer.address().port}`;
-  const gatewayApp = load(path.resolve(__dirname, "../../apiGateway/app.js"), {
+  if (!gatewayAvailable) return;
+  const gatewayApp = load(gatewayAppPath, {
     express, "http-errors": require("http-errors"), path, "cookie-parser": require("cookie-parser"),
     cors: silentLogger, morgan: silentLogger,
     "./routes/projects": loadGatewayRouter(),
@@ -120,27 +131,35 @@ async function request(base, url, body, { token = tokenFor(owner), method = "PUT
   });
 }
 
-test("B8: 1500 valid captions above 100 KiB pass through gateway and Project Service", async () => {
+for (const service of ["projects", "gateway"]) {
+  const skip = service === "gateway" && !gatewayAvailable
+    ? `Gateway source unavailable at ${gatewayDirectory}; mount apiGateway/ to exercise both services`
+    : false;
+  const run = (name, fn) => test(`B8 (${service}): ${name}`, { skip }, fn);
+  const base = () => service === "gateway" ? gatewayBase : projectBase;
+  const url = () => (service === "gateway" ? "/projects" : "") + route;
+
+run("1500 valid captions above 100 KiB are saved", async () => {
   const cues = segments(1500);
   const body = bodyFor(cues);
   assert.ok(Buffer.byteLength(body) > 100 * 1024);
-  const response = await request(gatewayBase, "/projects" + route, body);
+  const response = await request(base(), url(), body);
   assert.equal(response.status, 200);
   assert.deepEqual((await response.json()).segments, cues);
   assert.deepEqual(stored, cues);
   assert.equal(writes, 1);
-  assert.equal(forwarded, 1);
+  assert.equal(forwarded, service === "gateway" ? 1 : 0);
 });
 
 for (const escaped of [false, true]) {
-  test(`B8: 2000 two-line Unicode captions are saved (${escaped ? "JSON escapes" : "UTF-8"})`, async () => {
+  run(`2000 two-line Unicode captions are saved (${escaped ? "JSON escapes" : "UTF-8"})`, async () => {
     const cues = segments(2000, "漢".repeat(42) + "\n" + "字".repeat(42));
     assert.equal(validateSubtitleSegments(cues, 3600), null);
     let body = bodyFor(cues);
     if (escaped) body = body.replace(/[^\x00-\x7f]/g, char => "\\u" + char.charCodeAt(0).toString(16).padStart(4, "0"));
     assert.ok(Buffer.byteLength(body) > 100 * 1024);
     assert.ok(Buffer.byteLength(body) < 2 * 1024 * 1024);
-    const response = await request(gatewayBase, "/projects" + route, body);
+    const response = await request(base(), url(), body);
     assert.equal(response.status, 200);
     assert.deepEqual((await response.json()).segments, cues);
     assert.deepEqual(stored, cues);
@@ -148,30 +167,30 @@ for (const escaped of [false, true]) {
   });
 }
 
-test("B8: 2001 captions still reach business validation and are rejected without writes", async () => {
-  const response = await request(gatewayBase, "/projects" + route, bodyFor(segments(2001)));
+run("2001 captions still reach business validation and are rejected without writes", async () => {
+  const response = await request(base(), url(), bodyFor(segments(2001)));
   assert.equal(response.status, 400);
   assert.match(await response.json(), /demasiado longa/);
-  assert.equal(forwarded, 1);
+  assert.equal(forwarded, service === "gateway" ? 1 : 0);
   assert.equal(writes, 0);
 });
 
-test("B8: invalid captions above 100 KiB remain rejected by RN3", async () => {
+run("invalid captions above 100 KiB remain rejected by RN3", async () => {
   const cues = segments(2000);
   cues[1000].start = 999;
-  const response = await request(gatewayBase, "/projects" + route, bodyFor(cues));
+  const response = await request(base(), url(), bodyFor(cues));
   assert.equal(response.status, 400);
   assert.match(await response.json(), /sobrepor/);
   assert.equal(writes, 0);
 });
 
-test("B8: enlarged bodies do not bypass authentication or read-only permissions", async () => {
+run("enlarged bodies do not bypass authentication or read-only permissions", async () => {
   const body = bodyFor(segments(1500));
-  const unauthenticated = await request(gatewayBase, "/projects" + route, body, { token: null });
+  const unauthenticated = await request(base(), url(), body, { token: null });
   assert.equal(unauthenticated.status, 401);
   await unauthenticated.text();
   assert.equal(forwarded, 0);
-  const readOnly = await request(gatewayBase, "/projects" + route + "?share=read-link", body, { token: tokenFor(collaborator) });
+  const readOnly = await request(base(), url() + "?share=read-link", body, { token: tokenFor(collaborator) });
   assert.equal(readOnly.status, 403);
   await readOnly.text();
   const direct = await request(projectBase, route, body, { token: null });
@@ -180,23 +199,18 @@ test("B8: enlarged bodies do not bypass authentication or read-only permissions"
   assert.equal(writes, 0);
 });
 
-for (const service of ["gateway", "projects"]) {
-  test(`B8: ${service} still rejects subtitle JSON above 2 MiB`, async () => {
-    const base = service === "gateway" ? gatewayBase : projectBase;
-    const url = (service === "gateway" ? "/projects" : "") + route;
-    const response = await request(base, url, JSON.stringify({ padding: "a".repeat(2 * 1024 * 1024) }));
+  run("still rejects subtitle JSON above 2 MiB", async () => {
+    const response = await request(base(), url(), JSON.stringify({ padding: "a".repeat(2 * 1024 * 1024) }));
     assert.equal(response.status, 413);
     await response.text();
     assert.equal(forwarded, 0);
     assert.equal(writes, 0);
   });
-  test(`B8: ${service} preserves the default parser for other routes and methods`, async () => {
-    const base = service === "gateway" ? gatewayBase : projectBase;
-    const prefix = service === "gateway" ? "/projects" : "";
+  run("preserves the default parser for other routes and methods", async () => {
     const body = JSON.stringify({ padding: "a".repeat(110 * 1024) });
-    for (const [url, method] of [[prefix + route + "/generate", "POST"], [prefix + route, "POST"], [prefix + route + "/other", "PUT"]]) {
-      const response = await request(base, url, body, { method });
-      assert.equal(response.status, 413, `${method} ${url}`);
+    for (const [requestUrl, method] of [[url() + "/generate", "POST"], [url(), "POST"], [url() + "/other", "PUT"]]) {
+      const response = await request(base(), requestUrl, body, { method });
+      assert.equal(response.status, 413, `${method} ${requestUrl}`);
       await response.text();
     }
     assert.equal(writes, 0);
