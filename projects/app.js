@@ -34,6 +34,8 @@ app.set("views", path.join(__dirname, "views"));
 app.set("view engine", "jade");
 
 app.use(logger("dev"));
+// Match the gateway's transport allowance without changing subtitle validation.
+app.put("/:user/:project/video/:imageId/subtitles", express.json({ limit: "2mb" }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());

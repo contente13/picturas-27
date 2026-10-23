@@ -17,6 +17,9 @@ app.set("views", path.join(__dirname, "views"));
 app.set("view engine", "jade");
 
 app.use(logger("dev"));
+// Up to 2000 two-line captions, including UTF-8/JSON escaping (UC-VID-001 RN3).
+// Parse this route before the default 100 KiB parser; other JSON requests keep it.
+app.put("/projects/:user/:project/video/:imageId/subtitles", express.json({ limit: "2mb" }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
