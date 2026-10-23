@@ -169,11 +169,6 @@ router.post("/", function (req, res, next) {
     user.password = req.body.password;
   }
 
-  console.log("---- USERS-MS: REGISTER REQUEST ----");
-  console.log("BODY:", req.body);
-  console.log("USER OBJECT BEFORE SAVE:", user);
-  console.log("User object to persist:", user);
-
   User.create(user)
     .then((createdUser) => {
       const userResponse = removeSensitiveInfo(createdUser);
@@ -185,11 +180,11 @@ router.post("/", function (req, res, next) {
       });
     })
     .catch((err) => {
-      console.error("USERS-MS ERROR CREATING USER:");
-      console.error(err);              // stack completo
-      console.error(err.message);
-      console.error(err?.errors);      // mongoose validation errors
-      console.error(err?.response?.data);
+      // Never log the request, user object, or raw error: validation/DB errors may include values.
+      console.error("USERS-MS registration failed", {
+        errorName: typeof err?.name === "string" ? err.name : "Error",
+        errorCode: typeof err?.code === "string" || typeof err?.code === "number" ? err.code : undefined,
+      });
 
       res.status(702).jsonp("Error creating a new user.");
     });
