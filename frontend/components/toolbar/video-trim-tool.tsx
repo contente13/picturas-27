@@ -819,7 +819,7 @@ export function VideoTrimPanel({ disabled }: { disabled: boolean }) {
 
       {!isRunning && (
         <div className="mt-3 flex justify-end">
-          <Button onClick={handleSubmit} disabled={isDisabled || !videoDuration || videoDuration < 2}>
+          <Button onClick={handleSubmit} disabled={isDisabled || !videoDuration || videoDuration <= 1}>
             <Scissors className="size-4" /> Aplicar recorte
           </Button>
         </div>
