@@ -161,6 +161,16 @@ router.get("/share/:shareId/project", auth.checkToken, (req, res) => {
 });
 
 // Video trim task API (authenticated and scoped to the project owner/share).
+router.get("/:user/:project/video-policy", auth.checkToken, (req, res) => {
+  res.set("Cache-Control", "no-store");
+  axios.get(projectsURL + `${req.params.user}/${req.params.project}/video-policy`, {
+    httpsAgent,
+    params: req.query.share ? { share: req.query.share } : undefined,
+    headers: { Authorization: req.headers.authorization },
+  }).then((resp) => res.status(resp.status).jsonp(resp.data))
+    .catch((err) => forwardAxiosError(res, err, "Não foi possível consultar o perfil do proprietário."));
+});
+
 router.get("/:user/:project/video/:imageId/subtitles", auth.checkToken, (req, res) => {
   const callerId = req.authUserId || req.params.user;
   axios.get(projectsURL + `${req.params.user}/${req.params.project}/video/${req.params.imageId}/subtitles`, {

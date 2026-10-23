@@ -422,8 +422,6 @@ useEffect(() => {
             onSequenceChange={setSelection}
             projectVideos={videoImages}
             concat={concat}
-            userType={session.user.type}
-            remainingOperations={session.user.remaining_operations}
             onOpenResult={openConcatResult}
           />
         </>
