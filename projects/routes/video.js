@@ -10,6 +10,7 @@ const { requireVideoAccess } = require("../middleware/videoAccess");
 const { findActiveProjectTask, projectBusyMessage } = require("../controllers/videoTaskLock");
 const { muxSubtitles } = require("../controllers/videoDownload");
 const { validateTrimInterval, validateTrimProfileDuration } = require("../utils/videoTrim");
+const { getProjectVideoPolicy } = require("../controllers/videoQuota");
 const {
   cancelTask,
   enqueueTask,
@@ -24,6 +25,24 @@ const CANCELLABLE_STATES = ["EM_FILA", "EM_PROCESSAMENTO"];
 const SUBTITLE_EMBED_DURATION_LIMIT_SECONDS = { free: 60, premium: 600 };
 const PREMIUM_VIDEO_SIZE_LIMIT_BYTES = 2 * 1024 * 1024 * 1024;
 const PREMIUM_VIDEO_DURATION_LIMIT_SECONDS = 60 * 60;
+
+// The authenticated caller keeps their identity; limits/quota belong to the owner.
+router.get(
+  "/:user/:project/video-policy",
+  checkSharePermission,
+  requireVideoAccess,
+  async (req, res) => {
+    res.set("Cache-Control", "no-store");
+    try {
+      const project = req.sharedProject || await Project.getOne(req.params.user, req.params.project);
+      if (!project) return res.status(404).jsonp("Project not found");
+      return res.json(await getProjectVideoPolicy(project.user_id));
+    } catch {
+      return res.status(503).jsonp("Não foi possível consultar o perfil e a quota do proprietário. Tenta novamente.");
+    }
+  },
+);
+
 router.get(
   "/:user/:project/video/:imageId/subtitles",
   checkSharePermission,

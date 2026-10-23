@@ -826,6 +826,7 @@ router.get("/:user/:project", checkSharePermission, async (req, res, next) => {
     .then(async (project) => {
       const response = {
         _id: project._id,
+        user_id: project.user_id,
         name: project.name,
         tools: project.tools,
         imgs: [],

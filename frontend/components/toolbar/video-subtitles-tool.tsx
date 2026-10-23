@@ -8,7 +8,8 @@ import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Progress } from "../ui/progress";
-import { useCanEditProject, useCurrentImage, useProjectInfo, useVideoTrim } from "@/providers/project-provider";
+import { useCanEditProject, useCurrentImage, useProjectInfo, useProjectVideoPolicy, useVideoTrim } from "@/providers/project-provider";
+import ProjectVideoPolicyStatus from "../project-page/project-video-policy-status";
 import { useSession } from "@/providers/session-provider";
 import { useToast } from "@/hooks/use-toast";
 import { api } from "@/lib/axios";
@@ -76,6 +77,7 @@ export function VideoSubtitlesPanel({ disabled }: { disabled: boolean }) {
   const project = useProjectInfo();
   const canEdit = useCanEditProject();
   const session = useSession();
+  const { policy } = useProjectVideoPolicy();
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -251,7 +253,7 @@ export function VideoSubtitlesPanel({ disabled }: { disabled: boolean }) {
   }
 
   async function generateAutomatically() {
-    if (!imageId) return;
+    if (!imageId || !policy) return;
     const requestedImageId = imageId;
     if (dirty) {
       toast({ title: "Guarda primeiro", description: "Guarda as alterações atuais antes de gerar uma proposta automática." });
@@ -282,7 +284,7 @@ export function VideoSubtitlesPanel({ disabled }: { disabled: boolean }) {
   }
 
   async function embed() {
-    if (!imageId || !segments.length) return;
+    if (!imageId || !segments.length || !policy) return;
     if (dirty) { toast({ title: "Guarda primeiro", description: "Guarda as alterações antes de incorporar as legendas." }); return; }
     const error = validateSegments(segments, duration);
     if (error) { toast({ title: "Verifica as legendas", description: error, variant: "destructive" }); return; }
@@ -376,11 +378,12 @@ export function VideoSubtitlesPanel({ disabled }: { disabled: boolean }) {
           <p className="mt-1 text-sm text-muted-foreground">UC-VID-001 · Cria segmentos manualmente ou gera uma proposta com IA para rever. O vídeo original fica intacto.</p></div>
         <div className="flex gap-4 text-xs text-muted-foreground"><span>{duration ? `${duration.toFixed(1)} s` : "a carregar…"}</span><span>{resolution}</span><span>{format}</span></div>
       </div>
-      {session.user.type === "free" && session.user.remaining_operations != null && <p className="mb-3 text-xs text-muted-foreground">Operações diárias restantes: {session.user.remaining_operations}</p>}
+      <ProjectVideoPolicyStatus />
+      {policy?.userType === "free" && <p className="mb-3 text-xs text-muted-foreground">Operações diárias restantes do proprietário: {policy.remainingOperations}</p>}
       {loading ? <p className="text-sm text-muted-foreground">A carregar legendas…</p> : <>
         <div className="mb-3 flex flex-wrap items-center gap-2">
           <Button type="button" variant="outline" size="sm" disabled={isDisabled || active || generating || !duration} onClick={addSegment}><Plus className="mr-1 size-4" />Adicionar legenda na posição atual ({playhead.toFixed(1)} s)</Button>
-          <Button type="button" variant="outline" size="sm" disabled={isDisabled || active || generating || saving || dirty} onClick={generateAutomatically}>
+          <Button type="button" variant="outline" size="sm" disabled={isDisabled || !policy || active || generating || saving || dirty} onClick={generateAutomatically}>
             {generating ? <LoaderCircle className="mr-1 size-4 animate-spin" /> : <Sparkles className="mr-1 size-4" />}
             {generating ? "A gerar proposta…" : "Gerar automaticamente"}
           </Button>
@@ -398,7 +401,7 @@ export function VideoSubtitlesPanel({ disabled }: { disabled: boolean }) {
               <DropdownMenuItem onSelect={() => download("vtt")}>WebVTT (.vtt)</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button type="button" size="sm" disabled={isDisabled || dirty || active || generating || !segments.length} onClick={embed}><Film className="mr-1 size-4" />Incorporar no vídeo</Button>
+          <Button type="button" size="sm" disabled={isDisabled || !policy || dirty || active || generating || !segments.length} onClick={embed}><Film className="mr-1 size-4" />Incorporar no vídeo</Button>
           {dirty && <span className="text-xs text-amber-300">Alterações por guardar</span>}
         </div>
         <div className="max-h-64 space-y-2 overflow-y-auto pr-1">

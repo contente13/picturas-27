@@ -20,6 +20,8 @@ import {
   type ConcatValidation,
 } from "@/lib/video-concat";
 import VideoConcatClipRow from "./video-concat-clip-row";
+import { useProjectVideoPolicy } from "@/providers/project-provider";
+import ProjectVideoPolicyStatus from "./project-video-policy-status";
 
 type Props = {
   open: boolean;
@@ -29,8 +31,6 @@ type Props = {
   onSequenceChange: (sequence: ProjectImage[]) => void;
   projectVideos: ProjectImage[];
   concat: ReturnType<typeof useConcatTask>;
-  userType: "anonymous" | "free" | "premium";
-  remainingOperations?: number | null;
   onOpenResult: (imageId: string) => void;
 };
 
@@ -40,9 +40,10 @@ type Validation = { key: string; result?: ConcatValidation; message?: string; pr
 // normalization plan (passos 4–5), generate (passo 6), follow or cancel (passo 7, FA8) and preview,
 // download or open the result (passo 10).
 export default function VideoConcatDialog({
-  open, onOpenChange, context, sequence, onSequenceChange, projectVideos, concat, userType, remainingOperations, onOpenResult,
+  open, onOpenChange, context, sequence, onSequenceChange, projectVideos, concat, onOpenResult,
 }: Props) {
   const { toast } = useToast();
+  const { policy } = useProjectVideoPolicy();
   const [validation, setValidation] = useState<Validation | null>(null);
   const [validating, setValidating] = useState(false);
   const [starting, setStarting] = useState(false);
@@ -53,7 +54,7 @@ export default function VideoConcatDialog({
   const locked = active || starting;
   const sequenceKey = sequence.map((image) => image._id).join(",");
   const confirmed = validation?.key === sequenceKey && Boolean(validation.result);
-  const limits = userType === "premium" ? CONCAT_LIMITS.premium : CONCAT_LIMITS.free;
+  const limits = policy ? (policy.userType === "premium" ? CONCAT_LIMITS.premium : CONCAT_LIMITS.free) : null;
   const totals = sequenceTotals(sequence);
   const available = useMemo(
     () => projectVideos.filter((video) => !sequence.some((image) => image._id === video._id)),
@@ -79,6 +80,7 @@ export default function VideoConcatDialog({
   }
 
   async function confirmSequence() {
+    if (!policy) return;
     setValidating(true);
     try {
       const result = await validateConcat(context, sequence.map((image) => image._id));
@@ -92,6 +94,7 @@ export default function VideoConcatDialog({
   }
 
   async function generate() {
+    if (!policy) return;
     setStarting(true);
     try {
       await concat.start(sequence.map((image) => image._id));
@@ -121,9 +124,9 @@ export default function VideoConcatDialog({
 
   const finished = task && !active ? task : null;
   const overLimit = {
-    count: totals.count > limits.maxVideos,
-    duration: totals.durationSeconds > limits.maxDurationSeconds,
-    size: totals.sizeBytes > limits.maxSizeBytes,
+    count: Boolean(limits && totals.count > limits.maxVideos),
+    duration: Boolean(limits && totals.durationSeconds > limits.maxDurationSeconds),
+    size: Boolean(limits && totals.sizeBytes > limits.maxSizeBytes),
   };
 
   return (
@@ -195,12 +198,13 @@ export default function VideoConcatDialog({
           </Select>
         )}
 
-        <div className="flex flex-wrap gap-x-5 gap-y-1 rounded-lg bg-muted/40 px-3 py-2 text-sm" aria-label="Totais da sequência">
+        <ProjectVideoPolicyStatus />
+        {limits && <div className="flex flex-wrap gap-x-5 gap-y-1 rounded-lg bg-muted/40 px-3 py-2 text-sm" aria-label="Totais da sequência">
           <span className={cn(overLimit.count && "text-destructive")}>{totals.count} vídeos <span className="text-muted-foreground">(máx. {limits.maxVideos})</span></span>
           <span className={cn("tabular-nums", overLimit.duration && "text-destructive")}>Duração total {formatDuration(totals.durationSeconds)} <span className="text-muted-foreground">(máx. {formatDuration(limits.maxDurationSeconds)})</span></span>
           <span className={cn(overLimit.size && "text-destructive")}>{formatSize(totals.sizeBytes)} <span className="text-muted-foreground">(máx. {formatSize(limits.maxSizeBytes)})</span></span>
-          {userType === "free" && remainingOperations != null && <span className="text-muted-foreground">Operações diárias restantes: {remainingOperations}</span>}
-        </div>
+          {policy?.userType === "free" && <span className="text-muted-foreground">Operações diárias restantes do proprietário: {policy.remainingOperations}</span>}
+        </div>}
         {sequence.length < 2 && (
           <p className="flex items-center gap-2 text-sm text-amber-400"><Info className="size-4" />São necessários pelo menos dois vídeos para os juntar.</p>
         )}
@@ -237,10 +241,10 @@ export default function VideoConcatDialog({
             </Button>
           ) : (
             <>
-              <Button variant="outline" onClick={confirmSequence} disabled={sequence.length < 2 || validating || starting}>
+              <Button variant="outline" onClick={confirmSequence} disabled={!policy || sequence.length < 2 || validating || starting}>
                 {validating ? <LoaderCircle className="mr-1 size-4 animate-spin" /> : null}Confirmar sequência
               </Button>
-              <Button onClick={generate} disabled={!confirmed || starting}>
+              <Button onClick={generate} disabled={!policy || !confirmed || starting}>
                 {starting ? <LoaderCircle className="mr-1 size-4 animate-spin" /> : <Film className="mr-1 size-4" />}Gerar vídeo
               </Button>
             </>

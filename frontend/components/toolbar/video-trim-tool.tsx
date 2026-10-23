@@ -7,7 +7,9 @@ import { Button } from "../ui/button";
 import { Label } from "../ui/label";
 import { Input } from "../ui/input";
 import { Progress } from "../ui/progress";
-import { useCanEditProject, useCurrentImage, useProjectInfo, useVideoTrim } from "@/providers/project-provider";
+import { useCanEditProject, useCurrentImage, useProjectInfo, useProjectVideoPolicy, useVideoTrim } from "@/providers/project-provider";
+import { validateProjectTrimDuration } from "@/lib/project-video-policy";
+import ProjectVideoPolicyStatus from "../project-page/project-video-policy-status";
 import { useSession } from "@/providers/session-provider";
 import { useToast } from "@/hooks/use-toast";
 import { api } from "@/lib/axios";
@@ -163,6 +165,7 @@ export function VideoTrimPanel({ disabled }: { disabled: boolean }) {
   const project = useProjectInfo();
   const canEdit = useCanEditProject();
   const session = useSession();
+  const { policy } = useProjectVideoPolicy();
   const searchParams = useSearchParams();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -478,8 +481,8 @@ export function VideoTrimPanel({ disabled }: { disabled: boolean }) {
       } else if (interval >= videoDuration) {
         errors.end = "O recorte tem de ser mais curto do que o vídeo original.";
       } else {
-        const profileLimit = session.user.type === "premium" ? 600 : 60;
-        if (interval > profileLimit) errors.end = `O limite do teu perfil é ${profileLimit} segundos.`;
+        const profileError = validateProjectTrimDuration(interval, policy);
+        if (profileError) errors.end = profileError;
       }
     }
 
@@ -664,6 +667,7 @@ export function VideoTrimPanel({ disabled }: { disabled: boolean }) {
 
   return (
     <section className="mx-2 mb-3 shrink-0 rounded-xl border border-white/10 bg-[#131b26] p-4 shadow-lg sm:mx-4 sm:p-5" aria-label="Recorte Temporal">
+      <ProjectVideoPolicyStatus />
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="flex items-center gap-2 text-lg font-semibold">
@@ -819,7 +823,7 @@ export function VideoTrimPanel({ disabled }: { disabled: boolean }) {
 
       {!isRunning && (
         <div className="mt-3 flex justify-end">
-          <Button onClick={handleSubmit} disabled={isDisabled || !videoDuration || videoDuration <= 1}>
+          <Button onClick={handleSubmit} disabled={isDisabled || !policy || !videoDuration || videoDuration <= 1}>
             <Scissors className="size-4" /> Aplicar recorte
           </Button>
         </div>

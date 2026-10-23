@@ -14,12 +14,16 @@ import {
   type RefObject,
 } from "react";
 import { useSession } from "@/providers/session-provider";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { fetchProjectVideoPolicy, type ProjectVideoPolicy } from "@/lib/project-video-policy";
 import { useSetProjectDirty } from "@/lib/mutations/projects";
 import { useToast } from "@/hooks/use-toast";
 import { useGetSocket } from "@/lib/queries/projects";
 
 interface ProjectContextData {
+  videoPolicy: ProjectVideoPolicy | undefined;
+  videoPolicyError: boolean;
+  retryVideoPolicy: () => void;
   project: SingleProject;
   setProjectTools: (tools: ProjectToolResponse[]) => void;
   currentImage: ProjectImage | null;
@@ -67,6 +71,19 @@ export function ProjectProvider({
   const socket = useGetSocket(session.token);
   const qc = useQueryClient();
   const { toast } = useToast();
+
+  const videoPolicyOwnerId = project.user_id;
+  const videoPolicyQuery = useQuery({
+    queryKey: ["projectVideoPolicy", videoPolicyOwnerId, project._id, session.token, shareId],
+    queryFn: () => fetchProjectVideoPolicy(videoPolicyOwnerId, project._id, session.token, shareId),
+    enabled: Boolean(videoPolicyOwnerId && project._id && session.token),
+    refetchInterval: 30_000,
+  });
+  useEffect(() => {
+    const refresh = () => { void qc.invalidateQueries({ queryKey: ["projectVideoPolicy", videoPolicyOwnerId] }); };
+    window.addEventListener("session-updated", refresh);
+    return () => window.removeEventListener("session-updated", refresh);
+  }, [qc, videoPolicyOwnerId]);
 
   const [version, setVersion] = useState<number>(Number(project.version) || 0);
 
@@ -226,6 +243,7 @@ export function ProjectProvider({
     const handler = (msg: any) => {
       const { op } = msg || {};
       if (!op) return;
+      void qc.invalidateQueries({ queryKey: ["projectVideoPolicy", videoPolicyOwnerId] });
 
       const opId = op.opId ?? null;
       if (opId && seenOps.current.has(opId)) return;
@@ -319,11 +337,14 @@ export function ProjectProvider({
     return () => {
       socket.data.off("project-op", handler);
     };
-  }, [socket.data, version, qc, session.user._id, session.token, project._id, ownerId, shareId]);
+  }, [socket.data, version, qc, session.user._id, session.token, project._id, ownerId, shareId, videoPolicyOwnerId]);
 
   return (
     <ProjectContext.Provider
       value={{
+        videoPolicy: videoPolicyQuery.isError ? undefined : videoPolicyQuery.data,
+        videoPolicyError: videoPolicyQuery.isError,
+        retryVideoPolicy: () => { void videoPolicyQuery.refetch(); },
         project: { ...project, tools, version },
         setProjectTools: setTools,
         currentImage,
@@ -356,6 +377,12 @@ export function useProjectInfo() {
     throw new Error("useProjectInfo() must be used within a ProjectProvider");
   }
   return context.project;
+}
+
+export function useProjectVideoPolicy() {
+  const context = useContext(ProjectContext);
+  if (!context) throw new Error("useProjectVideoPolicy() must be used within a ProjectProvider");
+  return { policy: context.videoPolicy, isError: context.videoPolicyError, retry: context.retryVideoPolicy };
 }
 
 export function useSetProjectTools() {

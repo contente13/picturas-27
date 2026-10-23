@@ -21,6 +21,23 @@ function getUserType(userId) {
     .then((response) => response.data?.type);
 }
 
+// Only these fields may leave the Project Service for the editor (RNG-10).
+async function getProjectVideoPolicy(ownerId) {
+  const { data } = await axios.get(`${usersUrl}${ownerId}`, userServiceOptions());
+  if (!["anonymous", "free", "premium"].includes(data?.type)) {
+    throw new Error("Invalid project owner profile");
+  }
+  const remaining = data.remaining_operations;
+  if (data.type === "free" && (!Number.isInteger(remaining) || remaining < 0)) {
+    throw new Error("Invalid project owner quota");
+  }
+  return {
+    ownerId: String(ownerId),
+    userType: data.type,
+    remainingOperations: data.type === "premium" ? null : data.type === "anonymous" ? 0 : remaining,
+  };
+}
+
 async function reserveOperation(userId, amount, reservationId) {
   if (!amount) return;
   const response = await axios.post(
@@ -58,6 +75,7 @@ async function commitReservation(taskId) {
 module.exports = {
   commitReservation,
   getUserType,
+  getProjectVideoPolicy,
   refundOperation,
   releaseReservation,
   reserveOperation,
