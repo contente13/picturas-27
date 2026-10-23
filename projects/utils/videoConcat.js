@@ -11,6 +11,7 @@ const CONCAT_LIMITS = {
 };
 // RN17: accepted input containers and codecs (audio is optional, RN11).
 const ACCEPTED_CODECS = { mp4: { video: "h264", audio: "aac" }, webm: { video: "vp8", audio: "vorbis" } };
+const MIN_FRAME_RATE = 1;
 const MAX_FRAME_RATE = 240;
 const MIN_DIMENSION = 16;
 const AUDIO_SAMPLE_RATE = 48000;
@@ -32,7 +33,7 @@ function parseFrameRate(value) {
 function frameRateOf(metadata) {
   for (const candidate of [metadata.avgFrameRate, metadata.frameRate]) {
     const rate = parseFrameRate(candidate);
-    if (rate && rate <= MAX_FRAME_RATE) return { fps: rate, frameRate: String(candidate) };
+    if (rate && rate >= MIN_FRAME_RATE && rate <= MAX_FRAME_RATE) return { fps: rate, frameRate: String(candidate) };
   }
   return null;
 }
