@@ -526,6 +526,7 @@ router.post("/:user", auth.checkToken, function (req, res, next) {
   axios
     .post(projectsURL + `${req.params.user}`, req.body, {
       httpsAgent: httpsAgent,
+      headers: { Authorization: req.headers.authorization },
     })
     .then((resp) => res.status(201).jsonp(resp.data))
     .catch((err) => forwardAxiosError(res, err, "mensagem fallback"))
