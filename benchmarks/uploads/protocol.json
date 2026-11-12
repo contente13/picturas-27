@@ -1,0 +1,46 @@
+{
+  "protocol_version": 4,
+  "baseline_commit": "052310226c51fa57a17101c7bd1ad795674aac95",
+  "repetitions": 10,
+  "before_seconds": 30,
+  "after_seconds": 30,
+  "interval_ms": 100,
+  "sampling_schedule": "epoch_bucket_midpoint",
+  "max_sample_skew_ms": 150,
+  "http_timeout_seconds": 1800,
+  "services": [
+    "api_gateway",
+    "projects",
+    "img_storage"
+  ],
+  "scenarios": {
+    "small": {
+      "file": "video-small.mp4",
+      "kind": "video",
+      "clients": 1
+    },
+    "large": {
+      "file": "video-large.mp4",
+      "kind": "video",
+      "clients": 1
+    },
+    "image": {
+      "file": "image-control.jpg",
+      "kind": "image",
+      "clients": 1
+    },
+    "concurrent_small": {
+      "file": "video-small.mp4",
+      "kind": "video",
+      "clients": 3
+    },
+    "concurrent": {
+      "file": "video-large.mp4",
+      "kind": "video",
+      "clients": 3
+    }
+  },
+  "comparison_scenario": "concurrent_small",
+  "reviewed_failure_scenario": "concurrent",
+  "trial_failure_policy": "Count every numbered attempt without replacement; continue reviewed concurrent HTTP 504/sampling failures only after stable-service and cleanup checks; stop on unresolved instrument, service, integrity or cleanup errors."
+}

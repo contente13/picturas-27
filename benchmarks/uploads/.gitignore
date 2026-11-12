@@ -1,0 +1,4 @@
+corpus/
+runs/
+*.local.json
+*.local.json.tmp
