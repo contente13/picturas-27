@@ -1,0 +1,17 @@
+{
+  "protocol_version": 1,
+  "baseline_commit": "052310226c51fa57a17101c7bd1ad795674aac95",
+  "repetitions": 10,
+  "before_seconds": 30,
+  "after_seconds": 30,
+  "interval_ms": 100,
+  "max_sample_skew_ms": 150,
+  "http_timeout_seconds": 1800,
+  "services": ["api_gateway", "projects", "img_storage"],
+  "scenarios": {
+    "small": {"file": "video-small.mp4", "kind": "video", "clients": 1},
+    "large": {"file": "video-large.mp4", "kind": "video", "clients": 1},
+    "concurrent": {"file": "video-large.mp4", "kind": "video", "clients": 3},
+    "image": {"file": "image-control.jpg", "kind": "image", "clients": 1}
+  }
+}
