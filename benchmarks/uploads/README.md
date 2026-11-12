@@ -1,8 +1,10 @@
 # P4: upload measurement preparation
 
-Status: tooling prepared; **no official baseline has been collected**. The pilot must validate
-the corpus, resource budget and observer before the baseline starts. These tools do not
-change the application or add a product service. Baseline source: `052310226c51fa57a17101c7bd1ad795674aac95`.
+Status: the original-version official campaign completed under protocol 4: 50 trials,
+90 requests, 40 valid numeric trials and 30 HTTP 504 responses in the large-concurrent
+condition. Generated results and the external handoff are under ignored `runs/`;
+see `runs/ENTREGA-P3.md` and `runs/BASELINE-P4.md`. No application refactoring was done.
+Baseline source: `052310226c51fa57a17101c7bd1ad795674aac95`.
 
 ## Frozen decisions
 
@@ -12,6 +14,7 @@ change the application or add a product service. Baseline source: `052310226c51f
 | Large video | MP4/H.264 + AAC, about 900 MiB | 1 | 10 | 10 |
 | Concurrent videos | Same large file in three different projects | 3 | 10 | 10 |
 | Image control | Real JPEG, about 5 MiB | 1 | 10 | 10 |
+| Concurrent small videos | Same small file in three different projects | 3 | 10 | 10 |
 
 MiB means 1,048,576 bytes. Videos are 1280x720/25 fps; small duration 50 s and large
 duration 120 s. All clients use independent Premium test identities, including the small
@@ -20,7 +23,7 @@ size and +/-10% JPEG size, then freezes **exact bytes and SHA-256** in its manif
 The same actual files must be reused after refactoring. Synthetic, constant-rate videos
 exercise transfer size; they do not represent all real video content or codecs.
 
-There are 40 measured trials per version, comprising 60 HTTP uploads per version.
+There are 50 measured trials per version, comprising 90 HTTP uploads per version.
 Pilot trials are separate, one per condition, and never count towards those totals.
 
 The observation window is 30 s idle, the complete HTTP upload(s), and 30 s after **all**
@@ -175,3 +178,58 @@ Instrument references:
 - https://docs.docker.com/engine/containers/run/ (PID namespace sharing)
 - https://docs.docker.com/engine/containers/runmetrics/ (cgroups and resource metrics)
 - https://docs.docker.com/reference/cli/docker/container/stats/ (CLI memory differs from raw usage/cache)
+
+## Local pilot protocol revision 2
+
+The Linux small-video pilot completed with HTTP 204 and matching stored hash and
+metadata, but its memory window was invalid: 7 missing common buckets despite individual
+maximum gaps of 105–110 ms. Independent relative timers drift across fixed epoch buckets.
+Protocol 2 schedules each observer at the midpoint of the same epoch-aligned 100 ms
+buckets. It does not interpolate, backfill, or relax the zero-missing-bucket / 250 ms gap
+criteria. Read cost now includes supplementary cgroup reads. Preserve the protocol-1
+pilot as invalid; rerun pilots and use protocol 2 unchanged for baseline and final.
+
+## Official campaign protocol 4
+
+The user confirmed five scenarios: the original four plus `concurrent_small` (three
+clients with the same frozen small video). The original large concurrent condition is
+retained, with a final-version goal of completing without timeout under unchanged
+resources/timeouts. There are 50 numbered trials / 90 requests per version, ten trials
+per scenario. Pilots remain separate. Order: small, large, image, concurrent_small,
+concurrent; use the same order on the final version. Protocols 1–3 remain historical
+evidence, not current campaign specifications.
+
+The harness atomically checkpoints every completed response and window boundaries
+before observer shutdown. All helper cleanup is attempted, with forced removal only
+for helpers it created; the application is untouched. A read-only storage-prefix audit
+follows API cleanup, outside the measurement window. Observer labels cannot be confused
+with the application Compose project.
+
+`--continue-reviewed-concurrent` permits counting the already reviewed large-concurrent
+HTTP 504 and sampling failures without replacing attempts, after stable-service and
+project/object cleanup checks. Instrument, integrity, service or unresolved cleanup
+failures still stop the session. Failed/invalid trials remain in all counts and never
+contribute to accepted memory reduction statistics. The same policy must be used for
+the final campaign.
+
+```bash
+python3 benchmarks/uploads/bench.py run --project picturas-p4-baseline --phase baseline --continue-reviewed-concurrent
+```
+
+## Known limitation found in the official campaign
+
+Immediate per-trial cleanup checks returned zero, but the final global audit found 12
+objects under removed test projects from failed concurrent trials 4, 7, 9 and 10.
+Their exact keys/HEADs were retained; only those discovered P4 keys were removed after
+ending pending activity, and a final audit confirmed zero test projects/objects.
+Do not claim quiescent empty storage between those failed trials or infer unique memory
+causality. The numeric comparison scenarios preceded the failed concurrent block.
+Always perform a global post-campaign audit outside the measurement windows; an immediate
+check following HTTP 504 does not prove that the backend has stopped or storage will
+remain empty. Application cancellation/cleanup is a P3 implementation concern.
+
+A reviewed asynchronous helper-removal check caused a pause at `small-09`; original
+results were retained and reviewed, then resumed at `small-10` without replacing trials.
+Resume metadata and both harness snapshots identify the post-window control change.
+Eight local checks passed; six real helper-stop CLI timeouts were recovered without
+losing request outcomes in the official campaign.

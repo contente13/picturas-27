@@ -76,9 +76,20 @@ function sample() {
       row.memory_events = read('memory', 'memory.failcnt');
     }
   } catch (e) { row.cgroup_error = e.code; }
+  row.read_ms = Date.now() - started;
   console.log(JSON.stringify(row));
 }
-sample();
-setInterval(sample, interval);
+// Aim at each epoch bucket's midpoint so independent helpers do not drift
+// across bucket boundaries. Delays remain visible; never backfill missed samples.
+function scheduleSample() {
+  const now = Date.now();
+  const midpoint = Math.floor(now / interval) * interval + interval / 2;
+  const next = midpoint > now ? midpoint : midpoint + interval;
+  setTimeout(() => {
+    sample();
+    scheduleSample();
+  }, next - now);
+}
+scheduleSample();
 sampleDisk();
 setInterval(sampleDisk, 1000);

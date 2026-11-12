@@ -27,7 +27,13 @@ def command(args, timeout=30):
 
 
 def save(path, data):
-    path.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
+    temporary = path.with_name(path.name + ".tmp")
+    descriptor = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
+        json.dump(data, stream, indent=2, ensure_ascii=False)
+        stream.flush()
+        os.fsync(stream.fileno())
+    os.replace(temporary, path)
 
 
 def sha(path):
@@ -199,6 +205,8 @@ def start_observers(containers, folder):
             output = (folder / (service + ".jsonl")).open("w", encoding="utf-8")
             error = (folder / (service + ".stderr")).open("w", encoding="utf-8")
             process = subprocess.Popen(["docker", "run", "--rm", "--name", name,
+                "--label", "com.docker.compose.project=picturas-p4-observers",
+                "--label", "com.docker.compose.service=observer",
                 "--pid=container:" + target["Id"], "--network", "none", "--read-only",
                 "--cap-drop=ALL", "--cap-add=SYS_PTRACE", "--entrypoint", "node", target["Image"],
                 "-e", source, "--", str(PROTOCOL["interval_ms"]), service],
@@ -214,18 +222,86 @@ def start_observers(containers, folder):
 
 
 def stop_observers(workers):
+    diagnostics = []
     for name, process, output, error in workers:
+        entry = {"name": name, "removed": False, "warnings": []}
         try:
-            subprocess.run(["docker", "stop", "--time", "1", name], capture_output=True, timeout=15)
-        finally:
+            stopped = subprocess.run(["docker", "stop", "--time", "1", name],
+                capture_output=True, timeout=15)
+            if stopped.returncode:
+                entry["warnings"].append("stop_nonzero")
+        except (subprocess.TimeoutExpired, OSError) as failure:
+            entry["warnings"].append("stop_" + type(failure).__name__)
+        # Always confirm removal, including after a CLI timeout. These are only
+        # helpers created by this harness; target application containers are untouched.
+        try:
+            removed = subprocess.run(["docker", "rm", "-f", name],
+                capture_output=True, timeout=30)
+            entry["remove_exit_code"] = removed.returncode
+            # --rm may race explicit removal. Confirm absence rather than
+            # interpreting CLI wording or accepting "removal in progress".
+            deadline = time.monotonic() + 30
+            while True:
+                remaining = subprocess.run(["docker", "ps", "-aq", "--filter", "name=^/" + name + "$"],
+                    capture_output=True, timeout=15)
+                entry["removed"] = remaining.returncode == 0 and not remaining.stdout.strip()
+                if entry["removed"] or remaining.returncode or time.monotonic() >= deadline:
+                    break
+                time.sleep(1)
+        except (subprocess.TimeoutExpired, OSError) as failure:
+            entry["warnings"].append("remove_" + type(failure).__name__)
+        try:
             if process.poll() is None:
                 process.terminate()
             try:
                 process.wait(timeout=5)
             except subprocess.TimeoutExpired:
                 process.kill()
+                process.wait(timeout=5)
+        except (subprocess.TimeoutExpired, OSError) as failure:
+            entry["warnings"].append("client_" + type(failure).__name__)
+        finally:
             output.close()
             error.close()
+        diagnostics.append(entry)
+    return diagnostics
+
+
+def audit_cleanup(api, containers, clients, projects):
+    for client, project in zip(clients, projects):
+        remaining = api.request("GET", "/projects/" + client["user_id"], client)
+        if any(p["_id"] == project["_id"] for p in remaining):
+            raise RuntimeError("Test project still present after cleanup")
+    prefixes = [f'users/{c["user_id"]}/projects/{p["_id"]}/' for c, p in zip(clients, projects)]
+    # Read-only storage audit outside the measurement window, using known test
+    # prefixes from this trial and the original storage service's existing client.
+    script = """const s3=require('./services/s3Client');
+const {BUCKET}=require('./services/storage');
+(async()=>{let count=0;for(const prefix of PREFIXES){
+ const r=await s3.listObjectsV2({Bucket:BUCKET,Prefix:prefix,MaxKeys:1}).promise();
+ count+=(r.Contents||[]).length;
+}process.stdout.write(JSON.stringify({remaining_objects:count}));
+})().catch(e=>{console.error(e.code||e.name);process.exit(1)});""".replace("PREFIXES", json.dumps(prefixes))
+    checked = subprocess.run(["docker", "exec", "-i", containers["img_storage"]["Id"], "node", "-"],
+        input=script, text=True, capture_output=True, timeout=60)
+    if checked.returncode:
+        raise RuntimeError("Read-only test storage cleanup audit failed")
+    result = json.loads(checked.stdout)
+    if result["remaining_objects"]:
+        raise RuntimeError("Storage objects remain under this trial's test prefixes")
+    return {"projects_absent": True, **result}
+
+
+def may_continue_reviewed_failure(scenario, result, enabled):
+    # Never replace failures or relax their validity. Continue only the previously
+    # reviewed large-concurrent failure after confirmed cleanup and stable services.
+    return (enabled and scenario == "concurrent"
+        and not result.get("measurement_error") and not result.get("evaluation_error")
+        and result.get("services_stable") and result.get("cleanup", {}).get("projects_absent")
+        and result.get("cleanup", {}).get("remaining_objects") == 0
+        and result.get("observer_cleanup_successful")
+        and len(result.get("uploads", [])) == 3
+        and all(u.get("status") in (204, 504) for u in result["uploads"]))
 
 
 def summarize(folder, start, end):
@@ -289,6 +365,10 @@ def main():
     parser.add_argument("--scenario", choices=["all", *PROTOCOL["scenarios"]], default="all")
     parser.add_argument("--phase", choices=["pilot", "baseline", "final"], default="pilot")
     parser.add_argument("--generator-image", help="Optional existing Python+FFmpeg image for corpus generation without a running stack")
+    parser.add_argument("--continue-reviewed-concurrent", action="store_true",
+        help="Count reviewed large-concurrent 504/sampling failures without replacement; stop on unstable services, instrument or cleanup errors")
+    parser.add_argument("--resume-run", type=Path,
+        help="Resume an existing run without repeating evaluated attempts; stopped attempts require a cleanup review record")
     args = parser.parse_args()
     api = API(args.base_url)
     if args.action == "corpus" and args.generator_image:
@@ -341,18 +421,44 @@ def main():
     if any(not p.startswith("benchmarks/uploads/") for p in tracked_changes):
         raise RuntimeError("Commit application changes before measurement; source identity must be reproducible")
     scenarios = PROTOCOL["scenarios"] if args.scenario == "all" else {args.scenario: PROTOCOL["scenarios"][args.scenario]}
-    run = ROOT / "runs" / (time.strftime("%Y%m%d-%H%M%S") + "-" + args.phase + "-" + uuid.uuid4().hex[:6])
-    run.mkdir(parents=True)
-    save(run / "environment.json", {"commit": commit, "protocol": PROTOCOL,
-        "protocol_sha256": sha(ROOT / "protocol.json"), "harness_sha256": sha(Path(__file__)),
-        "observer_sha256": sha(ROOT / "observer.cjs"), "corpus_sha256": sha(ROOT / "corpus/manifest.json"),
-        "host": platform.platform(), "python": platform.python_version(), "phase": args.phase,
-        "docker": json.loads(command(["docker", "info", "--format", '{{json .}}']))["ServerVersion"],
-        "initial_containers": safe_inventory(containers)})
+    if args.resume_run:
+        run = args.resume_run.resolve()
+        if run.parent != (ROOT / "runs").resolve():
+            raise ValueError("Resume only a run in this harness's evidence directory")
+        previous = json.loads((run / "environment.json").read_text(encoding="utf-8"))
+        if previous["commit"] != commit or previous["phase"] != args.phase or previous["protocol"] != PROTOCOL:
+            raise RuntimeError("Cannot resume with different application source, phase or protocol")
+        if previous["continue_reviewed_concurrent"] != args.continue_reviewed_concurrent:
+            raise RuntimeError("Cannot change the reviewed-failure policy on resume")
+        stamp = time.strftime("%Y%m%d-%H%M%S")
+        snapshot = run / ("harness-resume-" + stamp + ".py")
+        snapshot.write_bytes(Path(__file__).read_bytes())
+        save(run / ("resume-" + stamp + ".json"), {"commit": commit,
+            "protocol_sha256": sha(ROOT / "protocol.json"), "harness_sha256": sha(Path(__file__)),
+            "original_harness_sha256": previous["harness_sha256"],
+            "reason": "Resume after explicit observer-cleanup review; preserve existing attempts and measurement rules"})
+    else:
+        run = ROOT / "runs" / (time.strftime("%Y%m%d-%H%M%S") + "-" + args.phase + "-" + uuid.uuid4().hex[:6])
+        run.mkdir(parents=True)
+        save(run / "environment.json", {"commit": commit, "protocol": PROTOCOL,
+            "protocol_sha256": sha(ROOT / "protocol.json"), "harness_sha256": sha(Path(__file__)),
+            "observer_sha256": sha(ROOT / "observer.cjs"), "corpus_sha256": sha(ROOT / "corpus/manifest.json"),
+            "host": platform.platform(), "python": platform.python_version(), "phase": args.phase,
+            "docker": json.loads(command(["docker", "info", "--format", '{{json .}}']))["ServerVersion"],
+            "initial_containers": safe_inventory(containers),
+            "continue_reviewed_concurrent": args.continue_reviewed_concurrent})
     repetitions = 1 if args.phase == "pilot" else PROTOCOL["repetitions"]
     for scenario, specification in scenarios.items():
         for repetition in range(1, repetitions + 1):
             folder = run / f"{scenario}-{repetition:02d}"
+            if folder.exists():
+                previous = json.loads((folder / "result.json").read_text(encoding="utf-8"))
+                if previous.get("stage") != "evaluated":
+                    raise RuntimeError("Incomplete prior attempt requires recovery; never overwrite or replace it")
+                review = json.loads((folder / "review.json").read_text()) if (folder / "review.json").exists() else {}
+                if not previous.get("eligible_for_memory_comparison") and not review.get("safe_to_resume") and not may_continue_reviewed_failure(scenario, previous, args.continue_reviewed_concurrent):
+                    raise RuntimeError("Prior failed attempt needs an explicit review before resuming")
+                continue
             folder.mkdir()
             print(f"{scenario}: {repetition}/{repetitions}", flush=True)
             # Restart only the three observed services in the isolated stack.
@@ -378,48 +484,86 @@ def main():
             projects = [api.request("GET", f'/projects/{c["user_id"]}/{p["_id"]}', c) for c, p in zip(selected, projects)]
             containers = inventory(args.project)
             save(folder / "containers-before.json", safe_inventory(containers))
-            observers = start_observers(containers, folder)
-            result = {"scenario": scenario, "repetition": repetition, "phase": args.phase}
+            result = {"scenario": scenario, "repetition": repetition, "phase": args.phase,
+                "stage": "prepared", "uploads": [], "harness_sha256": sha(Path(__file__)), "test_projects": [
+                    {"user_id": c["user_id"], "project_id": p["_id"]} for c, p in zip(selected, projects)]}
+            save(folder / "result.json", result)
+            observers = []
+            file = ROOT / "corpus" / specification["file"]
             try:
+                observers = start_observers(containers, folder)
                 observed_start = time.time_ns() / 1e6
+                result.update(stage="observing", observed_start_ms=observed_start)
+                save(folder / "result.json", result)
                 time.sleep(PROTOCOL["before_seconds"])
                 barrier = threading.Barrier(len(selected))
-                file = ROOT / "corpus" / specification["file"]
+                uploads = [None] * len(selected)
                 with concurrent.futures.ThreadPoolExecutor(max_workers=len(selected)) as pool:
-                    futures = [pool.submit(api.upload, c, p, file, specification["kind"], barrier)
-                               for c, p in zip(selected, projects)]
-                    uploads = [f.result() for f in futures]
+                    futures = {pool.submit(api.upload, c, p, file, specification["kind"], barrier): index
+                               for index, (c, p) in enumerate(zip(selected, projects))}
+                    for future in concurrent.futures.as_completed(futures):
+                        uploads[futures[future]] = future.result()
+                        result["uploads"] = [u for u in uploads if u is not None]
+                        save(folder / "result.json", result)
                 responses_end = time.time_ns() / 1e6
+                result.update(stage="responses_received", responses_end_ms=responses_end)
+                save(folder / "result.json", result)
                 time.sleep(PROTOCOL["after_seconds"])
                 observed_end = time.time_ns() / 1e6
-                result.update(uploads=uploads, observed_start_ms=observed_start,
-                    responses_end_ms=responses_end, observed_end_ms=observed_end)
+                result.update(stage="window_complete", observed_end_ms=observed_end)
+                save(folder / "result.json", result)
+            except Exception as error:
+                result["measurement_error"] = type(error).__name__
             finally:
-                stop_observers(observers)
+                # Request outcomes/window boundaries are already durable before
+                # attempting Docker cleanup, even if a stop command hangs.
+                save(folder / "result.json", result)
+                result["observer_shutdown"] = stop_observers(observers)
+                result["observer_cleanup_successful"] = all(x["removed"] for x in result["observer_shutdown"])
+                save(folder / "result.json", result)
             try:
-                result["memory"] = summarize(folder, observed_start, observed_end)
+                if "observed_end_ms" in result:
+                    try:
+                        result["memory"] = summarize(folder, result["observed_start_ms"], result["observed_end_ms"])
+                    except Exception as error:
+                        result["measurement_error"] = "summary_" + type(error).__name__
                 result["containers_after"] = safe_inventory(inventory(args.project))
                 result["services_stable"] = all(
                     result["containers_after"][s]["id"] == containers[s]["Id"]
                     and result["containers_after"][s]["started_at"] == containers[s]["State"]["StartedAt"]
                     and result["containers_after"][s]["restarts"] == containers[s]["RestartCount"]
                     and not result["containers_after"][s]["oom_killed"] for s in PROTOCOL["services"])
-                result["uploads_successful"] = all(u.get("status") == 204 and u.get("version") is not None for u in uploads)
+                uploads = result["uploads"]
+                result["uploads_successful"] = len(uploads) == len(selected) and all(
+                    u.get("status") == 204 and u.get("version") is not None for u in uploads)
                 if result["uploads_successful"]:
-                    # Hash download and metadata checks happen AFTER the memory window.
                     result["integrity"] = [api.verify(c, p, corpus[file.name]) for c, p in zip(selected, projects)]
                 starts = [u["start_ms"] for u in uploads if "start_ms" in u]
                 result["start_skew_ms"] = max(starts) - min(starts) if len(starts) == len(selected) else None
                 result["all_uploads_seconds"] = (max(u["end_ms"] for u in uploads) - min(starts)) / 1000 if starts else None
-                for client, project in zip(selected, projects):
-                    api.cleanup(client, project)
             except Exception as error:
                 result["evaluation_error"] = type(error).__name__ + ": " + str(error)
             finally:
+                # Quality/verification failure must not skip test-data cleanup.
+                try:
+                    for client, project in zip(selected, projects):
+                        api.cleanup(client, project)
+                    result["cleanup"] = audit_cleanup(api, containers, selected, projects)
+                except Exception as error:
+                    result["cleanup_error"] = type(error).__name__ + ": " + str(error)
+                result["stage"] = "evaluated"
+                result["eligible_for_memory_comparison"] = bool(
+                    result.get("uploads_successful") and result.get("integrity")
+                    and result.get("services_stable") and result.get("memory", {}).get("sampling_valid")
+                    and not result.get("measurement_error") and not result.get("evaluation_error")
+                    and not result.get("cleanup_error") and result.get("observer_cleanup_successful"))
                 save(folder / "result.json", result)
-            if result.get("evaluation_error") or not result.get("uploads_successful") or not result.get("services_stable") or not result.get("memory", {}).get("sampling_valid"):
-                print("Trial needs review; raw evidence retained. Stopping to avoid contaminating subsequent trials.")
+            failed = not result["eligible_for_memory_comparison"]
+            if failed and not may_continue_reviewed_failure(scenario, result, args.continue_reviewed_concurrent):
+                print("Trial needs review; evidence retained. Stopping without replacing this attempt.", flush=True)
                 return
+            if failed:
+                print("Reviewed concurrent failure counted; cleanup verified. Proceeding to the next numbered attempt.", flush=True)
     print("Measurements saved under", run)
 
 
