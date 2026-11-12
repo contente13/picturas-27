@@ -26,12 +26,12 @@ async function get_image_public_url(user, project, type, img) {
   );
 }
 
-async function post_image(user, project, type, file) {
+async function post_image(user, project, type, file, { signal } = {}) {
   return await axios.post(
     `${img_storage_ms}/upload/${user}/${project}/${type}`,
     file /* , { httpsAgent: httpsAgent } */,
     // Videos can be hundreds of MB
-    { maxBodyLength: Infinity, maxContentLength: Infinity, headers: file.getHeaders ? file.getHeaders() : undefined },
+    { signal, maxRedirects: 0, maxBodyLength: Infinity, maxContentLength: Infinity, headers: file.getHeaders ? file.getHeaders() : undefined },
   );
 }
 

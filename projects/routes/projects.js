@@ -4,7 +4,8 @@ var router = express.Router();
 const axios = require("axios");
 const sharp = require("sharp");
 
-const multer = require("multer");
+const { temporaryUpload } = require("../utils/temporaryUpload");
+const { mediaUpload } = require("../utils/mediaUpload");
 const FormData = require("form-data");
 
 const fs = require("fs");
@@ -57,7 +58,6 @@ const {
   isVideoFile,
   isVideoMedia,
   videoOutputName,
-  probeVideoBuffer,
   validateVideo,
   imageTools,
   videoPipeline,
@@ -69,8 +69,7 @@ const {
 const { persistFrameResults } = require("../utils/frameResults");
 const { dispatchProcessBatch } = require("../utils/processBatch");
 
-const storage = multer.memoryStorage();
-var upload = multer({ storage: storage });
+const upload = temporaryUpload();
 
 const key = fs.readFileSync(__dirname + "/../certs/selfsigned.key");
 const cert = fs.readFileSync(__dirname + "/../certs/selfsigned.crt");
@@ -1267,118 +1266,9 @@ router.post("/:user/:project/preview/:img", checkSharePermission, requireEditPer
 // Shared upload logic for project media (images and videos).
 // `kind` is "image" or "video"; each endpoint only accepts its own kind.
 function addProjectMedia(kind) {
-  return async (req, res) => {
-    console.log(`PROJECTS-MS /:user/:project/${kind === "video" ? "video" : "img"} HIT, file =`, !!req.file);
-    if (!req.file) {
-      res.status(400).jsonp("No file found");
-      return;
-    }
-
-    const fileIsVideo = isVideoFile(req.file.originalname, req.file.mimetype);
-    if (kind === "image" && fileIsVideo) {
-      return res.status(400).jsonp("Videos must be uploaded through the /video endpoint.");
-    }
-    if (kind === "video" && !fileIsVideo) {
-      return res.status(400).jsonp("Only video files (.mp4, .mov, .webm) can be uploaded here.");
-    }
-
-    Project.getOne(req.params.user, req.params.project)
-      .then(async (project) => {
-        const same_name_img = project.imgs.filter(
-          (i) => path.basename(i.og_uri) == req.file.originalname
-        );
-
-        if (same_name_img.length > 0) {
-          res
-            .status(400)
-            .jsonp(`This project already has ${kind === "video" ? "a video" : "an image"} with that name.`);
-          return;
-        }
-
-        // Validate the video before storing it
-        const isVideo = kind === "video";
-        let videoMeta = null;
-        if (isVideo) {
-          let userType = "anonymous";
-          try {
-            const r = await axios.get(users_ms + `${getCallerId(req)}/type`, { httpsAgent });
-            userType = r.data.type;
-          } catch (_) {}
-
-          try {
-            videoMeta = await probeVideoBuffer(req.file.buffer, req.file.originalname);
-          } catch (e) {
-            return res.status(400).jsonp(e.message);
-          }
-
-          const reason = validateVideo(videoMeta, req.file.originalname, req.file.mimetype, userType);
-          if (reason) {
-            return res.status(400).jsonp(reason);
-          }
-        }
-
-        try {
-          const data = new FormData();
-          data.append("file", req.file.buffer, {
-            filename: req.file.originalname,
-            contentType: req.file.mimetype,
-          });
-          const resp = await post_image(
-            req.params.user,
-            req.params.project,
-            "src",
-            data
-          );
-
-          const og_key_tmp = resp.data.data.imageKey.split("/");
-          const og_key = og_key_tmp[og_key_tmp.length - 1];
-
-          try {
-            const og_uri = `./images/users/${req.params.user}/projects/${req.params.project}/src/${req.file.originalname}`;
-            // the edited video is always MP4
-            const out_name = isVideo ? videoOutputName(req.file.originalname) : req.file.originalname;
-            const new_uri = `./images/users/${req.params.user}/projects/${req.params.project}/out/${out_name}`;
-
-            const crypto = require("crypto");
-            const sha = crypto.createHash("sha256").update(req.file.buffer).digest("hex");
-
-            // Insert new image
-            project["imgs"].push({
-              og_uri: og_uri,
-              new_uri: new_uri,
-              og_img_key: og_key,
-              og_sha256: sha,
-              media_type: isVideo ? "video" : "image",
-              video: videoMeta || undefined,
-            });
-
-            const updated = await Project.updateIfVersion(
-              req.params.user,
-              req.params.project,
-              project,
-              req.expectedVersion
-            );
-
-            if (!updated) {
-              const fresh = await Project.getOne(req.params.user, req.params.project);
-              return res.status(409).jsonp({
-                message: "Project version conflict",
-                serverVersion: fresh?.version ?? null,
-              });
-            }
-
-            res.set("X-Project-Version", String(updated.version));
-            return res.sendStatus(204);
-
-          } catch (_) {
-            res.status(501).jsonp(`Updating project information`);
-          }
-        } catch (_) {
-          res.status(501).jsonp(`Error storing image`);
-        }
-      })
-      .catch((_) => res.status(501).jsonp(`Error acquiring user's project`));
-  };
+  return mediaUpload(kind, {
+    Project, axios, usersURL: users_ms, httpsAgent, getCallerId, post_image, delete_image,
+  });
 }
 
 // Add new image to a project

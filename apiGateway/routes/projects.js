@@ -6,7 +6,8 @@ const axios = require("axios");
 const https = require("https");
 const fs = require("fs");
 
-const multer = require("multer");
+const { temporaryUpload } = require("../utils/temporaryUpload");
+const { forwardUpload } = require("../utils/forwardUpload");
 const FormData = require("form-data");
 
 const auth = require("../auth/auth");
@@ -20,8 +21,7 @@ const httpsAgent = new https.Agent({
   key: key,
 });
 
-const storage = multer.memoryStorage();
-const upload = multer({ storage: storage });
+const upload = temporaryUpload();
 
 const projectsURL = "https://projects:9001/";
 
@@ -410,43 +410,7 @@ router.post(
   "/:user/:project/img",
   upload.single("image"),
   auth.checkToken,
-  function (req, res, next) {
-    const ownerId = req.query.owner || req.params.user;
-    const callerId = req.authUserId || req.params.user;
-
-    const data = new FormData();
-    data.append("image", req.file.buffer, {
-      filename: req.file.originalname,
-      contentType: req.file.mimetype,
-    });
-
-    axios
-      .post(
-        projectsURL + `${ownerId}/${req.params.project}/img`,
-        data,
-        {
-          headers: {
-            ...data.getHeaders(),                     
-            Authorization: req.headers["authorization"], 
-            "X-Project-Version": req.headers["x-project-version"],
-            "X-Caller-Id": callerId,
-          },
-          httpsAgent: httpsAgent,
-          params: req.query.share ? { share: req.query.share } : undefined, 
-          // Videos can be hundreds of MB
-          maxBodyLength: Infinity,
-          maxContentLength: Infinity,
-        }
-      )
-      .then((resp) => {
-        if (resp.headers?.["x-project-version"]) {
-          res.set("X-Project-Version", resp.headers["x-project-version"]);
-        }
-        return res.sendStatus(204);
-      })
-    .catch((err) => forwardAxiosError(res, err, "mensagem fallback"))
-
-  }
+  forwardUpload(projectsURL, httpsAgent, forwardAxiosError, "image", "img")
 );
 
 /**
@@ -459,43 +423,7 @@ router.post(
   "/:user/:project/video",
   upload.single("video"),
   auth.checkToken,
-  function (req, res, next) {
-    const ownerId = req.query.owner || req.params.user;
-    const callerId = req.authUserId || req.params.user;
-
-    const data = new FormData();
-    data.append("video", req.file.buffer, {
-      filename: req.file.originalname,
-      contentType: req.file.mimetype,
-    });
-
-    axios
-      .post(
-        projectsURL + `${ownerId}/${req.params.project}/video`,
-        data,
-        {
-          headers: {
-            ...data.getHeaders(),                     
-            Authorization: req.headers["authorization"], 
-            "X-Project-Version": req.headers["x-project-version"],
-            "X-Caller-Id": callerId,
-          },
-          httpsAgent: httpsAgent,
-          params: req.query.share ? { share: req.query.share } : undefined, 
-          // Videos can be hundreds of MB
-          maxBodyLength: Infinity,
-          maxContentLength: Infinity,
-        }
-      )
-      .then((resp) => {
-        if (resp.headers?.["x-project-version"]) {
-          res.set("X-Project-Version", resp.headers["x-project-version"]);
-        }
-        return res.sendStatus(204);
-      })
-    .catch((err) => forwardAxiosError(res, err, "mensagem fallback"))
-
-  }
+  forwardUpload(projectsURL, httpsAgent, forwardAxiosError, "video", "video")
 );
 
 /**

@@ -3,9 +3,7 @@
 // validation against the profile limits.
 const { execFile } = require("child_process");
 const fs = require("fs");
-const os = require("os");
 const path = require("path");
-const { v4: uuidv4 } = require("uuid");
 
 // Accepted input containers and codecs
 const VIDEO_EXTENSIONS = [".mp4", ".mov", ".webm"];
@@ -62,12 +60,12 @@ function videoOutputName(originalname) {
   return `${base}.mp4`;
 }
 
-function ffprobe(filePath) {
+function ffprobe(filePath, signal) {
   return new Promise((resolve, reject) => {
     execFile(
       "ffprobe",
       ["-v", "error", "-print_format", "json", "-show_format", "-show_streams", filePath],
-      { maxBuffer: 10 * 1024 * 1024 },
+      { maxBuffer: 10 * 1024 * 1024, signal },
       (err, stdout) => {
         if (err) return reject(new Error("Unreadable or corrupted video file"));
         try {
@@ -80,34 +78,29 @@ function ffprobe(filePath) {
   });
 }
 
-// Reads the characteristics of an in-memory video
-async function probeVideoBuffer(buffer, originalname) {
-  const tmp = path.join(os.tmpdir(), `${uuidv4()}${path.extname(originalname || ".mp4")}`);
-  fs.writeFileSync(tmp, buffer);
-  try {
-    const data = await ffprobe(tmp);
-    const streams = data.streams || [];
-    const video = streams.find((s) => s.codec_type === "video");
-    const audio = streams.find((s) => s.codec_type === "audio");
-    if (!video) throw new Error("The file has no video stream");
+// Inspect the received file directly; do not create another full copy for FFprobe.
+async function probeVideoFile(filePath, { signal } = {}) {
+  const data = await ffprobe(filePath, signal);
+  const streams = data.streams || [];
+  const video = streams.find((s) => s.codec_type === "video");
+  const audio = streams.find((s) => s.codec_type === "audio");
+  if (!video) throw new Error("The file has no video stream");
 
-    const duration = parseFloat((data.format || {}).duration || video.duration || "0");
-    const [n, d] = String(video.avg_frame_rate || video.r_frame_rate || "0/1").split("/");
-    const fps = parseFloat(d) ? parseFloat(n) / parseFloat(d) : 0;
-
-    return {
-      duration,
-      width: video.width,
-      height: video.height,
-      fps: Math.round(fps * 100) / 100,
-      video_codec: video.codec_name,
-      audio_codec: audio ? audio.codec_name : null,
-      format_name: (data.format || {}).format_name,
-      size_bytes: buffer.length,
-    };
-  } finally {
-    fs.rmSync(tmp, { force: true });
-  }
+  const duration = parseFloat((data.format || {}).duration || video.duration || "0");
+  const [n, d] = String(video.avg_frame_rate || video.r_frame_rate || "0/1").split("/");
+  const fps = parseFloat(d) ? parseFloat(n) / parseFloat(d) : 0;
+  const stat = await fs.promises.stat(filePath);
+  signal?.throwIfAborted();
+  return {
+    duration,
+    width: video.width,
+    height: video.height,
+    fps: Math.round(fps * 100) / 100,
+    video_codec: video.codec_name,
+    audio_codec: audio ? audio.codec_name : null,
+    format_name: (data.format || {}).format_name,
+    size_bytes: stat.size,
+  };
 }
 
 // Validates a video against the accepted formats and the profile limits.
@@ -216,7 +209,7 @@ module.exports = {
   isVideoFile,
   isVideoMedia,
   videoOutputName,
-  probeVideoBuffer,
+  probeVideoFile,
   validateVideo,
   imageTools,
   videoPipeline,
