@@ -119,8 +119,13 @@ cd Tools/video && python3 -m venv .venv && .venv/bin/pip install -r requirements
 - Internal service-to-service TLS certificates are expired and not validated
   (`rejectUnauthorized: false`); several secrets are committed. Known issues, not patterns.
 - RabbitMQ consumers must survive broker restarts.
-- The image tools auto-acknowledge messages and swap `messageId`/`correlationId` in their error
-  replies, so their errors do not reach the user.
+- Image jobs are fault tolerant (RNF-FIAB-01, `docs/rnf-fiab-01/`): `Tools/utils` acks a request
+  only after its reply is confirmed (prefetch 1, max 3 deliveries per `messageId`, atomic writes),
+  and `projects` acks a reply only after handling it. Each image job is one `Process` document
+  with a `state`, a deterministic `request-<project>-<token>-<img>-<step>` id and its own output
+  under `out/runs/<token>/<img>/<step>/` (`projects/utils/runJobs.js`). Keep these properties
+  when changing tools or the orchestrator; previews, videos and frame extraction still use the
+  older per-step `Process` documents.
 - The users service answers errors with a non-standard 701 status (including "daily limit
   reached"); `projects` maps that case to 403 before replying.
 - Image/video handling is branched in the orchestrator, PIL effects are duplicated in

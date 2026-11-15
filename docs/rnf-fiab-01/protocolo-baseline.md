@@ -14,7 +14,7 @@ Definições e métricas: [especificacao-e-decisao.md](especificacao-e-decisao.m
 | `projects/utils/rabbit_mq.js`, `projects/routes/projects.js` | Linhas `READY`/`RECEIVED` e 5 pontos em `process_msg`, todos protegidos por `if (faultHooks.ENABLED)` |
 | `projects/tests/fault-hooks.test.js` | Testes unitários dos hooks Node (`node:test`) |
 | `tests/rnf-fiab-01/test_fault_hooks.py` | Testes unitários dos hooks Python |
-| `tests/rnf-fiab-01/test_baseline_characterization.py` | Caracterização do comportamento original (W1, W4, W5); a inverter na Fase 3 |
+| `tests/rnf-fiab-01/test_worker_messaging.py` | Na baseline: caracterização do comportamento original (W1, W4, W5), então `test_baseline_characterization.py`. Na Fase 3 foi renomeado e invertido (ver [implementacao.md](implementacao.md)) |
 | `tests/rnf-fiab-01/corpus.py` | Gerador determinístico do corpus e da referência |
 | `tests/rnf-fiab-01/compose.fiab.yaml` | Override do stack isolado `picturas-fiab` |
 | `tests/rnf-fiab-01/harness.py` | Execução dos cenários R0–R8, recolha de métricas e sumário |
