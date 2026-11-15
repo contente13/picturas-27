@@ -1,4 +1,4 @@
-const { send_rabbit_msg, read_rabbit_msg } = require('./rabbit_mq')
+const { publish, send_rabbit_msg, read_rabbit_msg } = require('./rabbit_mq')
 
 const queues = {
     'cut': 'cut_queue',
@@ -23,6 +23,7 @@ const queues = {
     'ws': 'ws_queue'
 }
 
+// Resolves when the broker has confirmed the persistent request (RNF-FIAB-01, D2).
 function send_msg_tool(msg_id, timestamp, og_img_uri, new_img_uri, tool, params) {
     const queue = queues[tool];
     const msg = {
@@ -36,7 +37,7 @@ function send_msg_tool(msg_id, timestamp, og_img_uri, new_img_uri, tool, params)
         }
     };
 
-    send_rabbit_msg(msg, queue);
+    return publish(msg, queue);
 }
 
 function send_msg_client(msg_id, timestamp, user) {
