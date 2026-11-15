@@ -34,23 +34,27 @@ Respostas ao pedido da Pessoa 2. O detalhe completo está em `docs/rnf-fiab-01/`
 
 ## Diagnóstico
 
+*Errata (2.ª entrega):* nesta tabela, os identificadores foram corrigidos para coincidirem com
+`diagnostico.md`. Antes diziam `W1′`, `R8b`, `P3–P6` e `P10`; o diagnóstico usa W1, W5, P4–P7/P12
+e P3, e P10 é o erro de um trabalho que leva a uma consolidação incompleta.
+
 O teu D1–D8 não está disponível (ver nota). O meu diagnóstico completo, com ficheiro e linha,
 está em `docs/rnf-fiab-01/diagnostico.md`. Resumo das janelas e de como as fechei:
 
 | Janela | Problema na versão original | Onde | Fechada por |
 | --- | --- | --- | --- |
 | W1 | Workers com `auto_ack=True`: o pedido é removido antes de ser processado; se o worker morre, perde-se | `Tools/utils/rabbit_mq.py` | ACK manual depois da resposta confirmada |
-| W1′ | Mensagens em *prefetch* (também já confirmadas) morrem com o worker: perdas colaterais | idem | `prefetch_count=1` |
+| W1 (colateral) | Mensagens em *prefetch* (também já confirmadas) morrem com o worker: perdas colaterais | idem | `prefetch_count=1` |
 | W2/W3 | Escrita *in-place* (`out/<nome>` é entrada e saída nos passos ≥ 1): uma repetição reaplica o efeito, e uma escrita parcial fica com o nome final | `projects/routes/projects.js`, `img_handler.py` | Saídas por execução/passo + escrita atómica |
 | W4/W6 | Respostas não persistentes e sem *publisher confirms* | `rabbit_mq.py` | `delivery_mode=2` + `confirm_delivery` |
 | W5 | Resposta de erro: chamada posicional rebenta (`raise`), e `messageId`/`correlationId` vêm trocados. O erro nunca chega ao utilizador | `Tools/utils/tool_msg.py` + todas as ferramentas | `send_msg` aceita a forma posicional; `correlationId` = pedido |
 | W7 | Efeito no fio da ligação bloqueia *heartbeats* | `rabbit_mq.py` | Fio de trabalho + `add_callback_threadsafe` |
-| R8b | Exceção fora do `try` da ferramenta mata o worker | `brightness.py` (e outras) | Resposta de erro genérica em `tool_msg.py` |
+| W5 (R8b) | Exceção fora do `try` da ferramenta mata o worker | `brightness.py` (e outras) | Resposta de erro genérica em `tool_msg.py` |
 | P1 | `projects` confirma a resposta antes do *callback* assíncrono terminar | `projects/utils/rabbit_mq.js` | ACK depois do tratamento |
-| P3–P6 | `Process` apagado antes de persistir; sucessor publicado sem confirmação | `process_msg` | Documento de trabalho com estado + *outbox* |
+| P4–P7, P12 | `Process` apagado antes de persistir; sucessor publicado sem confirmação | `process_msg` | Documento de trabalho com estado + *outbox* |
 | P8 | Consolidação prematura (contagem de `Process` restantes) | `process_msg` | Consolidação só com todos os trabalhos terminais |
 | P9 | Resultados todos gravados, mas a consolidação nunca acontece se o `projects` morre antes | `process_msg` | Reconciliação no arranque e a cada 10 s |
-| P10 | `Result` sem índice único: respostas repetidas publicam duplicados | `models/result.js` | `run_key` único + *upsert* |
+| P3 | `Result` sem índice único: respostas repetidas concorrentes publicam duplicados | `models/result.js` | `run_key` único + *upsert* |
 | K3 | Tentativa de uma execução cancelada escreve no mesmo ficheiro da execução nova | idem W2 | Saídas por execução |
 | K4 | *Undo* não invalida a execução em curso | `DELETE …/tool/:tool` | `activeToken` incrementado e resultados apagados, como no cancelamento |
 
