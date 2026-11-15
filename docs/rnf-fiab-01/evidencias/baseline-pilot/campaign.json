@@ -1,0 +1,76 @@
+{
+  "requirement": "RNF-FIAB-01",
+  "phase": "baseline",
+  "created": "2026-11-14T21:18:54.672394+00:00",
+  "git": {
+    "sha": "df5d0bc2a53ba8fb677987e2e1d69e939017418a",
+    "branch": "main",
+    "status": [
+      "M Tools/utils/img_handler.py",
+      " M Tools/utils/rabbit_mq.py",
+      " M Tools/utils/tool_msg.py",
+      " M projects/routes/projects.js",
+      " M projects/utils/rabbit_mq.js",
+      "?? Tools/utils/fault_hooks.py",
+      "?? docs/",
+      "?? projects/tests/fault-hooks.test.js",
+      "?? projects/utils/faultHooks.js",
+      "?? tests/rnf-fiab-01/"
+    ]
+  },
+  "runtime": {
+    "podman": "podman version 4.9.3",
+    "compose": [
+      "Docker Compose version v5.1.1"
+    ],
+    "kernel": "7.0.0-43-generic",
+    "cpus": 18
+  },
+  "images": {
+    "rabbitmq": {
+      "image": "docker.io/library/picturas-fiab-rabbitmq:latest",
+      "id": "8e8cdfc2407355f8bf70edbeb6539b2c980b0085d4a7fae2c3fda0668eda7a7a"
+    },
+    "projects_mongoDB": {
+      "image": "docker.io/library/mongo:4.4",
+      "id": "0010f63d26952bd3960fac5513c64a1cf7d6299f31fa7b54ac1b36633ee04333"
+    },
+    "projects": {
+      "image": "docker.io/library/picturas-fiab-projects:latest",
+      "id": "1d11dc513e0a525da52386a39ef934ed0c89ca7a8bc63c158d7f52e5d375407e"
+    },
+    "users": {
+      "image": "docker.io/library/picturas-fiab-users:latest",
+      "id": "275456da67640c749b518e66b88bfe44efdcda18afd3adb1d67237f3fbcd1153"
+    },
+    "img_storage": {
+      "image": "docker.io/library/picturas-fiab-img_storage:latest",
+      "id": "fef83adf35085c47f61f34f5652bda290cb2b20038d3fe037e05fe7b0c96546e"
+    },
+    "seaweedfs": {
+      "image": "docker.io/chrislusf/seaweedfs:4.47",
+      "id": "31d61f5e8771cbd5993912cd051be0c7bcdc207faaa12c50e1a3b8371631c927"
+    },
+    "border_tool": {
+      "image": "docker.io/library/picturas-fiab-border_tool:latest",
+      "id": "4d93ee6c9abaaceebedbc75e940504f42995474cc376a83bc9e536485713ccd6"
+    },
+    "brightness_tool": {
+      "image": "docker.io/library/picturas-fiab-brightness_tool:latest",
+      "id": "c1e55a391775bdd9b9e97604f8570e87e80ea295855bdf9d76273934e664a6c8"
+    },
+    "rotate_tool": {
+      "image": "docker.io/library/picturas-fiab-rotate_tool:latest",
+      "id": "681044a4ad0a26fc1294000dccc26bd18b40f53951e9e5da42e52276d7b281b8"
+    }
+  },
+  "compose_config_sha256": "a6ab6aae315230e04a696291b2383c46c2c9c9ee1c781a047f63eb24512a24ac",
+  "hooks_enabled_on": [
+    "projects",
+    "border_tool",
+    "brightness_tool",
+    "rotate_tool"
+  ],
+  "corpus_manifest_sha256": "f96259f942b7f76d3cf4b1b1f1f23a6f5b90c52f40dde6692a18d6eb73954912",
+  "t_obs_min_s": 120.0
+}

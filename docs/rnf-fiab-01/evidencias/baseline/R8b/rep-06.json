@@ -1,0 +1,243 @@
+{
+  "requirement": "RNF-FIAB-01",
+  "phase": "baseline",
+  "scenario": "R8b",
+  "rep": 6,
+  "pilot": false,
+  "fault_id": "R8b-06-4bd8ad",
+  "timestamps": {
+    "t_setup_done": "2026-11-15T00:53:29.499185+00:00",
+    "t_post": "2026-11-15T00:53:29.499207+00:00",
+    "t_commit": null
+  },
+  "fault": null,
+  "notes": [],
+  "queues_before": {
+    "border_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 1
+    },
+    "brightness_queue": {
+      "ready": 8,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "rotate_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 1
+    },
+    "project_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 1
+    },
+    "ws_queue": {
+      "ready": 13,
+      "unacked": 0,
+      "consumers": 0
+    }
+  },
+  "user": "6af90289b567c4ba5fbeff27",
+  "project": "6af90289e29eb6eeb03b239a",
+  "media": 10,
+  "pipeline": [
+    {
+      "procedure": "border",
+      "params": {
+        "borderWidth": 12,
+        "r": 200,
+        "g": 30,
+        "b": 30
+      }
+    },
+    {
+      "procedure": "brightness",
+      "params": {
+        "brightness": "invalid"
+      }
+    },
+    {
+      "procedure": "rotate",
+      "params": {
+        "degrees": 90
+      }
+    }
+  ],
+  "committed": false,
+  "results_at_commit": null,
+  "verify": {
+    "committed_token": 0,
+    "active_token": 1,
+    "token": 1,
+    "results_total": 0,
+    "media_with_result": 0,
+    "media_expected": 10,
+    "media_correct": 0,
+    "duplicates": 0,
+    "reapplied": 0,
+    "missing": 10,
+    "originals_changed": 0,
+    "pending_processes": 10,
+    "media": [
+      {
+        "name": "img01.png",
+        "img_id": "6af90289e29eb6eeb03b23a2",
+        "results": 0,
+        "pixel_ok": 0,
+        "pixel_mismatch": 0,
+        "dims": []
+      },
+      {
+        "name": "img02.png",
+        "img_id": "6af90289e29eb6eeb03b23ae",
+        "results": 0,
+        "pixel_ok": 0,
+        "pixel_mismatch": 0,
+        "dims": []
+      },
+      {
+        "name": "img03.png",
+        "img_id": "6af90289e29eb6eeb03b23be",
+        "results": 0,
+        "pixel_ok": 0,
+        "pixel_mismatch": 0,
+        "dims": []
+      },
+      {
+        "name": "img04.png",
+        "img_id": "6af90289e29eb6eeb03b23d2",
+        "results": 0,
+        "pixel_ok": 0,
+        "pixel_mismatch": 0,
+        "dims": []
+      },
+      {
+        "name": "img05.png",
+        "img_id": "6af90289e29eb6eeb03b23ea",
+        "results": 0,
+        "pixel_ok": 0,
+        "pixel_mismatch": 0,
+        "dims": []
+      },
+      {
+        "name": "img06.png",
+        "img_id": "6af90289e29eb6eeb03b2406",
+        "results": 0,
+        "pixel_ok": 0,
+        "pixel_mismatch": 0,
+        "dims": []
+      },
+      {
+        "name": "img07.png",
+        "img_id": "6af90289e29eb6eeb03b2426",
+        "results": 0,
+        "pixel_ok": 0,
+        "pixel_mismatch": 0,
+        "dims": []
+      },
+      {
+        "name": "img08.png",
+        "img_id": "6af90289e29eb6eeb03b244a",
+        "results": 0,
+        "pixel_ok": 0,
+        "pixel_mismatch": 0,
+        "dims": []
+      },
+      {
+        "name": "img09.png",
+        "img_id": "6af90289e29eb6eeb03b2472",
+        "results": 0,
+        "pixel_ok": 0,
+        "pixel_mismatch": 0,
+        "dims": []
+      },
+      {
+        "name": "img10.png",
+        "img_id": "6af90289e29eb6eeb03b249e",
+        "results": 0,
+        "pixel_ok": 0,
+        "pixel_mismatch": 0,
+        "dims": []
+      }
+    ]
+  },
+  "ops_before": {
+    "operations": [],
+    "remaining": 5
+  },
+  "ops_after": {
+    "operations": [],
+    "remaining": 5
+  },
+  "quota_delta": 0,
+  "queues_after": {
+    "border_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 1
+    },
+    "brightness_queue": {
+      "ready": 7,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "rotate_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 1
+    },
+    "project_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 1
+    },
+    "ws_queue": {
+      "ready": 13,
+      "unacked": 0,
+      "consumers": 0
+    }
+  },
+  "log_excerpt": [
+    "projects: RNF-FIAB-01 RECEIVED service=projects msg=request-da8a051a-58a0-4140-976d-64f63afd098f redelivered=false ts=2026-11-15T00:53:29.624Z",
+    "projects: RNF-FIAB-01 RECEIVED service=projects msg=request-77e5281f-e194-4f77-b978-70ba0f73e555 redelivered=false ts=2026-11-15T00:53:29.635Z",
+    "projects: RNF-FIAB-01 RECEIVED service=projects msg=request-b58b6e75-268d-4f2a-9012-bd45e1cc9da4 redelivered=false ts=2026-11-15T00:53:29.653Z",
+    "projects: RNF-FIAB-01 RECEIVED service=projects msg=request-34f173d7-5bbd-4f92-afab-24fd61de8a58 redelivered=false ts=2026-11-15T00:53:29.664Z",
+    "projects: RNF-FIAB-01 RECEIVED service=projects msg=request-6bcc9f5f-0a2b-4504-bde4-dbdae68f41bb redelivered=false ts=2026-11-15T00:53:29.678Z",
+    "projects: RNF-FIAB-01 RECEIVED service=projects msg=request-f073a773-d074-4584-88de-7e2bda4d351b redelivered=false ts=2026-11-15T00:53:29.690Z",
+    "projects: RNF-FIAB-01 RECEIVED service=projects msg=request-992f3856-5b36-456a-9e4d-67c3eeff9d51 redelivered=false ts=2026-11-15T00:53:29.710Z",
+    "projects: RNF-FIAB-01 RECEIVED service=projects msg=request-bd192eba-9a68-46d5-8c07-094a9133a9ba redelivered=false ts=2026-11-15T00:53:29.733Z",
+    "projects: RNF-FIAB-01 RECEIVED service=projects msg=request-731a5a0b-486b-4077-9c87-6d37e6a8b16e redelivered=false ts=2026-11-15T00:53:29.756Z",
+    "projects: RNF-FIAB-01 RECEIVED service=projects msg=request-46595508-e972-4596-91bf-6d6b7efd0f4f redelivered=false ts=2026-11-15T00:53:29.778Z",
+    "border_tool: RNF-FIAB-01 RECEIVED service=border_tool msg=request-da8a051a-58a0-4140-976d-64f63afd098f redelivered=false ts=2026-11-15T00:53:29.613118+00:00",
+    "border_tool: RNF-FIAB-01 RECEIVED service=border_tool msg=request-77e5281f-e194-4f77-b978-70ba0f73e555 redelivered=false ts=2026-11-15T00:53:29.624223+00:00",
+    "border_tool: RNF-FIAB-01 RECEIVED service=border_tool msg=request-b58b6e75-268d-4f2a-9012-bd45e1cc9da4 redelivered=false ts=2026-11-15T00:53:29.635601+00:00",
+    "border_tool: RNF-FIAB-01 RECEIVED service=border_tool msg=request-34f173d7-5bbd-4f92-afab-24fd61de8a58 redelivered=false ts=2026-11-15T00:53:29.652768+00:00",
+    "border_tool: RNF-FIAB-01 RECEIVED service=border_tool msg=request-6bcc9f5f-0a2b-4504-bde4-dbdae68f41bb redelivered=false ts=2026-11-15T00:53:29.664374+00:00",
+    "border_tool: RNF-FIAB-01 RECEIVED service=border_tool msg=request-f073a773-d074-4584-88de-7e2bda4d351b redelivered=false ts=2026-11-15T00:53:29.677987+00:00",
+    "border_tool: RNF-FIAB-01 RECEIVED service=border_tool msg=request-992f3856-5b36-456a-9e4d-67c3eeff9d51 redelivered=false ts=2026-11-15T00:53:29.689678+00:00",
+    "border_tool: RNF-FIAB-01 RECEIVED service=border_tool msg=request-bd192eba-9a68-46d5-8c07-094a9133a9ba redelivered=false ts=2026-11-15T00:53:29.709710+00:00",
+    "border_tool: RNF-FIAB-01 RECEIVED service=border_tool msg=request-731a5a0b-486b-4077-9c87-6d37e6a8b16e redelivered=false ts=2026-11-15T00:53:29.732476+00:00",
+    "border_tool: RNF-FIAB-01 RECEIVED service=border_tool msg=request-46595508-e972-4596-91bf-6d6b7efd0f4f redelivered=false ts=2026-11-15T00:53:29.755492+00:00",
+    "brightness_tool: RNF-FIAB-01 RECEIVED service=brightness_tool msg=request-29937da6-9755-4c48-94c3-c22df9159633 redelivered=false ts=2026-11-15T00:53:29.675573+00:00",
+    "brightness_tool: RNF-FIAB-01 READY service=brightness_tool ts=2026-11-15T00:55:29.946804+00:00",
+    "brightness_tool: RNF-FIAB-01 RECEIVED service=brightness_tool msg=request-a7022ba0-458e-4f41-84b0-b3537057ad76 redelivered=false ts=2026-11-15T00:55:29.946937+00:00",
+    "brightness_tool: Traceback (most recent call last):",
+    "brightness_tool: TypeError: must be real number, not str",
+    "brightness_tool: Traceback (most recent call last):",
+    "brightness_tool: raise Exception(\"Make sure, in case of error status, err_code, err_msg and og_img_uri are not None\")",
+    "brightness_tool: Exception: Make sure, in case of error status, err_code, err_msg and og_img_uri are not None",
+    "brightness_tool: Traceback (most recent call last):",
+    "brightness_tool: TypeError: must be real number, not str",
+    "brightness_tool: Traceback (most recent call last):",
+    "brightness_tool: raise Exception(\"Make sure, in case of error status, err_code, err_msg and og_img_uri are not None\")",
+    "brightness_tool: Exception: Make sure, in case of error status, err_code, err_msg and og_img_uri are not None"
+  ],
+  "duration_s": null,
+  "max_deliveries_per_msg": 1,
+  "worker_running_after": false,
+  "error_notified": false,
+  "t_obs_s": 120.0,
+  "wall_s": 122.56
+}

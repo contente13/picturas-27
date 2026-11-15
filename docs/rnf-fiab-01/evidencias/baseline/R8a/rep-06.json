@@ -1,0 +1,236 @@
+{
+  "requirement": "RNF-FIAB-01",
+  "phase": "baseline",
+  "scenario": "R8a",
+  "rep": 6,
+  "pilot": false,
+  "fault_id": "R8a-06-5524cc",
+  "timestamps": {
+    "t_setup_done": "2026-11-15T00:32:23.631304+00:00",
+    "t_post": "2026-11-15T00:32:23.631336+00:00",
+    "t_commit": null
+  },
+  "fault": null,
+  "notes": [],
+  "queues_before": {
+    "border_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "brightness_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 1
+    },
+    "rotate_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 1
+    },
+    "project_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 1
+    },
+    "ws_queue": {
+      "ready": 24,
+      "unacked": 0,
+      "consumers": 0
+    }
+  },
+  "user": "6af8fd97b567c4ba5fbefe50",
+  "project": "6af8fd978bd20b1359e46eaf",
+  "media": 11,
+  "committed": false,
+  "results_at_commit": null,
+  "verify": {
+    "committed_token": 0,
+    "active_token": 1,
+    "token": 1,
+    "results_total": 3,
+    "media_with_result": 3,
+    "media_expected": 11,
+    "media_correct": 3,
+    "duplicates": 0,
+    "reapplied": 0,
+    "missing": 8,
+    "originals_changed": 0,
+    "pending_processes": 8,
+    "media": [
+      {
+        "name": "img01.png",
+        "img_id": "6af8fd978bd20b1359e46eb7",
+        "results": 1,
+        "pixel_ok": 1,
+        "pixel_mismatch": 0,
+        "dims": [
+          [
+            504,
+            664
+          ]
+        ]
+      },
+      {
+        "name": "img02.png",
+        "img_id": "6af8fd978bd20b1359e46ec3",
+        "results": 1,
+        "pixel_ok": 1,
+        "pixel_mismatch": 0,
+        "dims": [
+          [
+            504,
+            664
+          ]
+        ]
+      },
+      {
+        "name": "img03.png",
+        "img_id": "6af8fd978bd20b1359e46ed3",
+        "results": 1,
+        "pixel_ok": 1,
+        "pixel_mismatch": 0,
+        "dims": [
+          [
+            504,
+            664
+          ]
+        ]
+      },
+      {
+        "name": "img04.png",
+        "img_id": "6af8fd978bd20b1359e46ee7",
+        "results": 0,
+        "pixel_ok": 0,
+        "pixel_mismatch": 0,
+        "dims": []
+      },
+      {
+        "name": "img05.png",
+        "img_id": "6af8fd978bd20b1359e46eff",
+        "results": 0,
+        "pixel_ok": 0,
+        "pixel_mismatch": 0,
+        "dims": []
+      },
+      {
+        "name": "img06.png",
+        "img_id": "6af8fd978bd20b1359e46f1b",
+        "results": 0,
+        "pixel_ok": 0,
+        "pixel_mismatch": 0,
+        "dims": []
+      },
+      {
+        "name": "img07.png",
+        "img_id": "6af8fd978bd20b1359e46f3b",
+        "results": 0,
+        "pixel_ok": 0,
+        "pixel_mismatch": 0,
+        "dims": []
+      },
+      {
+        "name": "img08.png",
+        "img_id": "6af8fd978bd20b1359e46f5f",
+        "results": 0,
+        "pixel_ok": 0,
+        "pixel_mismatch": 0,
+        "dims": []
+      },
+      {
+        "name": "img09.png",
+        "img_id": "6af8fd978bd20b1359e46f87",
+        "results": 0,
+        "pixel_ok": 0,
+        "pixel_mismatch": 0,
+        "dims": []
+      },
+      {
+        "name": "img10.png",
+        "img_id": "6af8fd978bd20b1359e46fb3",
+        "results": 0,
+        "pixel_ok": 0,
+        "pixel_mismatch": 0,
+        "dims": []
+      },
+      {
+        "name": "img11-invalid.png",
+        "img_id": "6af8fd978bd20b1359e46fe3",
+        "results": 0,
+        "pixel_ok": 0,
+        "pixel_mismatch": 0,
+        "dims": []
+      }
+    ]
+  },
+  "ops_before": {
+    "operations": [],
+    "remaining": 5
+  },
+  "ops_after": {
+    "operations": [],
+    "remaining": 5
+  },
+  "quota_delta": 0,
+  "queues_after": {
+    "border_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "brightness_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 1
+    },
+    "rotate_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 1
+    },
+    "project_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 1
+    },
+    "ws_queue": {
+      "ready": 12,
+      "unacked": 0,
+      "consumers": 0
+    }
+  },
+  "log_excerpt": [
+    "projects: RNF-FIAB-01 RECEIVED service=projects msg=request-d2bc2e15-952b-4b00-b1cb-b6b3d4173b2a redelivered=false ts=2026-11-15T00:32:23.785Z",
+    "projects: RNF-FIAB-01 RECEIVED service=projects msg=request-e34b6880-979d-43d9-97e4-e3cf5941c350 redelivered=false ts=2026-11-15T00:32:23.799Z",
+    "projects: RNF-FIAB-01 RECEIVED service=projects msg=request-5fcf3974-2683-46eb-bbfd-bba559e9d86d redelivered=false ts=2026-11-15T00:32:23.820Z",
+    "projects: RNF-FIAB-01 RECEIVED service=projects msg=request-0169c979-a674-435d-bc33-4e4701d2f253 redelivered=false ts=2026-11-15T00:32:23.863Z",
+    "projects: RNF-FIAB-01 RECEIVED service=projects msg=request-a175d86a-d6d6-4c80-8e57-07d0187ec98b redelivered=false ts=2026-11-15T00:32:23.888Z",
+    "projects: RNF-FIAB-01 RECEIVED service=projects msg=request-75243436-4e30-49d6-9c98-2e5d9e059ef6 redelivered=false ts=2026-11-15T00:32:23.913Z",
+    "projects: RNF-FIAB-01 RECEIVED service=projects msg=request-a2094c6e-30b7-472f-999a-99d7c959157d redelivered=false ts=2026-11-15T00:32:23.934Z",
+    "projects: RNF-FIAB-01 RECEIVED service=projects msg=request-1388e7ff-3d59-4c53-b4ad-76e2eba47e95 redelivered=false ts=2026-11-15T00:32:23.962Z",
+    "projects: RNF-FIAB-01 RECEIVED service=projects msg=request-551453a9-4cea-48f3-aaec-09cbcf243d4d redelivered=false ts=2026-11-15T00:32:28.985Z",
+    "border_tool: RNF-FIAB-01 RECEIVED service=border_tool msg=request-d2bc2e15-952b-4b00-b1cb-b6b3d4173b2a redelivered=false ts=2026-11-15T00:32:23.763936+00:00",
+    "border_tool: RNF-FIAB-01 RECEIVED service=border_tool msg=request-e34b6880-979d-43d9-97e4-e3cf5941c350 redelivered=false ts=2026-11-15T00:32:23.784581+00:00",
+    "border_tool: RNF-FIAB-01 RECEIVED service=border_tool msg=request-5fcf3974-2683-46eb-bbfd-bba559e9d86d redelivered=false ts=2026-11-15T00:32:23.799289+00:00",
+    "border_tool: RNF-FIAB-01 RECEIVED service=border_tool msg=request-59514d42-8042-40bd-89cb-e90a69d9e82e redelivered=false ts=2026-11-15T00:32:23.820142+00:00",
+    "border_tool: RNF-FIAB-01 READY service=border_tool ts=2026-11-15T00:34:23.965687+00:00",
+    "border_tool: Traceback (most recent call last):",
+    "border_tool: raise UnidentifiedImageError(msg)",
+    "border_tool: PIL.UnidentifiedImageError: cannot identify image file '/app/images/users/6af8fd97b567c4ba5fbefe50/projects/6af8fd978bd20b1359e46eaf/src/img11-invalid.png'",
+    "border_tool: Traceback (most recent call last):",
+    "border_tool: raise Exception(\"Make sure, in case of error status, err_code, err_msg and og_img_uri are not None\")",
+    "border_tool: Exception: Make sure, in case of error status, err_code, err_msg and og_img_uri are not None",
+    "brightness_tool: RNF-FIAB-01 RECEIVED service=brightness_tool msg=request-0169c979-a674-435d-bc33-4e4701d2f253 redelivered=false ts=2026-11-15T00:32:23.836238+00:00",
+    "brightness_tool: RNF-FIAB-01 RECEIVED service=brightness_tool msg=request-a175d86a-d6d6-4c80-8e57-07d0187ec98b redelivered=false ts=2026-11-15T00:32:23.862984+00:00",
+    "brightness_tool: RNF-FIAB-01 RECEIVED service=brightness_tool msg=request-75243436-4e30-49d6-9c98-2e5d9e059ef6 redelivered=false ts=2026-11-15T00:32:23.888355+00:00",
+    "rotate_tool: RNF-FIAB-01 RECEIVED service=rotate_tool msg=request-a2094c6e-30b7-472f-999a-99d7c959157d redelivered=false ts=2026-11-15T00:32:23.916469+00:00",
+    "rotate_tool: RNF-FIAB-01 RECEIVED service=rotate_tool msg=request-1388e7ff-3d59-4c53-b4ad-76e2eba47e95 redelivered=false ts=2026-11-15T00:32:23.942441+00:00",
+    "rotate_tool: RNF-FIAB-01 RECEIVED service=rotate_tool msg=request-551453a9-4cea-48f3-aaec-09cbcf243d4d redelivered=false ts=2026-11-15T00:32:28.970958+00:00"
+  ],
+  "duration_s": null,
+  "max_deliveries_per_msg": 1,
+  "worker_running_after": true,
+  "error_notified": false,
+  "t_obs_s": 120.0,
+  "wall_s": 122.09
+}

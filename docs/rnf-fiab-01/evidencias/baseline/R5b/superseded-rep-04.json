@@ -1,0 +1,9 @@
+{
+  "requirement": "RNF-FIAB-01",
+  "phase": "baseline",
+  "scenario": "R5b",
+  "rep": 4,
+  "harness_error": "TypeError(\"'<' not supported between instances of 'NoneType' and 'int'\")",
+  "t_obs_s": 120.0,
+  "wall_s": 4.04
+}
