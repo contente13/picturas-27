@@ -3,7 +3,7 @@
 Inert unless the container sets RNF_FIAB_01_HOOKS=1, which only the isolated
 test stack does (tests/rnf-fiab-01/compose.fiab.yaml). When disabled, every
 public function returns immediately without touching the filesystem, and
-store_img() is exactly Image.save(path).
+store_img() is exactly Image.save(path, format=fmt).
 
 When enabled, a fault is armed by writing <DIR>/fault.json:
 
@@ -149,14 +149,17 @@ def _format_for(path):
     return Image.registered_extensions().get(ext)
 
 
-def store_img(img, path):
-    """Image.save(path), with the before_write/during_write points when enabled."""
+def store_img(img, path, fmt=None):
+    """Image.save(path, format=fmt), with the before_write/during_write points when enabled.
+
+    Img_Handler passes the temporary file of its atomic write, so during_write leaves a
+    partial temporary file, never a partial file under the final name."""
     if ENABLED:
         point("before_write")
         cfg = _armed("during_write")
         if cfg is not None:
             buffer = io.BytesIO()
-            img.save(buffer, format=_format_for(path))
+            img.save(buffer, format=fmt or _format_for(path))
             data = buffer.getvalue()
             with open(path, "wb") as handle:
                 handle.write(data[: len(data) // 2])
@@ -165,4 +168,4 @@ def store_img(img, path):
             log("FAULT-POINT", id=cfg["id"], point="during_write", msg=current_msg(),
                 written=len(data) // 2, total=len(data))
             _block(cfg)
-    img.save(path)
+    img.save(path, format=fmt)
