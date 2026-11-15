@@ -1,0 +1,14 @@
+{
+  "status": 201,
+  "committed": true,
+  "results": 4,
+  "types": [
+    "image"
+  ],
+  "pass": true,
+  "requirement": "RNF-FIAB-01",
+  "check": "frames",
+  "doc": "Frame extraction on a mixed project (legacy barriers): 3 frames + the images.",
+  "started": "2026-11-15T12:55:32.272354+00:00",
+  "finished": "2026-11-15T12:55:33.384809+00:00"
+}

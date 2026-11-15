@@ -14,9 +14,9 @@ aqui.
 | ---- | ----------------------------------------------------- | ------------------------------- |
 | 0    | Inspeção, ambiente e plano                            | Concluída e aprovada            |
 | 1    | Diagnóstico do fluxo e especificação verificável      | Concluída e aprovada            |
-| 2    | Testes de falha, hooks, corpus e baseline             | Concluída — aguarda confirmação |
-| 3    | Implementação incremental                             | Por iniciar                     |
-| 4    | Validação final, regressão e relatório                | Por iniciar                     |
+| 2    | Testes de falha, hooks, corpus e baseline             | Concluída e aprovada            |
+| 3    | Implementação incremental                             | Concluída e aprovada            |
+| 4    | Validação final, regressão e relatório                | Concluída — aguarda confirmação |
 
 ## Índice
 
@@ -27,12 +27,12 @@ aqui.
 | [especificacao-e-decisao.md](especificacao-e-decisao.md)     | 1    | Definições formais, critérios de aceitação, alternativas e decisão       |
 | [protocolo-baseline.md](protocolo-baseline.md)               | 2    | Corpus, hooks, cenários R0–R8, métricas, repetições, reposição           |
 | [resultados-baseline.md](resultados-baseline.md)             | 2    | Medições da versão original                                              |
-| `implementacao.md`                                           | 3    | Alterações técnicas por incremento e respetivos testes                   |
-| `resultados-finais.md`                                       | 4    | Mesmo protocolo após implementação, tabela antes/depois                  |
-| `regressao-e-limitacoes.md`                                  | 4    | Regressão (cancelamento, quotas, mistos, vídeo, outros workers), riscos  |
+| [implementacao.md](implementacao.md)                         | 3    | Alterações técnicas por incremento e respetivos testes                   |
+| [resultados-finais.md](resultados-finais.md)                 | 4    | Mesmo protocolo após implementação, tabela antes/depois                  |
+| [regressao-e-limitacoes.md](regressao-e-limitacoes.md)       | 4    | Regressão (cancelamento, quotas, mistos, vídeo, outros workers), riscos  |
 | `evidencias/`                                                | 2–4  | Manifestos SHA-256, contagens, estados persistidos, logs sanitizados     |
 
-Os ficheiros sem ligação ainda não existem; são criados na fase indicada. `implementacao.md`
+`implementacao.md`
 foi acrescentado à estrutura sugerida para não misturar decisões (Fase 1) com o registo das
 alterações (Fase 3).
 

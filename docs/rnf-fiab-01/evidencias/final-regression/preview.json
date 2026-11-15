@@ -1,0 +1,10 @@
+{
+  "status": 201,
+  "preview_documents": 1,
+  "pass": true,
+  "requirement": "RNF-FIAB-01",
+  "check": "preview",
+  "doc": "Image preview (legacy path, ack after handling) still reaches its final step.",
+  "started": "2026-11-15T12:55:33.385125+00:00",
+  "finished": "2026-11-15T12:55:33.821243+00:00"
+}
