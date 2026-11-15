@@ -1,5 +1,7 @@
 from PIL import Image
 
+from . import fault_hooks
+
 class Img_HandlerException(Exception):
     def __init__(self, message, error_code = None):
         super().__init__(message)
@@ -13,4 +15,4 @@ class Img_Handler:
         return Image.open(img_path)
     
     def store_img(self, img: Image, img_path:str) -> None:
-        img.save(img_path)
+        fault_hooks.store_img(img, img_path)

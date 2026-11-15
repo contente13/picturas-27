@@ -68,6 +68,7 @@ const {
 } = require("../utils/video");
 const { persistFrameResults } = require("../utils/frameResults");
 const { dispatchProcessBatch } = require("../utils/processBatch");
+const faultHooks = require("../utils/faultHooks");
 
 const upload = temporaryUpload();
 
@@ -178,6 +179,8 @@ function process_msg() {
     try {
       const msg_content = JSON.parse(msg.content.toString());
       const msg_id = msg_content.correlationId;
+      const hookCtx = { body: msg.content.toString(), msg: msg_id };
+      if (faultHooks.ENABLED) await faultHooks.faultPoint("after_receive", hookCtx);
 
       const process = await Process.getOneByMsgId(msg_id);
       if (!process) return;
@@ -206,6 +209,8 @@ function process_msg() {
       // as barriers so another source cannot commit a partial run.
       const holdsRunCommit = project.tools.some((tool) => tool.procedure === "extract_frames") && !/preview/.test(msg_id);
       if (!holdsRunCommit) await Process.delete(process.user_id, process.project_id, process._id);
+      hookCtx.cur_pos = process.cur_pos;
+      if (faultHooks.ENABLED) await faultHooks.faultPoint("after_process_delete", hookCtx);
       
       if (msg_content.status === "error") {
         console.log(JSON.stringify(msg_content));
@@ -418,6 +423,7 @@ if (/preview/.test(msg_id) && isLast) {
         };
 
         await Result.create(result);
+        if (faultHooks.ENABLED) await faultHooks.faultPoint("after_result_persist", hookCtx);
       }
 
       // Se esta imagem acabou o pipeline, pode ser que a execução tenha terminado
@@ -432,6 +438,7 @@ if (/preview/.test(msg_id) && isLast) {
         );
 
         if (remaining === 0) {
+          if (faultHooks.ENABLED) await faultHooks.faultPoint("before_commit", hookCtx);
           // re-fetch do projeto (já tens project) mas garante que está fresh
           const freshProject = await Project.getOne(process.user_id, process.project_id);
 
@@ -513,6 +520,7 @@ if (/preview/.test(msg_id) && isLast) {
       // Making sure database entry is created before sending message to avoid conflicts
       await Process.create(new_process);
       if (holdsRunCommit) await Process.delete(process.user_id, process.project_id, process._id);
+      if (faultHooks.ENABLED) await faultHooks.faultPoint("before_next_publish", hookCtx);
       send_msg_tool(
         new_msg_id,
         timestamp,

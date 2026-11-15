@@ -1,6 +1,8 @@
 import pika
 from pika.exchange_type import ExchangeType
 
+from . import fault_hooks
+
 """
 # Callback example for those who need it
 def callback(ch, method, properties, body):
@@ -36,8 +38,9 @@ class Rabbit_MQ:
         
         self._channel.basic_consume(
             queue=self._queue,
-            on_message_callback=callback,
+            on_message_callback=fault_hooks.wrap_callback(callback),
             auto_ack=True,
         )
 
+        fault_hooks.ready()
         self._channel.start_consuming()

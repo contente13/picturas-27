@@ -1,6 +1,7 @@
 import json
 
 from .rabbit_mq import Rabbit_MQ
+from . import fault_hooks
 
 """
 # Callback example for those who need it
@@ -84,6 +85,10 @@ class ToolMSG:
                 
         msg = json.dumps(msg)    
             
+        if fault_hooks.ENABLED:
+            fault_hooks.point("after_output_before_reply")
         self._rabbit_mq.send_rabbit_msg(msg, self._proj_queue)
+        if fault_hooks.ENABLED:
+            fault_hooks.after_reply(msg, lambda: self._rabbit_mq.send_rabbit_msg(msg, self._proj_queue))
         
     

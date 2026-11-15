@@ -1,4 +1,5 @@
 const amqp = require('amqplib/callback_api');
+const faultHooks = require('./faultHooks');
 
 const rabbit_host = process.env.RABBITMQ_HOST;
 const rabbit_port = process.env.RABBITMQ_PORT;
@@ -45,13 +46,14 @@ function read_rabbit_msg(queue, callback) {
 
                 channel.consume(q.queue, (msg) => {
                     if(msg != null){
+                        if (faultHooks.ENABLED) faultHooks.received(msg);
                         callback(msg);
                         // Acknowledge the message
                         channel.ack(msg);
                     }
                 }, {
                     noAck: false
-                });
+                }, () => faultHooks.ready());
             });
         });
     });
