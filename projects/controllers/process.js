@@ -41,7 +41,13 @@ module.exports.delete = (user_id, project_id, process_id) => {
   });
 };
 
+// Pending documents of a run: legacy ones exist until done; image jobs (RNF-FIAB-01)
+// stay with a terminal state. Previews never block a run commit.
 module.exports.countByProjectAndToken = async (project_id, token) => {
-  return await Process.countDocuments({ project_id, token }).exec();
+  return await Process.countDocuments({
+    project_id, token,
+    state: { $nin: ["COMPLETED", "FAILED"] },
+    msg_id: { $not: /^preview-/ },
+  }).exec();
 };
 

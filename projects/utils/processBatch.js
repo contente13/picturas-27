@@ -3,7 +3,11 @@
 async function dispatchProcessBatch(jobs, { create, remove, send }) {
   const created = [];
   try {
-    for (const job of jobs) created.push(await create(job.process));
+    for (const job of jobs) {
+      const doc = await create(job.process);
+      created.push(doc);
+      job.created = doc;
+    }
   } catch (error) {
     await Promise.allSettled(created.map(remove));
     throw error;

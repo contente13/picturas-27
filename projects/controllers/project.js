@@ -90,10 +90,11 @@ module.exports.updateRaw = async (user_id, project_id, update) => {
 };
 
 
-// Commit only if cancellation/new processing has not changed the active run.
+// Commit only if cancellation/new processing has not changed the active run, and only
+// once: concurrent callers race on committedToken and a single one gets the document.
 module.exports.commitRunIfActive = async (user_id, project_id, token, tools) => {
   return Project.findOneAndUpdate(
-    { user_id, _id: project_id, activeToken: token },
+    { user_id, _id: project_id, activeToken: token, committedToken: { $ne: token } },
     { $set: { committedToken: token, resultsToken: token, committedTools: tools } },
     { new: true }
   ).exec();
