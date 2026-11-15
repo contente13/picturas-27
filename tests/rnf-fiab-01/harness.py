@@ -308,12 +308,20 @@ def corpus_files(include_invalid=False):
     return manifest, files
 
 
+# Pending = not finished. Baseline documents have no state and are deleted when done;
+# image jobs of the fixed version (RNF-FIAB-01) stay with a terminal state.
+def pending_filter(oid, token):
+    return {"project_id": oid, "token": token, "state": {"$nin": ["COMPLETED", "FAILED"]},
+            "msg_id": {"$not": re.compile("^preview-")}}
+
+
 def verify(env, user, project, token, manifest, expect_names):
     """Count, deduplicate and hash the results of one execution, plus original integrity."""
     oid = ObjectId(project)
     doc = env.db.projects.find_one({"_id": oid})
     results = list(env.db.results.find({"project_id": oid, "token": token}))
-    processes = env.db.processes.count_documents({"project_id": oid, "token": token})
+    processes = env.db.processes.count_documents(pending_filter(oid, token))
+    failed_jobs = env.db.processes.count_documents({"project_id": oid, "token": token, "state": "FAILED"})
     by_media = {}
     for result in results:
         by_media.setdefault(str(result["img_id"]), []).append(result)
@@ -365,7 +373,8 @@ def verify(env, user, project, token, manifest, expect_names):
         "token": token, "results_total": len(results), "media_with_result": len(by_media),
         "media_expected": expect_names, "media_correct": correct, "duplicates": duplicates,
         "reapplied": reapplied, "unreadable": unreadable, "missing": max(0, expect_names - len(by_media)),
-        "originals_changed": originals_changed, "pending_processes": processes, "media": media,
+        "originals_changed": originals_changed, "pending_processes": processes,
+        "failed_jobs": failed_jobs, "media": media,
     }
 
 
@@ -373,7 +382,7 @@ SANITIZE = re.compile(r"(?i)(bearer\s+\S+|password\S*|jwt\S*|authorization\S*|X-
 
 
 def excerpt(env, since, services):
-    keep = re.compile(r"RNF-FIAB-01|\[COMMIT|\[RUN-GUARD|\[process_msg\]|Traceback|Error|Exception")
+    keep = re.compile(r"RNF-FIAB-01|\[COMMIT|\[RUN-GUARD|\[JOB-|\[RECONCILE|\[process_msg\]|Traceback|Error|Exception")
     lines = []
     for service in services:
         for line in env.lines(service, since):
@@ -534,7 +543,7 @@ def r5(rep, variant):
     # Observation window for late side effects of the copies (not a failure proof).
     settle_until = time.time() + 30
     oid = ObjectId(rep.project)
-    while time.time() < settle_until and env.db.processes.count_documents({"project_id": oid, "token": run["token"]}):
+    while time.time() < settle_until and env.db.processes.count_documents(pending_filter(oid, run["token"])):
         time.sleep(0.05)
     time.sleep(2)
     rep.record["copies_delivered"] = len([x for x in env.events("projects", rep.t0, "RECEIVED") if x.get("msg") == msg])
@@ -597,7 +606,10 @@ def r8(rep, variant):
         deliveries[item.get("msg")] = deliveries.get(item.get("msg"), 0) + 1
     record["max_deliveries_per_msg"] = max(deliveries.values()) if deliveries else 0
     record["worker_running_after"] = env.running(target)
-    record["error_notified"] = any("[process_msg]" in l or "status=error" in l for l in record["log_excerpt"])
+    # Fixed version: projects logs [JOB-FAILED] right where it sends the error notification.
+    notified = [l for l in record["log_excerpt"] if "[JOB-FAILED]" in l or "[process_msg]" in l or "status=error" in l]
+    record["error_notified"] = bool(notified)
+    record["errors_notified"] = len(notified)
     return record
 
 
@@ -766,8 +778,10 @@ def cmd_summarize(args):
             "resume_s": _stats([r.get("resume_s") for r in reps]),
             "complete_after_fault_s": _stats([r.get("complete_after_fault_s") for r in reps]),
             "duration_s": _stats([r.get("duration_s") for r in reps]),
+            # D6: a job that failed permanently is reported, not awaited by the commit.
             "premature_commits": sum(1 for r in reps if r.get("committed") and
-                                     (r.get("results_at_commit") or 0) < (r.get("verify", {}).get("media_expected") or 0)),
+                                     (r.get("results_at_commit") or 0) <
+                                     (r.get("verify", {}).get("media_expected") or 0) - (r.get("verify", {}).get("failed_jobs") or 0)),
         }
         if recoverable:
             # A run is "completed correctly" only if committed with every job correct.
