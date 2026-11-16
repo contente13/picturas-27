@@ -1,0 +1,32 @@
+# Reclaim deleted media before repeated uploads exhaust writable volume slots.
+# Storage capacity, replication and request timeouts retain their defaults.
+[master.maintenance]
+scripts = """
+  lock
+  volume.vacuum -garbageThreshold=0.3
+  ec.encode -fullPercent=95 -quietFor=1h
+  ec.rebuild -apply
+  ec.balance -apply
+  fs.log.purge -daysAgo=7
+  volume.deleteEmpty -quietFor=24h -apply
+  volume.balance -apply
+  volume.fix.replication -apply
+  s3.clean.uploads -timeAgo=24h
+  unlock
+"""
+sleep_minutes = 1
+
+[master.sequencer]
+type = "raft"
+sequencer_snowflake_id = 0
+
+[master.volume_growth]
+copy_1 = 7
+copy_2 = 6
+copy_3 = 3
+copy_other = 1
+threshold = 0.9
+disable = false
+
+[master.replication]
+treat_replication_as_minimums = false

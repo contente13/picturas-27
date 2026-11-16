@@ -6,7 +6,6 @@ const axios = require("axios");
 const https = require("https");
 const fs = require("fs");
 
-const { temporaryUpload } = require("../utils/temporaryUpload");
 const { forwardUpload } = require("../utils/forwardUpload");
 const FormData = require("form-data");
 
@@ -21,7 +20,6 @@ const httpsAgent = new https.Agent({
   key: key,
 });
 
-const upload = temporaryUpload();
 
 const projectsURL = "https://projects:9001/";
 
@@ -408,9 +406,8 @@ router.post(
  */
 router.post(
   "/:user/:project/img",
-  upload.single("image"),
   auth.checkToken,
-  forwardUpload(projectsURL, httpsAgent, forwardAxiosError, "image", "img")
+  forwardUpload(projectsURL, httpsAgent, forwardAxiosError, "img")
 );
 
 /**
@@ -421,9 +418,8 @@ router.post(
  */
 router.post(
   "/:user/:project/video",
-  upload.single("video"),
   auth.checkToken,
-  forwardUpload(projectsURL, httpsAgent, forwardAxiosError, "video", "video")
+  forwardUpload(projectsURL, httpsAgent, forwardAxiosError, "video")
 );
 
 /**

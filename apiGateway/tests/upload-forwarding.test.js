@@ -37,14 +37,14 @@ test("forwarder preserves multipart, owner, caller, share, version and upstream 
   });
   const upstreamURL = await server(t, upstream);
   const gateway = express();
-  gateway.post("/:user/:project/video", temporaryUpload(path.join(dir, "gateway")).single("video"), (req, res, next) => {
+  gateway.post("/:user/:project/video", (req, res, next) => {
     req.authUserId = "caller";
     next();
   }, forwardUpload(upstreamURL, undefined, (res, error) => {
     const version = error.response.headers["x-project-version"];
     if (version) res.set("X-Project-Version", version);
     return res.status(error.response.status).json(error.response.data);
-  }, "video", "video"));
+  }, "video"));
   const gatewayURL = await server(t, gateway);
   for (const status of [204, 409]) {
     conflict = status === 409;
@@ -63,21 +63,23 @@ test("forwarder preserves multipart, owner, caller, share, version and upstream 
 test("upload transport disables redirect replay buffering", async (t) => {
   const original = axios.post;
   t.after(() => { axios.post = original; });
-  let cleaned = false;
   const input = new (require("node:stream").PassThrough)();
+  Object.assign(input, { params: { user: "u", project: "p" }, query: {},
+    headers: { "content-type": "multipart/form-data; boundary=test", "content-length": "123" } });
+  const response = new (require("node:events").EventEmitter)();
+  response.sendStatus = (status) => assert.equal(status, 204);
   axios.post = async (url, body, options) => {
+    assert.equal(body, input);
+    assert.equal(options.headers["Content-Type"], input.headers["content-type"]);
+    assert.equal(options.headers["Content-Length"], "123");
     assert.equal(options.maxRedirects, 0);
     assert.equal(options.maxBodyLength, Infinity);
     assert.equal(options.signal.aborted, false);
     return { headers: {} };
   };
-  await forwardUpload("http://projects/", null, () => assert.fail("must succeed"), "image", "img")({
-    file: { originalname: "photo.jpg", mimetype: "image/jpeg", size: 0 },
-    params: { user: "u", project: "p" }, query: {}, headers: {},
-    uploadContext: { signal: new AbortController().signal, openStream: () => input, cleanup: async () => { cleaned = true; } },
-  }, { sendStatus: (status) => assert.equal(status, 204) });
-  assert.equal(input.destroyed, true);
-  assert.equal(cleaned, true);
+  await forwardUpload("http://projects/", null, () => assert.fail("must succeed"), "img")(input, response);
+  assert.equal(input.listenerCount("aborted"), 0);
+  assert.equal(response.listenerCount("close"), 0);
 });
 
 test("client disconnect cancels the in-flight downstream request", { timeout: 30000 }, async (t) => {
@@ -93,8 +95,7 @@ test("client disconnect cancels the in-flight downstream request", { timeout: 30
   });
   const upstreamURL = await server(t, upstream);
   const gateway = express();
-  gateway.post("/:user/:project/video", temporaryUpload(path.join(dir, "gateway")).single("video"),
-    forwardUpload(upstreamURL, undefined, () => assert.fail("disconnected client must not receive an error response"), "video", "video"));
+  gateway.post("/:user/:project/video", forwardUpload(upstreamURL, undefined, () => assert.fail("disconnected client must not receive an error response"), "video"));
   const gatewayURL = await server(t, gateway);
   const form = new FormData();
   form.append("video", Buffer.alloc(1024 * 1024), { filename: "movie.mp4", contentType: "video/mp4" });
@@ -104,4 +105,36 @@ test("client disconnect cancels the in-flight downstream request", { timeout: 30
   await ready;
   req.destroy();
   await stopped;
+});
+
+test("forwards bytes before the client finishes the multipart body", { timeout: 30000 }, async (t) => {
+  let received;
+  const firstBytes = new Promise((resolve) => { received = resolve; });
+  const body = Buffer.from('--test\r\nContent-Disposition: form-data; name="video"; filename="movie.mp4"\r\nContent-Type: video/mp4\r\n\r\nvideo bytes\r\n--test--\r\n');
+  const upstream = express();
+  upstream.post("/u/p/video", (req, res) => {
+    const chunks = [];
+    req.on("data", (chunk) => { chunks.push(chunk); received(); });
+    req.on("end", () => {
+      assert.deepEqual(Buffer.concat(chunks), body);
+      res.set("X-Project-Version", "1").sendStatus(204);
+    });
+  });
+  const upstreamURL = await server(t, upstream);
+  const gateway = express();
+  gateway.post("/:user/:project/video", forwardUpload(upstreamURL, undefined,
+    () => assert.fail("streaming request must succeed"), "video"));
+  const gatewayURL = await server(t, gateway);
+  const request = http.request(`${gatewayURL}u/p/video`, { method: "POST", headers: {
+    "Content-Type": "multipart/form-data; boundary=test", "Content-Length": body.length,
+  } });
+  const response = once(request, "response");
+  request.write(body.subarray(0, 100));
+  await firstBytes;
+  assert.equal(request.writableEnded, false);
+  request.end(body.subarray(100));
+  const [result] = await response;
+  assert.equal(result.statusCode, 204);
+  assert.equal(result.headers["x-project-version"], "1");
+  result.resume();
 });

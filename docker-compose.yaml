@@ -71,6 +71,7 @@ services:
       WEED_S3_SSE_KEK_PASSPHRASE: ${S3_KEK_PASSPHRASE:-picturas-kek-passphrase-change-me}
     volumes:
       - seaweedfs_data:/data
+      - ./seaweedfs/master.toml:/etc/seaweedfs/master.toml:ro
     networks:
       - elk
 
