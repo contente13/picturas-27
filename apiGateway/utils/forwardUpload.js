@@ -1,50 +1,51 @@
 const axios = require("axios");
-const FormData = require("form-data");
 
-function forwardUpload(projectsURL, httpsAgent, forwardError, field, endpoint) {
+function forwardUpload(projectsURL, httpsAgent, forwardError, endpoint) {
   return async (req, res) => {
-    const context = req.uploadContext;
-    let input;
+    const controller = new AbortController();
+    const cancel = () => controller.abort();
+    const onClose = () => {
+      if (!res.writableFinished) cancel();
+    };
+    req.once("aborted", cancel);
+    res.once("close", onClose);
+    if (req.aborted || res.destroyed) cancel();
     try {
-      if (!req.file) throw new Error("No file found");
       const ownerId = req.query.owner || req.params.user;
       const callerId = req.authUserId || req.params.user;
-      const data = new FormData();
-      input = context.openStream();
-      data.append(field, input, {
-        filename: req.file.originalname,
-        contentType: req.file.mimetype,
-        knownLength: req.file.size,
-      });
       const response = await axios.post(
         `${projectsURL}${ownerId}/${req.params.project}/${endpoint}`,
-        data,
+        req,
         {
           headers: {
-            ...data.getHeaders(),
+            "Content-Type": req.headers["content-type"],
+            ...(req.headers["content-length"] ? { "Content-Length": req.headers["content-length"] } : {}),
             Authorization: req.headers.authorization,
             "X-Project-Version": req.headers["x-project-version"],
             "X-Caller-Id": callerId,
           },
           httpsAgent,
           params: req.query.share ? { share: req.query.share } : undefined,
-          signal: context.signal,
-          // Redirect replay retains uploaded chunks in memory. Internal endpoints do not redirect.
+          signal: controller.signal,
+          // Forward the original multipart stream with backpressure. Projects
+          // performs parsing and validation; redirects must not retain the body.
           maxRedirects: 0,
           maxBodyLength: Infinity,
           maxContentLength: Infinity,
         },
       );
-      if (!context.signal.aborted && !res.destroyed) {
+      if (!controller.signal.aborted && !res.destroyed) {
         const version = response.headers["x-project-version"];
         if (version) res.set("X-Project-Version", version);
         res.sendStatus(204);
       }
     } catch (error) {
-      if (!context.signal.aborted && !res.destroyed) forwardError(res, error, "Error uploading media");
+      if (!controller.signal.aborted && !res.destroyed) forwardError(res, error, "Error uploading media");
     } finally {
-      if (input) input.destroy();
-      await context.cleanup();
+      req.removeListener("aborted", cancel);
+      res.removeListener("close", onClose);
+      // An early upstream rejection must not leave an unread client body.
+      if (!req.complete && !req.destroyed) req.resume();
     }
   };
 }

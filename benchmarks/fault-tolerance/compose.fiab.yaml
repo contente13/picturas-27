@@ -1,0 +1,71 @@
+# Test-only override for the RNF-FIAB-01 fault-injection harness.
+# Used on top of the docker-compose.yaml of the version under test, always with
+# its own project name (fiab.py uses "picturas-fiab"), so the normal stack and
+# its volumes are never touched. It adds the fault shims, moves nginx to port 8443
+# and removes the other host ports to avoid collisions. FIAB_DIR and FIAB_CTL are set by fiab.py.
+
+x-image-tool-fault: &image-tool-fault
+  PYTHONPATH: /fault/shim
+  FAULT_DIR: /fault/ctl
+
+services:
+  brightness_tool:
+    environment:
+      <<: *image-tool-fault
+      FAULT_SERVICE: brightness
+    volumes:
+      - ${FIAB_DIR:?set by fiab.py}/faultshim:/fault/shim:ro
+      - ${FIAB_CTL:?set by fiab.py}:/fault/ctl
+
+  rotate_tool:
+    environment:
+      <<: *image-tool-fault
+      FAULT_SERVICE: rotate
+    volumes:
+      - ${FIAB_DIR:?set by fiab.py}/faultshim:/fault/shim:ro
+      - ${FIAB_CTL:?set by fiab.py}:/fault/ctl
+
+  border_tool:
+    environment:
+      <<: *image-tool-fault
+      FAULT_SERVICE: border
+    volumes:
+      - ${FIAB_DIR:?set by fiab.py}/faultshim:/fault/shim:ro
+      - ${FIAB_CTL:?set by fiab.py}:/fault/ctl
+
+  projects:
+    ports: !reset []
+    environment:
+      NODE_OPTIONS: --require /fault/shim/node/fault-shim.js
+      FAULT_SERVICE: projects
+      FAULT_DIR: /fault/ctl
+    volumes:
+      - ${FIAB_DIR:?set by fiab.py}/faultshim:/fault/shim:ro
+      - ${FIAB_CTL:?set by fiab.py}:/fault/ctl
+
+  # Own HTTPS port, so a normal stack on 8080 can keep running. Signed S3 URLs
+  # must point to the same port.
+  nginx:
+    ports: !override
+      - "8443:443"
+  img_storage:
+    ports: !reset []
+    environment:
+      FRONTEND_URL: "https://localhost:8443"
+
+  seaweedfs:
+    ports: !reset []
+  rabbitmq:
+    ports: !reset []
+  projects_mongoDB:
+    ports: !reset []
+  users_mongoDB:
+    ports: !reset []
+  users:
+    ports: !reset []
+  subscriptions:
+    ports: !reset []
+  ws_gateway:
+    ports: !reset []
+  generative-mock:
+    ports: !reset []

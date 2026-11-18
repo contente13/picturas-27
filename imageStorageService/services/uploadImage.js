@@ -21,19 +21,23 @@ async function uploadImage(userId, projectId, file, stage, { signal } = {}) {
     ContentType: file.mimetype,
   };
 
-  // RNF-EFIC-01: bound the SDK's part buffering to 8 MiB per active upload.
+  // Accepted source uploads fit in one PUT. Keep bounded multipart support for
+  // larger generated outputs without imposing a new limit on internal producers.
   let upload;
   const cancel = () => upload?.abort();
   signal?.addEventListener("abort", cancel, { once: true });
   try {
-    upload = s3.upload(params, { queueSize: 1, partSize: 8 * 1024 * 1024, leavePartsOnError: false });
+    upload = file.size <= 1024 * 1024 * 1024
+      ? s3.putObject(params)
+      : s3.upload(params, { queueSize: 1, partSize: 8 * 1024 * 1024, leavePartsOnError: false });
     if (signal?.aborted) cancel();
     const data = await upload.promise();
     if (signal?.aborted) {
       await s3.deleteObject({ Bucket: BUCKET, Key: params.Key }).promise();
       signal.throwIfAborted();
     }
-    return { imageKey, location: data.Location };
+    const location = data.Location || `${upload.httpRequest.endpoint.protocol}//${upload.httpRequest.endpoint.host}${upload.httpRequest.path}`;
+    return { imageKey, location };
   } catch (error) {
     console.error("Error uploading file:", error.message);
     throw error;

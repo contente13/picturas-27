@@ -1,0 +1,10 @@
+{
+  "requirement": "RNF-EFIC-01",
+  "comparison_scenario": "concurrent_small",
+  "minimum_memory_reduction_percent": 50,
+  "target_memory_reduction_percent": 70,
+  "maximum_time_increase_percent": 15,
+  "target_time_increase_percent": 0,
+  "decision_basis": "The team accepts up to 15% median response-time overhead in exchange for the memory improvement.",
+  "additional_goal": "All three large concurrent uploads complete with HTTP 204, version and integrity in all ten trials, under unchanged resources and timeouts."
+}
