@@ -30,7 +30,17 @@ SERVICE = os.environ.get("FAULT_SERVICE", "unknown")
 REPLY_QUEUE = os.environ.get("FAULT_REPLY_QUEUE", "project_queue")
 BOOT = uuid.uuid4().hex[:12]  # PIDs repeat across container restarts (PID 1)
 
-_state = threading.local()
+# The message being handled. Process-wide, not thread-local: a worker may run the effect
+# and the reply publish on threads other than the consumer callback (e.g. a handler thread
+# plus add_callback_threadsafe). Workers handle one message at a time (synchronous callback,
+# or prefetch_count=1), so the state is replaced on the next receive instead of being
+# cleared when the consumer callback returns.
+class _Current:
+    msg_id = None
+    target = None
+
+
+_state = _Current()
 _arm_lock = threading.Lock()
 _arm = {"key": None, "config": None, "count": 0}
 
@@ -135,11 +145,7 @@ def _wrap_callback(callback):
                     trace("armed-target", point=config.get("point"), action=config.get("action"),
                           trial=config.get("trial"), msg_id=msg_id)
         _act("after_receive")
-        try:
-            return callback(ch, method, properties, body)
-        finally:
-            _state.target = None
-            _state.msg_id = None
+        return callback(ch, method, properties, body)
     return wrapped
 
 

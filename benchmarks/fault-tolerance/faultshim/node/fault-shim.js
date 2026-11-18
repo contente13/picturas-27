@@ -4,9 +4,15 @@
 //
 // Control: <FAULT_DIR>/arm-<FAULT_SERVICE>.json, e.g.
 //   {"trial": "R6a-01", "point": "before_successor_create", "nth": 5}
-// Points (all crash the process before calling the wrapped function):
-//   before_successor_create  Process.create of a chain successor (cur_pos >= 1)
-//   before_result_create     Result.create (final output persisted)
+// Points (all crash the process; the window is the same in every version):
+//   before_successor_create  step advance: the reply was taken and the next step is not
+//                            yet published. Original code: before Process.create of a
+//                            successor (cur_pos >= 1), after the old Process was deleted.
+//                            RNF-FIAB-01 refactoring (utils/runJobs.js): right after the
+//                            store transition that persists the next step
+//                            (PENDING_DISPATCH), before it is published.
+//   before_result_create     before the final output is recorded: Result.create, or
+//                            mongoStore().upsertResult after the refactoring
 //   before_commit            Project.commitRunIfActive (run consolidation)
 // The arm file is renamed to *.fired.json before crashing, so the restarted
 // process does not fire again.
@@ -71,7 +77,31 @@ function wrap(exportsObject, name, point, select) {
 
 const id = (value) => (value == null ? null : String(value));
 
+// utils/runJobs.js (refactoring): wrap the store that mongoStore() returns. The patch is
+// applied when the module is loaded, before routes/projects.js destructures it.
+function patchRunJobs(m) {
+  const original = m.mongoStore;
+  if (typeof original !== "function") return;
+  m.mongoStore = function (...args) {
+    const store = original.apply(this, args);
+    const transition = store.transition;
+    if (typeof transition === "function") {
+      store.transition = async function (jobId, fromMsgId, update) {
+        const result = await transition.apply(this, [jobId, fromMsgId, update]);
+        if (result && update && update.state === "PENDING_DISPATCH" && update.cur_pos >= 1) {
+          maybeCrash("before_successor_create",
+            { msg_id: update.msg_id, img_id: id(result.img_id), cur_pos: update.cur_pos });
+        }
+        return result;
+      };
+    }
+    wrap(store, "upsertResult", "before_result_create", (r) => ({ img_id: id(r && r.img_id), token: r && r.token }));
+    return store;
+  };
+}
+
 const patches = {
+  "utils/runJobs.js": patchRunJobs,
   "controllers/process.js": (m) =>
     wrap(m, "create", "before_successor_create", (p) =>
       p && p.cur_pos >= 1 ? { msg_id: p.msg_id, img_id: id(p.img_id), cur_pos: p.cur_pos } : null),

@@ -15,6 +15,7 @@ from pika.adapters.blocking_connection import BlockingChannel
 from PIL import Image
 
 HERE = Path(__file__).resolve().parent
+SHIM_DIR = Path(os.environ.get("FIAB_SHIM_DIR", HERE / "faultshim"))
 sys.path.insert(0, str(HERE))
 import fiab  # noqa: E402
 
@@ -39,7 +40,7 @@ def shim(tmp_path, monkeypatch):
     monkeypatch.setattr(Image.Image, "save", Image.Image.save)
     monkeypatch.setenv("FAULT_DIR", str(tmp_path))
     monkeypatch.setenv("FAULT_SERVICE", "rotate")
-    spec = importlib.util.spec_from_file_location("fiab_sitecustomize", HERE / "faultshim" / "sitecustomize.py")
+    spec = importlib.util.spec_from_file_location("fiab_sitecustomize", SHIM_DIR / "sitecustomize.py")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
 
@@ -143,6 +144,44 @@ def test_duplicate_publishes_reply_copies(shim, monkeypatch):
     # Messages to other queues (e.g. ws progress) are never duplicated.
     BlockingChannel.basic_publish(shim.channel, "picturas", "ws_queue", b"{}")
     assert len(shim.published) == 3
+
+
+def test_points_fire_when_the_effect_and_reply_run_on_other_threads(shim, tmp_path, monkeypatch):
+    """Refactored workers: the consumer callback only starts a handler thread and the
+    reply is published later from the connection thread (add_callback_threadsafe)."""
+    import threading
+    monkeypatch.setattr(shim.time, "sleep", lambda s: None)
+    target = tmp_path / "out.png"
+    pending = []
+
+    def consumer_callback(ch, m, p, b):
+        def work():
+            Image.new("RGB", (8, 8)).save(str(target))
+            pending.append(lambda: BlockingChannel.basic_publish(shim.channel, "picturas", "project_queue", b"{}"))
+        thread = threading.Thread(target=work)
+        thread.start()
+        thread.join()
+
+    arm(shim.dir, point="after_publish", action="duplicate", nth=1, copies=2, gap_s=0)
+    shim.callback_for(consumer_callback)(None, Method(), None, body("t1"))
+    pending.pop()()  # the connection thread publishes after the callback returned
+    assert len(shim.published) == 2
+
+    arm(shim.dir, point="during_write", action="crash", nth=1, trial="t2")
+    errors = []
+
+    def crashing_callback(ch, m, p, b):
+        def work():
+            try:
+                Image.new("RGB", (8, 8)).save(str(target))
+            except Crashed as error:
+                errors.append(error)
+        thread = threading.Thread(target=work)
+        thread.start()
+        thread.join()
+
+    shim.callback_for(crashing_callback)(None, Method(), None, body("t2"))
+    assert errors, "during_write must fire on the handler thread"
 
 
 def test_hold_blocks_until_release(shim):

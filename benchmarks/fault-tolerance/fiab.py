@@ -296,7 +296,7 @@ def wait_event(predicate, timeout):
 def mongo_state(stack, pid):
     return stack.mongo(
         "var p=db.projects.findOne({_id:ObjectId('%s')});"
-        "var proc=db.processes.find({project_id:ObjectId('%s')}).toArray().map(function(d){return {msg_id:d.msg_id,img_id:d.img_id.str,cur_pos:d.cur_pos,token:d.token}});"
+        "var proc=db.processes.find({project_id:ObjectId('%s')}).toArray().map(function(d){return {msg_id:d.msg_id,img_id:d.img_id.str,cur_pos:d.cur_pos,token:d.token,state:d.state||null}});"
         "var res=db.results.find({project_id:ObjectId('%s')}).toArray().map(function(d){return {img_id:d.img_id.str,token:d.token,file_name:d.file_name,type:d.type}});"
         "print(JSON.stringify({activeToken:p?p.activeToken:null,committedToken:p?p.committedToken:null,processes:proc,results:res}))"
         % (pid, pid, pid))
@@ -370,7 +370,12 @@ def evaluate(api, stack, client, pid, run_token, corpus, golden):
             if sha256(api.download(media["url"])) != expected["sha256"]:
                 originals.append(media["name"])
     return {"committed": committed, "active_token": state["activeToken"], "committed_token": state["committedToken"],
-            "run_token": run_token, "pending_processes": len([p for p in state["processes"] if p["token"] == run_token]),
+            "run_token": run_token,
+            # Original code deletes a Process when its job ends; the refactoring keeps it with a
+            # terminal state (COMPLETED / FAILED). Only non-terminal documents are pending.
+            "pending_processes": len([p for p in state["processes"] if p["token"] == run_token
+                                      and p.get("state") not in TERMINAL_STATES]),
+            "failed_jobs": len([p for p in state["processes"] if p["token"] == run_token and p.get("state") == "FAILED"]),
             "results_for_run": len(run_results), "lost_files": files["missing"], "duplicated_files": files["duplicated"],
             "output_mismatch": mismatched, "originals_altered": originals, "outputs": outputs}
 
@@ -401,6 +406,7 @@ def run_trial(api, stack, scenario_id, rep, folder, corpus, golden):
         arm(scenario["arm"], trial)
     log_since = datetime.datetime.now(datetime.timezone.utc).isoformat()
     t_start = time.time()
+    m_start = time.monotonic()  # durations: immune to host clock corrections (WSL)
     record["t_start"] = t_start
     try:
         api.process(client, pid)
@@ -432,12 +438,13 @@ def run_trial(api, stack, scenario_id, rep, folder, corpus, golden):
         try:
             if api.results(client, pid).get("imgs"):
                 t_done = time.time()
+                m_done = time.monotonic()
                 break
         except Exception:
             pass
         time.sleep(PROTOCOL["poll_s"])
     record["completed_in_window"] = t_done is not None
-    record["duration_s"] = round(t_done - t_start, 3) if t_done else None
+    record["duration_s"] = round(m_done - m_start, 3) if t_done else None
 
     if t_done is None or scenario.get("arm"):
         time.sleep(PROTOCOL["late_check_s"])  # late replies, redeliveries, persistence
@@ -460,8 +467,13 @@ def run_trial(api, stack, scenario_id, rep, folder, corpus, golden):
     return record
 
 
+TERMINAL_STATES = ("COMPLETED", "FAILED")
+MAX_DELIVERIES_PERMANENT_ERROR = 3  # limit specified by Pessoa 1 (ENTREGA-P1-FIAB, M12)
+
+
 def classify(record):
     ev = record["evaluation"]
+    scenario = PROTOCOL["scenarios"][record["scenario"]]
     ok = (ev["committed"] and not ev["lost_files"] and not ev["duplicated_files"]
           and not ev["output_mismatch"] and not ev["originals_altered"])
     tl = record["timeline"]
@@ -473,6 +485,13 @@ def classify(record):
         "recovered_correctly": ok, "lost_files": len(ev["lost_files"]), "duplicated_results": len(ev["duplicated_files"]),
         "output_mismatch": len(ev["output_mismatch"]), "originals_altered": len(ev["originals_altered"]),
         "pending_processes": ev["pending_processes"], "max_deliveries": tl["max_deliveries"],
+        "failed_jobs": ev.get("failed_jobs", 0), "error_notifications": record.get("error_notifications"),
+        # M12: every job of a permanent error ends FAILED, with bounded deliveries and one
+        # notification each. Only meaningful for expect_failure scenarios (R8).
+        "permanent_error_handled": (ev.get("failed_jobs", 0) == len(json.loads((CORPUS / "manifest.json").read_text()))
+                                    and tl["max_deliveries"] <= MAX_DELIVERIES_PERMANENT_ERROR
+                                    and record.get("error_notifications") == ev.get("failed_jobs", 0))
+                                   if scenario.get("expect_failure") else None,
         "duration_s": record["duration_s"],
         "fault_to_ready_s": round(ready["ts"] - fault["ts"], 3) if fault and ready else None,
         "ready_to_resume_s": round(resume["ts"] - ready["ts"], 3) if ready and resume else None,
@@ -487,6 +506,8 @@ def summarize(folder):
         record = json.loads(path.read_text())
         # Recompute from the archived traces so later fixes of the analysis apply uniformly.
         record["timeline"] = timeline(read_events(path.parent), record["t_start"])
+        logs = path.parent / "logs.txt"
+        record["error_notifications"] = logs.read_text().count("[JOB-FAILED]") if logs.exists() else None
         rows.append(classify(record))
     if not rows:
         print("no trials")
@@ -499,12 +520,14 @@ def summarize(folder):
     for row in rows:
         s = summary.setdefault(row["scenario"], {"trials": 0, "recovered_correctly": 0, "completed_in_window": 0,
                                                  "lost_files": 0, "duplicated_results": 0, "output_mismatch": 0,
-                                                 "originals_altered": 0, "durations": [], "ready_to_resume": []})
+                                                 "originals_altered": 0, "failed_jobs": 0, "permanent_error_handled": 0,
+                                                 "durations": [], "ready_to_resume": []})
         s["trials"] += 1
         s["recovered_correctly"] += row["recovered_correctly"]
         s["completed_in_window"] += row["completed_in_window"]
-        for key in ("lost_files", "duplicated_results", "output_mismatch", "originals_altered"):
+        for key in ("lost_files", "duplicated_results", "output_mismatch", "originals_altered", "failed_jobs"):
             s[key] += row[key]
+        s["permanent_error_handled"] += bool(row["permanent_error_handled"])
         if row["duration_s"] is not None:
             s["durations"].append(row["duration_s"])
         if row["ready_to_resume_s"] is not None:
