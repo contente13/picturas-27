@@ -1,0 +1,15 @@
+{
+  "status": 201,
+  "committed": true,
+  "results": 3,
+  "image_results_correct": 2,
+  "video_results": 1,
+  "quota_delta": 2,
+  "expected_quota_delta": 2,
+  "pass": true,
+  "requirement": "RNF-FIAB-01",
+  "check": "mixed",
+  "doc": "Images + video in one run: images use the new jobs, the video the legacy path;\nthe run commits once after both, video effects are charged once, images are correct.",
+  "started": "2026-11-15T12:55:08.932620+00:00",
+  "finished": "2026-11-15T12:55:12.563638+00:00"
+}

@@ -1,0 +1,60 @@
+# RNF-FIAB-01 isolated test stack (override). Never use it with the "picturas" project.
+#
+#   podman compose -p picturas-fiab -f docker-compose.yaml -f tests/rnf-fiab-01/compose.fiab.yaml \
+#     up -d --build rabbitmq projects_mongoDB projects users_mongoDB users img_storage seaweedfs \
+#     border_tool brightness_tool rotate_tool
+#
+# - Own Compose project => own containers (picturas-fiab-*) and volumes (picturas-fiab_*).
+# - Host ports are removed or moved to 127.0.0.1 on non-default ports, so this stack can run
+#   next to the normal "picturas" stack without collisions.
+# - Fault hooks (RNF_FIAB_01_HOOKS=1) are enabled ONLY here; they are inert elsewhere.
+# - restart "no" on the services that the harness kills: the harness restarts them explicitly
+#   and measures from the READY log line, independently of runtime restart policies.
+services:
+  rabbitmq:
+    ports: !override
+      - "127.0.0.1:25672:5672"
+      - "127.0.0.1:25673:15672"
+
+  projects_mongoDB:
+    ports: !override
+      - "127.0.0.1:37018:27018"
+
+  projects:
+    restart: "no"
+    ports: !override
+      - "127.0.0.1:19002:9001"
+    environment:
+      RNF_FIAB_01_HOOKS: "1"
+      RNF_FIAB_01_SERVICE: "projects"
+
+  users_mongoDB:
+    ports: !reset []
+
+  users:
+    ports: !override
+      - "127.0.0.1:20001:10001"
+
+  img_storage:
+    ports: !reset []
+
+  seaweedfs:
+    ports: !reset []
+
+  border_tool:
+    restart: "no"
+    environment:
+      RNF_FIAB_01_HOOKS: "1"
+      RNF_FIAB_01_SERVICE: "border_tool"
+
+  brightness_tool:
+    restart: "no"
+    environment:
+      RNF_FIAB_01_HOOKS: "1"
+      RNF_FIAB_01_SERVICE: "brightness_tool"
+
+  rotate_tool:
+    restart: "no"
+    environment:
+      RNF_FIAB_01_HOOKS: "1"
+      RNF_FIAB_01_SERVICE: "rotate_tool"

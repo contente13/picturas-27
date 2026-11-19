@@ -1,0 +1,383 @@
+{
+  "trial": "R6c-04",
+  "scenario": "R6c",
+  "description": "Orchestrator dies before consolidating (committing) the run",
+  "rep": 4,
+  "queues_before": {
+    "saturation_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "border_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 1
+    },
+    "cut_ai_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "brightness_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 1
+    },
+    "binarization_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "obj_ai_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "contrast_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "text_ai_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "people_ai_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "project_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 1
+    },
+    "bg_remove_ai_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "upgrade_ai_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "rotate_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 1
+    },
+    "expand_ai_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "cut_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "scale_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "video_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "ws_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 1
+    },
+    "watermark_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "resize_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    }
+  },
+  "user_id": "6afecc6db300ee006cca55b7",
+  "project_id": "6afecc6d266a60b7d30544b3",
+  "operations_before": 5,
+  "t_start": 1795083374.2337935,
+  "process_http": "ok",
+  "completed_in_window": true,
+  "duration_s": 1.29,
+  "evaluation": {
+    "committed": true,
+    "active_token": 1,
+    "committed_token": 1,
+    "run_token": 1,
+    "pending_processes": 0,
+    "failed_jobs": 0,
+    "results_for_run": 10,
+    "lost_files": [],
+    "duplicated_files": [],
+    "output_mismatch": [],
+    "originals_altered": [],
+    "outputs": {
+      "fiab-00.png": [
+        {
+          "sha256": "c119e1f23d392578ca620d202784d44c42d5e588ae962fddacca458eea6da619",
+          "size": [
+            256,
+            336
+          ]
+        }
+      ],
+      "fiab-01.png": [
+        {
+          "sha256": "07e8edac5250c9870c572c87f6b7d84be72e225f6a38a2d1ad71ab06562c70ba",
+          "size": [
+            256,
+            336
+          ]
+        }
+      ],
+      "fiab-02.png": [
+        {
+          "sha256": "89e4143c4c9eb194d89566ba30e0f443d70b254639f09b4dd651fe4335a89195",
+          "size": [
+            256,
+            336
+          ]
+        }
+      ],
+      "fiab-03.png": [
+        {
+          "sha256": "dcbcfd091fc3136446957435dfc3d9212c518f3c433e53147459ccf2a0ea5e22",
+          "size": [
+            256,
+            336
+          ]
+        }
+      ],
+      "fiab-04.png": [
+        {
+          "sha256": "7b92a75c4efc6cf5f6eab70fe6c40ca62c0fb09ef65d5bdb45b2b8901d56534e",
+          "size": [
+            256,
+            336
+          ]
+        }
+      ],
+      "fiab-05.png": [
+        {
+          "sha256": "046eec7ba683214de755249aa13fb2b1b01c58e53342dcf229db12583e3458c3",
+          "size": [
+            256,
+            336
+          ]
+        }
+      ],
+      "fiab-06.png": [
+        {
+          "sha256": "c80f4719f5c9df781882c48246f4659de33c31f5ffb9be3aabe1fce5c1980b2d",
+          "size": [
+            256,
+            336
+          ]
+        }
+      ],
+      "fiab-07.png": [
+        {
+          "sha256": "342314d583dd6c31f6d59165b66fa3db566c487bf4c35165f3aad09ca15820da",
+          "size": [
+            256,
+            336
+          ]
+        }
+      ],
+      "fiab-08.png": [
+        {
+          "sha256": "fc6c2b4141ae5a114ccf7f28964cc4f05ea45073d965007f2ea2e31422945e55",
+          "size": [
+            256,
+            336
+          ]
+        }
+      ],
+      "fiab-09.png": [
+        {
+          "sha256": "da3c8de802fef90b744f160b6b7861c43fecd6f986484b58d498faa9db5aedbd",
+          "size": [
+            256,
+            336
+          ]
+        }
+      ]
+    }
+  },
+  "operations_after": 5,
+  "timeline": {
+    "fault": {
+      "ts": 1795083374.773,
+      "service": "projects",
+      "pid": 19,
+      "boot": "dbaf59fc5544",
+      "event": "fault",
+      "point": "before_commit",
+      "action": "crash",
+      "trial": "R6c-04",
+      "project_id": "6afecc6d266a60b7d30544b3",
+      "token": 1,
+      "t_rel": 0.539
+    },
+    "ready_after_fault": {
+      "ts": 1795083375.103,
+      "service": "projects",
+      "pid": 19,
+      "boot": "9a469f49c678",
+      "event": "start",
+      "argv": "/app/bin/www",
+      "t_rel": 0.869
+    },
+    "resume": null,
+    "deliveries": {
+      "request-6afecc6d266a60b7d30544b3-1-6afecc6d266a60b7d30544c0-0": 1,
+      "request-6afecc6d266a60b7d30544b3-1-6afecc6d266a60b7d30544d2-0": 1,
+      "request-6afecc6d266a60b7d30544b3-1-6afecc6d266a60b7d30544c0-1": 1,
+      "request-6afecc6d266a60b7d30544b3-1-6afecc6d266a60b7d30544e9-0": 1,
+      "request-6afecc6d266a60b7d30544b3-1-6afecc6d266a60b7d30544d2-1": 1,
+      "request-6afecc6d266a60b7d30544b3-1-6afecc6d266a60b7d30544c0-2": 1,
+      "request-6afecc6d266a60b7d30544b3-1-6afecc6d266a60b7d3054505-0": 1,
+      "request-6afecc6d266a60b7d30544b3-1-6afecc6d266a60b7d30544d2-2": 1,
+      "request-6afecc6d266a60b7d30544b3-1-6afecc6d266a60b7d30544e9-1": 1,
+      "request-6afecc6d266a60b7d30544b3-1-6afecc6d266a60b7d3054526-0": 1,
+      "request-6afecc6d266a60b7d30544b3-1-6afecc6d266a60b7d30544e9-2": 1,
+      "request-6afecc6d266a60b7d30544b3-1-6afecc6d266a60b7d3054505-1": 1,
+      "request-6afecc6d266a60b7d30544b3-1-6afecc6d266a60b7d305454c-0": 1,
+      "request-6afecc6d266a60b7d30544b3-1-6afecc6d266a60b7d3054526-1": 1,
+      "request-6afecc6d266a60b7d30544b3-1-6afecc6d266a60b7d3054505-2": 1,
+      "request-6afecc6d266a60b7d30544b3-1-6afecc6d266a60b7d3054526-2": 1,
+      "request-6afecc6d266a60b7d30544b3-1-6afecc6d266a60b7d3054577-0": 1,
+      "request-6afecc6d266a60b7d30544b3-1-6afecc6d266a60b7d305454c-1": 1,
+      "request-6afecc6d266a60b7d30544b3-1-6afecc6d266a60b7d305454c-2": 1,
+      "request-6afecc6d266a60b7d30544b3-1-6afecc6e266a60b7d30545a7-0": 1,
+      "request-6afecc6d266a60b7d30544b3-1-6afecc6d266a60b7d3054577-1": 1,
+      "request-6afecc6d266a60b7d30544b3-1-6afecc6e266a60b7d30545dc-0": 1,
+      "request-6afecc6d266a60b7d30544b3-1-6afecc6e266a60b7d30545a7-1": 1,
+      "request-6afecc6d266a60b7d30544b3-1-6afecc6d266a60b7d3054577-2": 1,
+      "request-6afecc6d266a60b7d30544b3-1-6afecc6e266a60b7d3054616-0": 1,
+      "request-6afecc6d266a60b7d30544b3-1-6afecc6e266a60b7d30545a7-2": 1,
+      "request-6afecc6d266a60b7d30544b3-1-6afecc6e266a60b7d30545dc-1": 1,
+      "request-6afecc6d266a60b7d30544b3-1-6afecc6e266a60b7d30545dc-2": 1,
+      "request-6afecc6d266a60b7d30544b3-1-6afecc6e266a60b7d3054616-1": 1,
+      "request-6afecc6d266a60b7d30544b3-1-6afecc6e266a60b7d3054616-2": 1
+    },
+    "fault_applied": true,
+    "max_deliveries": 1
+  },
+  "queues_after": {
+    "saturation_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "border_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 1
+    },
+    "cut_ai_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "brightness_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 1
+    },
+    "binarization_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "obj_ai_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "contrast_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "text_ai_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "people_ai_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "project_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 1
+    },
+    "bg_remove_ai_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "upgrade_ai_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "rotate_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 1
+    },
+    "expand_ai_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "cut_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "scale_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "video_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "ws_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 1
+    },
+    "watermark_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "resize_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    }
+  },
+  "cleanup": "project deleted"
+}

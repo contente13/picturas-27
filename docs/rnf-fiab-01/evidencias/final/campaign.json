@@ -1,0 +1,92 @@
+{
+  "requirement": "RNF-FIAB-01",
+  "phase": "final",
+  "created": "2026-11-15T12:16:53.667081+00:00",
+  "git": {
+    "sha": "674709b87924737eb3da8cb797fb610133b4c49d",
+    "branch": "rnf-fiab-01",
+    "status": [
+      "M AGENTS.md",
+      " M Tools/utils/fault_hooks.py",
+      " M Tools/utils/img_handler.py",
+      " M Tools/utils/rabbit_mq.py",
+      " M Tools/utils/tool_msg.py",
+      " M docs/rnf-fiab-01/README.md",
+      " M docs/rnf-fiab-01/protocolo-baseline.md",
+      " M projects/controllers/process.js",
+      " M projects/controllers/project.js",
+      " M projects/models/process.js",
+      " M projects/models/result.js",
+      " M projects/routes/projects.js",
+      " M projects/tests/process-batch.test.js",
+      " M projects/utils/processBatch.js",
+      " M projects/utils/project_msg.js",
+      " M projects/utils/rabbit_mq.js",
+      " M tests/rnf-fiab-01/harness.py",
+      "RM tests/rnf-fiab-01/test_baseline_characterization.py -> tests/rnf-fiab-01/test_worker_messaging.py",
+      "?? docs/rnf-fiab-01/evidencias/final/",
+      "?? docs/rnf-fiab-01/evidencias/phase3-debug-pilot/",
+      "?? docs/rnf-fiab-01/evidencias/phase3-pilot/",
+      "?? docs/rnf-fiab-01/implementacao.md",
+      "?? projects/tests/run-jobs.test.js",
+      "?? projects/utils/runJobs.js",
+      "?? tests/rnf-fiab-01/compose.ab-baseline.yaml",
+      "?? tests/rnf-fiab-01/regression.py"
+    ]
+  },
+  "runtime": {
+    "podman": "podman version 4.9.3",
+    "compose": [
+      "Docker Compose version v5.1.1"
+    ],
+    "kernel": "7.0.0-43-generic",
+    "cpus": 18
+  },
+  "images": {
+    "rabbitmq": {
+      "image": "docker.io/library/picturas-fiab-rabbitmq:latest",
+      "id": "8e8cdfc2407355f8bf70edbeb6539b2c980b0085d4a7fae2c3fda0668eda7a7a"
+    },
+    "projects_mongoDB": {
+      "image": "docker.io/library/mongo:4.4",
+      "id": "0010f63d26952bd3960fac5513c64a1cf7d6299f31fa7b54ac1b36633ee04333"
+    },
+    "projects": {
+      "image": "docker.io/library/picturas-fiab-projects:latest",
+      "id": "2879513e3410d4851a716a3996fe78cdef602323255b1f6d560c93c5f8e1fbe9"
+    },
+    "users": {
+      "image": "docker.io/library/picturas-fiab-users:latest",
+      "id": "275456da67640c749b518e66b88bfe44efdcda18afd3adb1d67237f3fbcd1153"
+    },
+    "img_storage": {
+      "image": "docker.io/library/picturas-fiab-img_storage:latest",
+      "id": "fef83adf35085c47f61f34f5652bda290cb2b20038d3fe037e05fe7b0c96546e"
+    },
+    "seaweedfs": {
+      "image": "docker.io/chrislusf/seaweedfs:4.47",
+      "id": "31d61f5e8771cbd5993912cd051be0c7bcdc207faaa12c50e1a3b8371631c927"
+    },
+    "border_tool": {
+      "image": "docker.io/library/picturas-fiab-border_tool:latest",
+      "id": "422f657ea0ce79ecd50e223535f3ec6cfe73763d643277508f060a9e2142242e"
+    },
+    "brightness_tool": {
+      "image": "docker.io/library/picturas-fiab-brightness_tool:latest",
+      "id": "a3dc2c1b8e48f414e9e98ef28ac54271d419c0e8fc2a6316495d51b95d4235bd"
+    },
+    "rotate_tool": {
+      "image": "docker.io/library/picturas-fiab-rotate_tool:latest",
+      "id": "2bc9550d67cd3fcf7353ce678c85976b78caca55cd5c3a575500e5addf260bb7"
+    }
+  },
+  "compose_config_sha256": "a6ab6aae315230e04a696291b2383c46c2c9c9ee1c781a047f63eb24512a24ac",
+  "hooks_enabled_on": [
+    "projects",
+    "border_tool",
+    "brightness_tool",
+    "rotate_tool"
+  ],
+  "corpus_manifest_sha256": "f96259f942b7f76d3cf4b1b1f1f23a6f5b90c52f40dde6692a18d6eb73954912",
+  "t_obs_min_s": 120.0
+}

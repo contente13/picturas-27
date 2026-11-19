@@ -1,0 +1,312 @@
+{
+  "requirement": "RNF-FIAB-01",
+  "phase": "baseline",
+  "scenario": "R6d",
+  "rep": 6,
+  "pilot": false,
+  "fault_id": "R6d-06-53f234",
+  "timestamps": {
+    "t_setup_done": "2026-11-14T23:58:59.415483+00:00",
+    "t_post": "2026-11-14T23:58:59.415689+00:00",
+    "t_fault": "2026-11-14T23:58:59.785000+00:00",
+    "t_kill": "2026-11-14T23:59:00.218867+00:00",
+    "t_ready": "2026-11-14T23:59:00.951000+00:00",
+    "t_resume": null,
+    "t_commit": "2026-11-14T23:59:01.101702+00:00"
+  },
+  "fault": {
+    "id": "R6d-06-53f234",
+    "target": "projects",
+    "action": "block",
+    "point": "after_result_persist",
+    "match": "img03.png",
+    "cur_pos": 2
+  },
+  "notes": [],
+  "queues_before": {
+    "border_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 1
+    },
+    "brightness_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 1
+    },
+    "rotate_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 1
+    },
+    "project_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "ws_queue": {
+      "ready": 27,
+      "unacked": 0,
+      "consumers": 0
+    }
+  },
+  "user": "6af8f5c2b567c4ba5fbefbc2",
+  "project": "6af8f5c2e90238ba87c9a89b",
+  "media": 10,
+  "post_status": 201,
+  "fault_msg": "request-7437e901-f8a1-4958-a15c-815d7f63dcaa",
+  "resume_s": null,
+  "complete_after_fault_s": 1.317,
+  "committed": true,
+  "results_at_commit": 10,
+  "verify": {
+    "committed_token": 1,
+    "active_token": 1,
+    "token": 1,
+    "results_total": 10,
+    "media_with_result": 10,
+    "media_expected": 10,
+    "media_correct": 10,
+    "duplicates": 0,
+    "reapplied": 0,
+    "missing": 0,
+    "originals_changed": 0,
+    "pending_processes": 0,
+    "media": [
+      {
+        "name": "img01.png",
+        "img_id": "6af8f5c3e90238ba87c9a8a3",
+        "results": 1,
+        "pixel_ok": 1,
+        "pixel_mismatch": 0,
+        "dims": [
+          [
+            504,
+            664
+          ]
+        ]
+      },
+      {
+        "name": "img02.png",
+        "img_id": "6af8f5c3e90238ba87c9a8af",
+        "results": 1,
+        "pixel_ok": 1,
+        "pixel_mismatch": 0,
+        "dims": [
+          [
+            504,
+            664
+          ]
+        ]
+      },
+      {
+        "name": "img03.png",
+        "img_id": "6af8f5c3e90238ba87c9a8bf",
+        "results": 1,
+        "pixel_ok": 1,
+        "pixel_mismatch": 0,
+        "dims": [
+          [
+            504,
+            664
+          ]
+        ]
+      },
+      {
+        "name": "img04.png",
+        "img_id": "6af8f5c3e90238ba87c9a8d3",
+        "results": 1,
+        "pixel_ok": 1,
+        "pixel_mismatch": 0,
+        "dims": [
+          [
+            504,
+            664
+          ]
+        ]
+      },
+      {
+        "name": "img05.png",
+        "img_id": "6af8f5c3e90238ba87c9a8eb",
+        "results": 1,
+        "pixel_ok": 1,
+        "pixel_mismatch": 0,
+        "dims": [
+          [
+            504,
+            664
+          ]
+        ]
+      },
+      {
+        "name": "img06.png",
+        "img_id": "6af8f5c3e90238ba87c9a907",
+        "results": 1,
+        "pixel_ok": 1,
+        "pixel_mismatch": 0,
+        "dims": [
+          [
+            504,
+            664
+          ]
+        ]
+      },
+      {
+        "name": "img07.png",
+        "img_id": "6af8f5c3e90238ba87c9a927",
+        "results": 1,
+        "pixel_ok": 1,
+        "pixel_mismatch": 0,
+        "dims": [
+          [
+            504,
+            664
+          ]
+        ]
+      },
+      {
+        "name": "img08.png",
+        "img_id": "6af8f5c3e90238ba87c9a94b",
+        "results": 1,
+        "pixel_ok": 1,
+        "pixel_mismatch": 0,
+        "dims": [
+          [
+            504,
+            664
+          ]
+        ]
+      },
+      {
+        "name": "img09.png",
+        "img_id": "6af8f5c3e90238ba87c9a973",
+        "results": 1,
+        "pixel_ok": 1,
+        "pixel_mismatch": 0,
+        "dims": [
+          [
+            504,
+            664
+          ]
+        ]
+      },
+      {
+        "name": "img10.png",
+        "img_id": "6af8f5c3e90238ba87c9a99f",
+        "results": 1,
+        "pixel_ok": 1,
+        "pixel_mismatch": 0,
+        "dims": [
+          [
+            504,
+            664
+          ]
+        ]
+      }
+    ]
+  },
+  "ops_before": {
+    "operations": [],
+    "remaining": 5
+  },
+  "ops_after": {
+    "operations": [],
+    "remaining": 5
+  },
+  "quota_delta": 0,
+  "queues_after": {
+    "border_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 1
+    },
+    "brightness_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 1
+    },
+    "rotate_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 1
+    },
+    "project_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "ws_queue": {
+      "ready": 27,
+      "unacked": 0,
+      "consumers": 0
+    }
+  },
+  "log_excerpt": [
+    "projects: RNF-FIAB-01 RECEIVED service=projects msg=request-0740fbbc-fb01-454c-a13c-b0ad576e59ae redelivered=false ts=2026-11-14T23:58:59.553Z",
+    "projects: RNF-FIAB-01 RECEIVED service=projects msg=request-37f6f816-2508-435a-bf7b-0d311270a650 redelivered=false ts=2026-11-14T23:58:59.569Z",
+    "projects: RNF-FIAB-01 RECEIVED service=projects msg=request-40c2e25f-6c51-4867-9b5c-cd1fbf0348ff redelivered=false ts=2026-11-14T23:58:59.582Z",
+    "projects: RNF-FIAB-01 RECEIVED service=projects msg=request-2e72902b-293d-4a47-993e-4a6acb2295e3 redelivered=false ts=2026-11-14T23:58:59.596Z",
+    "projects: RNF-FIAB-01 RECEIVED service=projects msg=request-ee8e99db-3f0f-4788-be91-0ccf8f178580 redelivered=false ts=2026-11-14T23:58:59.610Z",
+    "projects: RNF-FIAB-01 RECEIVED service=projects msg=request-412d9734-0566-41d9-a980-b89a5ceb73a9 redelivered=false ts=2026-11-14T23:58:59.624Z",
+    "projects: RNF-FIAB-01 RECEIVED service=projects msg=request-19a6c1b6-326e-4ee4-b012-938bcd64f053 redelivered=false ts=2026-11-14T23:58:59.631Z",
+    "projects: RNF-FIAB-01 RECEIVED service=projects msg=request-cf82c13c-44f4-479d-83eb-459283ad431b redelivered=false ts=2026-11-14T23:58:59.639Z",
+    "projects: RNF-FIAB-01 RECEIVED service=projects msg=request-a2459a1f-4256-4640-8835-12f1d3e945c3 redelivered=false ts=2026-11-14T23:58:59.652Z",
+    "projects: RNF-FIAB-01 RECEIVED service=projects msg=request-3149cdcb-7bb5-4e24-b18c-f3754da2e591 redelivered=false ts=2026-11-14T23:58:59.657Z",
+    "projects: RNF-FIAB-01 RECEIVED service=projects msg=request-96ee8bf1-1b8f-463c-b146-4be50d045572 redelivered=false ts=2026-11-14T23:58:59.671Z",
+    "projects: RNF-FIAB-01 RECEIVED service=projects msg=request-5a28d265-93d3-4101-82f8-9bfd3cd47736 redelivered=false ts=2026-11-14T23:58:59.674Z",
+    "projects: RNF-FIAB-01 RECEIVED service=projects msg=request-f07c512c-e45f-4405-a582-13b828e3e4fe redelivered=false ts=2026-11-14T23:58:59.700Z",
+    "projects: RNF-FIAB-01 RECEIVED service=projects msg=request-08f50ba2-f66a-41b8-ae3f-c431d23fd287 redelivered=false ts=2026-11-14T23:58:59.702Z",
+    "projects: RNF-FIAB-01 RECEIVED service=projects msg=request-6e3664a0-2cc8-47a3-860c-b310f9cd00b0 redelivered=false ts=2026-11-14T23:58:59.720Z",
+    "projects: RNF-FIAB-01 RECEIVED service=projects msg=request-f5984997-2f32-406c-9ac3-5182f7c4b05d redelivered=false ts=2026-11-14T23:58:59.723Z",
+    "projects: RNF-FIAB-01 RECEIVED service=projects msg=request-d2caca88-43a5-4df6-8973-0d9a895f0165 redelivered=false ts=2026-11-14T23:58:59.738Z",
+    "projects: RNF-FIAB-01 RECEIVED service=projects msg=request-96da070e-809c-4d40-bcdf-74bd7f56b194 redelivered=false ts=2026-11-14T23:58:59.747Z",
+    "projects: RNF-FIAB-01 RECEIVED service=projects msg=request-7437e901-f8a1-4958-a15c-815d7f63dcaa redelivered=false ts=2026-11-14T23:58:59.767Z",
+    "projects: RNF-FIAB-01 RECEIVED service=projects msg=request-98040409-277a-4c66-9c51-6b80ccf5daf5 redelivered=false ts=2026-11-14T23:58:59.772Z",
+    "projects: RNF-FIAB-01 RECEIVED service=projects msg=request-89db6b90-eab3-4c72-a449-a9394f2d85a0 redelivered=false ts=2026-11-14T23:58:59.783Z",
+    "projects: RNF-FIAB-01 FAULT-POINT service=projects id=R6d-06-53f234 point=after_result_persist msg=request-7437e901-f8a1-4958-a15c-815d7f63dcaa cur_pos=2 ts=2026-11-14T23:58:59.785Z",
+    "projects: RNF-FIAB-01 RECEIVED service=projects msg=request-dc77773c-d472-4b84-b077-8f78062b8639 redelivered=false ts=2026-11-14T23:58:59.801Z",
+    "projects: RNF-FIAB-01 RECEIVED service=projects msg=request-02ac79cc-3f1a-4785-b401-ed2a1f292e65 redelivered=false ts=2026-11-14T23:58:59.801Z",
+    "projects: RNF-FIAB-01 RECEIVED service=projects msg=request-3d26cd5a-4270-4e51-9897-86b2dea27695 redelivered=false ts=2026-11-14T23:58:59.824Z",
+    "projects: RNF-FIAB-01 RECEIVED service=projects msg=request-72a2ae7a-abf9-4df7-8b83-3eae4d29cda2 redelivered=false ts=2026-11-14T23:58:59.832Z",
+    "projects: RNF-FIAB-01 RECEIVED service=projects msg=request-e02a8f77-5734-48db-b6a7-adfe829d21b3 redelivered=false ts=2026-11-14T23:58:59.849Z",
+    "projects: RNF-FIAB-01 RECEIVED service=projects msg=request-818af453-5396-4952-8dc0-cd9113402b79 redelivered=false ts=2026-11-14T23:58:59.852Z",
+    "projects: RNF-FIAB-01 RECEIVED service=projects msg=request-0a41da1c-6d3e-4968-82e0-4c109efc8a81 redelivered=false ts=2026-11-14T23:58:59.877Z",
+    "projects: RNF-FIAB-01 RECEIVED service=projects msg=request-6b62ff08-b733-4390-b34a-c53e2b996e01 redelivered=false ts=2026-11-14T23:58:59.893Z",
+    "projects: RNF-FIAB-01 READY service=projects ts=2026-11-14T23:59:00.951Z",
+    "projects: RNF-FIAB-01 RECEIVED service=projects msg=request-ca8bcb02-fd14-4e71-acb7-dd20215ec3ff redelivered=false ts=2026-11-14T23:59:00.952Z",
+    "projects: [COMMIT] project=6af8f5c2e90238ba87c9a89b committedToken=1",
+    "border_tool: RNF-FIAB-01 RECEIVED service=border_tool msg=request-0740fbbc-fb01-454c-a13c-b0ad576e59ae redelivered=false ts=2026-11-14T23:58:59.530949+00:00",
+    "border_tool: RNF-FIAB-01 RECEIVED service=border_tool msg=request-37f6f816-2508-435a-bf7b-0d311270a650 redelivered=false ts=2026-11-14T23:58:59.551496+00:00",
+    "border_tool: RNF-FIAB-01 RECEIVED service=border_tool msg=request-40c2e25f-6c51-4867-9b5c-cd1fbf0348ff redelivered=false ts=2026-11-14T23:58:59.569261+00:00",
+    "border_tool: RNF-FIAB-01 RECEIVED service=border_tool msg=request-2e72902b-293d-4a47-993e-4a6acb2295e3 redelivered=false ts=2026-11-14T23:58:59.582219+00:00",
+    "border_tool: RNF-FIAB-01 RECEIVED service=border_tool msg=request-ee8e99db-3f0f-4788-be91-0ccf8f178580 redelivered=false ts=2026-11-14T23:58:59.596362+00:00",
+    "border_tool: RNF-FIAB-01 RECEIVED service=border_tool msg=request-412d9734-0566-41d9-a980-b89a5ceb73a9 redelivered=false ts=2026-11-14T23:58:59.609930+00:00",
+    "border_tool: RNF-FIAB-01 RECEIVED service=border_tool msg=request-cf82c13c-44f4-479d-83eb-459283ad431b redelivered=false ts=2026-11-14T23:58:59.623803+00:00",
+    "border_tool: RNF-FIAB-01 RECEIVED service=border_tool msg=request-3149cdcb-7bb5-4e24-b18c-f3754da2e591 redelivered=false ts=2026-11-14T23:58:59.639057+00:00",
+    "border_tool: RNF-FIAB-01 RECEIVED service=border_tool msg=request-96ee8bf1-1b8f-463c-b146-4be50d045572 redelivered=false ts=2026-11-14T23:58:59.657174+00:00",
+    "border_tool: RNF-FIAB-01 RECEIVED service=border_tool msg=request-f07c512c-e45f-4405-a582-13b828e3e4fe redelivered=false ts=2026-11-14T23:58:59.670673+00:00",
+    "brightness_tool: RNF-FIAB-01 RECEIVED service=brightness_tool msg=request-19a6c1b6-326e-4ee4-b012-938bcd64f053 redelivered=false ts=2026-11-14T23:58:59.609820+00:00",
+    "brightness_tool: RNF-FIAB-01 RECEIVED service=brightness_tool msg=request-a2459a1f-4256-4640-8835-12f1d3e945c3 redelivered=false ts=2026-11-14T23:58:59.630594+00:00",
+    "brightness_tool: RNF-FIAB-01 RECEIVED service=brightness_tool msg=request-5a28d265-93d3-4101-82f8-9bfd3cd47736 redelivered=false ts=2026-11-14T23:58:59.652425+00:00",
+    "brightness_tool: RNF-FIAB-01 RECEIVED service=brightness_tool msg=request-08f50ba2-f66a-41b8-ae3f-c431d23fd287 redelivered=false ts=2026-11-14T23:58:59.674098+00:00",
+    "brightness_tool: RNF-FIAB-01 RECEIVED service=brightness_tool msg=request-f5984997-2f32-406c-9ac3-5182f7c4b05d redelivered=false ts=2026-11-14T23:58:59.700050+00:00",
+    "brightness_tool: RNF-FIAB-01 RECEIVED service=brightness_tool msg=request-96da070e-809c-4d40-bcdf-74bd7f56b194 redelivered=false ts=2026-11-14T23:58:59.723122+00:00",
+    "brightness_tool: RNF-FIAB-01 RECEIVED service=brightness_tool msg=request-98040409-277a-4c66-9c51-6b80ccf5daf5 redelivered=false ts=2026-11-14T23:58:59.747399+00:00",
+    "brightness_tool: RNF-FIAB-01 RECEIVED service=brightness_tool msg=request-dc77773c-d472-4b84-b077-8f78062b8639 redelivered=false ts=2026-11-14T23:58:59.770796+00:00",
+    "brightness_tool: RNF-FIAB-01 RECEIVED service=brightness_tool msg=request-3d26cd5a-4270-4e51-9897-86b2dea27695 redelivered=false ts=2026-11-14T23:58:59.799398+00:00",
+    "brightness_tool: RNF-FIAB-01 RECEIVED service=brightness_tool msg=request-818af453-5396-4952-8dc0-cd9113402b79 redelivered=false ts=2026-11-14T23:58:59.824287+00:00",
+    "rotate_tool: RNF-FIAB-01 RECEIVED service=rotate_tool msg=request-6e3664a0-2cc8-47a3-860c-b310f9cd00b0 redelivered=false ts=2026-11-14T23:58:59.701622+00:00",
+    "rotate_tool: RNF-FIAB-01 RECEIVED service=rotate_tool msg=request-d2caca88-43a5-4df6-8973-0d9a895f0165 redelivered=false ts=2026-11-14T23:58:59.720352+00:00",
+    "rotate_tool: RNF-FIAB-01 RECEIVED service=rotate_tool msg=request-7437e901-f8a1-4958-a15c-815d7f63dcaa redelivered=false ts=2026-11-14T23:58:59.752371+00:00",
+    "rotate_tool: RNF-FIAB-01 RECEIVED service=rotate_tool msg=request-89db6b90-eab3-4c72-a449-a9394f2d85a0 redelivered=false ts=2026-11-14T23:58:59.766938+00:00",
+    "rotate_tool: RNF-FIAB-01 RECEIVED service=rotate_tool msg=request-02ac79cc-3f1a-4785-b401-ed2a1f292e65 redelivered=false ts=2026-11-14T23:58:59.782641+00:00",
+    "rotate_tool: RNF-FIAB-01 RECEIVED service=rotate_tool msg=request-72a2ae7a-abf9-4df7-8b83-3eae4d29cda2 redelivered=false ts=2026-11-14T23:58:59.817351+00:00",
+    "rotate_tool: RNF-FIAB-01 RECEIVED service=rotate_tool msg=request-e02a8f77-5734-48db-b6a7-adfe829d21b3 redelivered=false ts=2026-11-14T23:58:59.832584+00:00",
+    "rotate_tool: RNF-FIAB-01 RECEIVED service=rotate_tool msg=request-0a41da1c-6d3e-4968-82e0-4c109efc8a81 redelivered=false ts=2026-11-14T23:58:59.863645+00:00",
+    "rotate_tool: RNF-FIAB-01 RECEIVED service=rotate_tool msg=request-6b62ff08-b733-4390-b34a-c53e2b996e01 redelivered=false ts=2026-11-14T23:58:59.879178+00:00",
+    "rotate_tool: RNF-FIAB-01 RECEIVED service=rotate_tool msg=request-ca8bcb02-fd14-4e71-acb7-dd20215ec3ff redelivered=false ts=2026-11-14T23:58:59.903514+00:00"
+  ],
+  "duration_s": 1.686,
+  "t_obs_s": 120.0,
+  "wall_s": 3.25
+}

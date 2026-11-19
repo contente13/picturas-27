@@ -45,7 +45,9 @@ test('a cancelled run cannot overwrite the committed results with a delayed comm
   require.cache[modelPath] = { id: modelPath, filename: modelPath, loaded: true, exports: {
     findOneAndUpdate(filter, update) {
       return { exec: async () => {
-        if (Object.entries(filter).some(([key, value]) => state[key] !== value)) return null;
+        const matches = ([key, value]) => (value && typeof value === 'object' && '$ne' in value
+          ? state[key] !== value.$ne : state[key] === value);
+        if (!Object.entries(filter).every(matches)) return null;
         Object.assign(state, update.$set);
         return { ...state };
       }};
@@ -59,6 +61,8 @@ test('a cancelled run cannot overwrite the committed results with a delayed comm
     const result = await Project.commitRunIfActive('owner', 'project', 8, [{ procedure: 'extract_frames' }]);
     assert.equal(result.committedToken, 8);
     assert.equal(result.resultsToken, 8);
+    // RNF-FIAB-01: a second commit of the same run (concurrent reply copy) does nothing.
+    assert.equal(await Project.commitRunIfActive('owner', 'project', 8, []), null);
   } finally {
     if (originalModel) require.cache[modelPath] = originalModel; else delete require.cache[modelPath];
     if (originalController) require.cache[controllerPath] = originalController; else delete require.cache[controllerPath];

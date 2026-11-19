@@ -1,0 +1,25 @@
+# RNF-FIAB-01, Phase 4, M11 A/B only: runs the ORIGINAL version (commit 674709b: df5d0bc
+# + inert hooks) of the services the requirement changed, next to the same stack.
+#
+#   podman compose -p picturas-fiab -f docker-compose.yaml -f tests/rnf-fiab-01/compose.fiab.yaml \
+#     -f tests/rnf-fiab-01/compose.ab-baseline.yaml up -d --no-deps --no-build \
+#     projects border_tool brightness_tool rotate_tool
+#
+# The images are built from a worktree of 674709b (see docs/rnf-fiab-01/resultados-finais.md):
+#   podman build -t localhost/rnf-fiab-01-baseline-projects:674709b <worktree>/projects
+#   podman build -t localhost/rnf-fiab-01-baseline-<tool>_tool:674709b \
+#     -f <worktree>/Tools/<tool>/Dockerfile <worktree>/Tools
+# Going back to the fixed version: the same command without this file.
+services:
+  projects:
+    image: localhost/rnf-fiab-01-baseline-projects:674709b
+    pull_policy: never
+  border_tool:
+    image: localhost/rnf-fiab-01-baseline-border_tool:674709b
+    pull_policy: never
+  brightness_tool:
+    image: localhost/rnf-fiab-01-baseline-brightness_tool:674709b
+    pull_policy: never
+  rotate_tool:
+    image: localhost/rnf-fiab-01-baseline-rotate_tool:674709b
+    pull_policy: never

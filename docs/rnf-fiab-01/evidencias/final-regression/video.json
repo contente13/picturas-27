@@ -1,0 +1,15 @@
+{
+  "committed": true,
+  "results": [
+    [
+      "video",
+      "sample_6s.mp4"
+    ]
+  ],
+  "pass": true,
+  "requirement": "RNF-FIAB-01",
+  "check": "video",
+  "doc": "Video-only project (legacy path): commits once with one video result.",
+  "started": "2026-11-15T12:55:31.181706+00:00",
+  "finished": "2026-11-15T12:55:32.272057+00:00"
+}

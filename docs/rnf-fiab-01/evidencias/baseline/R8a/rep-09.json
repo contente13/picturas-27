@@ -1,0 +1,219 @@
+{
+  "requirement": "RNF-FIAB-01",
+  "phase": "baseline",
+  "scenario": "R8a",
+  "rep": 9,
+  "pilot": false,
+  "fault_id": "R8a-09-aed028",
+  "timestamps": {
+    "t_setup_done": "2026-11-15T00:39:01.949696+00:00",
+    "t_post": "2026-11-15T00:39:01.949714+00:00",
+    "t_commit": null
+  },
+  "fault": null,
+  "notes": [],
+  "queues_before": {
+    "border_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "brightness_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 1
+    },
+    "rotate_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 1
+    },
+    "project_queue": {
+      "ready": 1,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "ws_queue": {
+      "ready": 7,
+      "unacked": 0,
+      "consumers": 0
+    }
+  },
+  "user": "6af8ff1bb567c4ba5fbefe92",
+  "project": "6af8ff1bb5c28ef5bd45b776",
+  "media": 11,
+  "committed": false,
+  "results_at_commit": null,
+  "verify": {
+    "committed_token": 0,
+    "active_token": 1,
+    "token": 1,
+    "results_total": 0,
+    "media_with_result": 0,
+    "media_expected": 11,
+    "media_correct": 0,
+    "duplicates": 0,
+    "reapplied": 0,
+    "missing": 11,
+    "originals_changed": 0,
+    "pending_processes": 10,
+    "media": [
+      {
+        "name": "img01.png",
+        "img_id": "6af8ff25b5c28ef5bd45b781",
+        "results": 0,
+        "pixel_ok": 0,
+        "pixel_mismatch": 0,
+        "dims": []
+      },
+      {
+        "name": "img02.png",
+        "img_id": "6af8ff25b5c28ef5bd45b78d",
+        "results": 0,
+        "pixel_ok": 0,
+        "pixel_mismatch": 0,
+        "dims": []
+      },
+      {
+        "name": "img03.png",
+        "img_id": "6af8ff25b5c28ef5bd45b79d",
+        "results": 0,
+        "pixel_ok": 0,
+        "pixel_mismatch": 0,
+        "dims": []
+      },
+      {
+        "name": "img04.png",
+        "img_id": "6af8ff25b5c28ef5bd45b7b1",
+        "results": 0,
+        "pixel_ok": 0,
+        "pixel_mismatch": 0,
+        "dims": []
+      },
+      {
+        "name": "img05.png",
+        "img_id": "6af8ff25b5c28ef5bd45b7c9",
+        "results": 0,
+        "pixel_ok": 0,
+        "pixel_mismatch": 0,
+        "dims": []
+      },
+      {
+        "name": "img06.png",
+        "img_id": "6af8ff25b5c28ef5bd45b7e5",
+        "results": 0,
+        "pixel_ok": 0,
+        "pixel_mismatch": 0,
+        "dims": []
+      },
+      {
+        "name": "img07.png",
+        "img_id": "6af8ff25b5c28ef5bd45b805",
+        "results": 0,
+        "pixel_ok": 0,
+        "pixel_mismatch": 0,
+        "dims": []
+      },
+      {
+        "name": "img08.png",
+        "img_id": "6af8ff25b5c28ef5bd45b829",
+        "results": 0,
+        "pixel_ok": 0,
+        "pixel_mismatch": 0,
+        "dims": []
+      },
+      {
+        "name": "img09.png",
+        "img_id": "6af8ff25b5c28ef5bd45b851",
+        "results": 0,
+        "pixel_ok": 0,
+        "pixel_mismatch": 0,
+        "dims": []
+      },
+      {
+        "name": "img10.png",
+        "img_id": "6af8ff25b5c28ef5bd45b87d",
+        "results": 0,
+        "pixel_ok": 0,
+        "pixel_mismatch": 0,
+        "dims": []
+      },
+      {
+        "name": "img11-invalid.png",
+        "img_id": "6af8ff25b5c28ef5bd45b8ad",
+        "results": 0,
+        "pixel_ok": 0,
+        "pixel_mismatch": 0,
+        "dims": []
+      }
+    ]
+  },
+  "ops_before": {
+    "operations": [],
+    "remaining": 5
+  },
+  "ops_after": {
+    "operations": [],
+    "remaining": 5
+  },
+  "quota_delta": 0,
+  "queues_after": {
+    "border_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "brightness_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 1
+    },
+    "rotate_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 1
+    },
+    "project_queue": {
+      "ready": 1,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "ws_queue": {
+      "ready": 7,
+      "unacked": 0,
+      "consumers": 0
+    }
+  },
+  "log_excerpt": [
+    "projects: RNF-FIAB-01 RECEIVED service=projects msg=request-36d004c6-eda7-41a5-9fba-ef8ff9e18469 redelivered=false ts=2026-11-15T00:39:02.083Z",
+    "projects: RNF-FIAB-01 RECEIVED service=projects msg=request-f5d1ec02-cbb5-4a4b-a9dd-c8045d43ed7b redelivered=false ts=2026-11-15T00:39:02.104Z",
+    "projects: RNF-FIAB-01 RECEIVED service=projects msg=request-9956025e-6d36-4786-bb87-9e5aa895ba7e redelivered=false ts=2026-11-15T00:39:02.123Z",
+    "projects: RNF-FIAB-01 RECEIVED service=projects msg=request-57d5e6bd-492b-4819-b18f-0872cc144685 redelivered=false ts=2026-11-15T00:39:02.162Z",
+    "projects: RNF-FIAB-01 RECEIVED service=projects msg=request-c474f08a-cd6f-4f89-94d7-83a2a437d52a redelivered=false ts=2026-11-15T00:39:02.193Z",
+    "projects: RNF-FIAB-01 READY service=projects ts=2026-11-15T00:41:02.810Z",
+    "projects: RNF-FIAB-01 RECEIVED service=projects msg=request-eb850338-ec93-4c67-9ecb-50c7a2e9adde redelivered=false ts=2026-11-15T00:41:02.811Z",
+    "projects: RNF-FIAB-01 RECEIVED service=projects msg=request-2a085e65-6b8c-4a10-a27b-23c7c856a853 redelivered=false ts=2026-11-15T00:41:02.910Z",
+    "projects: Error: getaddrinfo EAI_AGAIN rabbitmq",
+    "border_tool: RNF-FIAB-01 RECEIVED service=border_tool msg=request-36d004c6-eda7-41a5-9fba-ef8ff9e18469 redelivered=false ts=2026-11-15T00:39:02.058975+00:00",
+    "border_tool: RNF-FIAB-01 RECEIVED service=border_tool msg=request-f5d1ec02-cbb5-4a4b-a9dd-c8045d43ed7b redelivered=false ts=2026-11-15T00:39:02.081798+00:00",
+    "border_tool: RNF-FIAB-01 RECEIVED service=border_tool msg=request-9956025e-6d36-4786-bb87-9e5aa895ba7e redelivered=false ts=2026-11-15T00:39:02.104366+00:00",
+    "border_tool: RNF-FIAB-01 RECEIVED service=border_tool msg=request-2a15ed12-960e-4920-bc78-33b2a14f7d86 redelivered=false ts=2026-11-15T00:39:02.122390+00:00",
+    "border_tool: RNF-FIAB-01 READY service=border_tool ts=2026-11-15T00:41:03.252959+00:00",
+    "border_tool: Traceback (most recent call last):",
+    "border_tool: raise UnidentifiedImageError(msg)",
+    "border_tool: PIL.UnidentifiedImageError: cannot identify image file '/app/images/users/6af8ff1bb567c4ba5fbefe92/projects/6af8ff1bb5c28ef5bd45b776/src/img11-invalid.png'",
+    "border_tool: Traceback (most recent call last):",
+    "border_tool: raise Exception(\"Make sure, in case of error status, err_code, err_msg and og_img_uri are not None\")",
+    "border_tool: Exception: Make sure, in case of error status, err_code, err_msg and og_img_uri are not None",
+    "brightness_tool: RNF-FIAB-01 RECEIVED service=brightness_tool msg=request-57d5e6bd-492b-4819-b18f-0872cc144685 redelivered=false ts=2026-11-15T00:39:02.137610+00:00",
+    "brightness_tool: RNF-FIAB-01 RECEIVED service=brightness_tool msg=request-c474f08a-cd6f-4f89-94d7-83a2a437d52a redelivered=false ts=2026-11-15T00:39:02.162225+00:00",
+    "brightness_tool: RNF-FIAB-01 RECEIVED service=brightness_tool msg=request-eb850338-ec93-4c67-9ecb-50c7a2e9adde redelivered=false ts=2026-11-15T00:39:02.193116+00:00",
+    "rotate_tool: RNF-FIAB-01 RECEIVED service=rotate_tool msg=request-2a085e65-6b8c-4a10-a27b-23c7c856a853 redelivered=false ts=2026-11-15T00:41:02.882117+00:00"
+  ],
+  "duration_s": null,
+  "max_deliveries_per_msg": 1,
+  "worker_running_after": true,
+  "error_notified": false,
+  "t_obs_s": 120.0,
+  "wall_s": 132.95
+}

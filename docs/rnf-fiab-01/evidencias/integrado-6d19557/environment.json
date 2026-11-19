@@ -1,0 +1,187 @@
+{
+  "phase": "final",
+  "started": "2026-11-19T09:47:00.853524",
+  "protocol": {
+    "protocol": 1,
+    "requirement": "RNF-FIAB-01",
+    "baseline_commit": "052310226c51fa57a17101c7bd1ad795674aac95",
+    "compose_project": "picturas-fiab",
+    "base_url": "https://localhost:8443/api-gateway",
+    "lot": {
+      "images": 10,
+      "width": 320,
+      "height": 240
+    },
+    "pipeline": [
+      {
+        "procedure": "brightness",
+        "params": {
+          "brightness": 1.3
+        }
+      },
+      {
+        "procedure": "rotate",
+        "params": {
+          "degrees": 90
+        }
+      },
+      {
+        "procedure": "border",
+        "params": {
+          "borderWidth": 8,
+          "r": 255,
+          "g": 0,
+          "b": 0
+        }
+      }
+    ],
+    "fault_services": [
+      "brightness",
+      "rotate",
+      "border"
+    ],
+    "repetitions": 10,
+    "window_s": 120,
+    "late_check_s": 30,
+    "poll_s": 0.25,
+    "ready_timeout_s": 120,
+    "scenarios": {
+      "R0": {
+        "description": "No fault: reference duration, quota and result count"
+      },
+      "R1": {
+        "description": "Worker dies after receiving the request, before any output",
+        "arm": {
+          "service": "rotate",
+          "point": "after_receive",
+          "action": "crash",
+          "nth": 5
+        }
+      },
+      "R2": {
+        "description": "Worker dies while writing the output file",
+        "arm": {
+          "service": "rotate",
+          "point": "during_write",
+          "action": "crash",
+          "nth": 5
+        }
+      },
+      "R3": {
+        "description": "Worker dies after writing the output, before replying",
+        "arm": {
+          "service": "rotate",
+          "point": "after_write",
+          "action": "crash",
+          "nth": 5
+        }
+      },
+      "R4": {
+        "description": "Worker dies after the reply reached the broker, before acknowledging the request",
+        "arm": {
+          "service": "rotate",
+          "point": "after_publish",
+          "action": "crash",
+          "nth": 5,
+          "post_publish_wait_s": 1.0
+        }
+      },
+      "R5a": {
+        "description": "Reply delivered twice at once (concurrent duplicates)",
+        "arm": {
+          "service": "rotate",
+          "point": "after_publish",
+          "action": "duplicate",
+          "nth": 5,
+          "copies": 2,
+          "gap_s": 0
+        }
+      },
+      "R5b": {
+        "description": "Reply delivered twice, 2 s apart (late duplicate)",
+        "arm": {
+          "service": "rotate",
+          "point": "after_publish",
+          "action": "duplicate",
+          "nth": 5,
+          "copies": 2,
+          "gap_s": 2
+        }
+      },
+      "R6a": {
+        "description": "Orchestrator dies while advancing a step (before registering the successor)",
+        "arm": {
+          "service": "projects",
+          "point": "before_successor_create",
+          "nth": 5
+        }
+      },
+      "R6b": {
+        "description": "Orchestrator dies before persisting a final result",
+        "arm": {
+          "service": "projects",
+          "point": "before_result_create",
+          "nth": 5
+        }
+      },
+      "R6c": {
+        "description": "Orchestrator dies before consolidating (committing) the run",
+        "arm": {
+          "service": "projects",
+          "point": "before_commit",
+          "nth": 1
+        }
+      },
+      "R7a": {
+        "description": "Cancel and restart while an old reply is held; the old reply is then delivered",
+        "arm": {
+          "service": "rotate",
+          "point": "before_publish",
+          "action": "hold",
+          "nth": 1,
+          "hold_timeout_s": 300
+        },
+        "cancel_restart": true
+      },
+      "R7b": {
+        "description": "Cancel and restart while an old write is held; the old write then lands on the new run",
+        "arm": {
+          "service": "rotate",
+          "point": "before_write",
+          "action": "hold",
+          "nth": 1,
+          "hold_timeout_s": 300
+        },
+        "cancel_restart": true
+      },
+      "R8": {
+        "description": "Permanent error (invalid effect parameter): no endless retries, error surfaced",
+        "pipeline_override": [
+          {
+            "procedure": "brightness",
+            "params": {
+              "brightness": "not-a-number"
+            }
+          }
+        ],
+        "expect_failure": true
+      }
+    }
+  },
+  "inventory": {
+    "source": "../picturas-fiab-final (git worktree, detached at 6d19557)",
+    "commit": "6d19557c32e45e08985854ef8f7a57a13d0ec000",
+    "dirty_files": [],
+    "docker_version": "4.9.3",
+    "docker_info": "",
+    "compose_version": "5.1.1",
+    "images": "[{\"ID\":\"sha256:c05939e13a616cd46ade6515e869aa24451ce7dc28d6f4f9ee8c6b1ec03fbf39\",\"ContainerName\":\"picturas-fiab-nginx-1\",\"Repository\":\"nginx\",\"Tag\":\"latest\",\"Platform\":\"linux/amd64\",\"Size\":166931294,\"Created\":\"2026-11-05T07:17:53.714313256Z\"},{\"ID\":\"sha256:94faf950fe59975d5187634f9106dd7aaf9df057991b2bce721998487af58269\",\"ContainerName\":\"picturas-fiab-ws_gateway-1\",\"Repository\":\"picturas-fiab-ws_gateway\",\"Tag\":\"latest\",\"Platform\":\"linux/amd64\",\"Size\":1144608799,\"Created\":\"2026-11-19T09:22:35.138084271Z\"},{\"ID\":\"sha256:7cebf874f10adc3302c66202e607849034cc8e9d70088b6847ac49a4f68740fd\",\"ContainerName\":\"picturas-fiab-rotate_tool-1\",\"Repository\":\"picturas-fiab-rotate_tool\",\"Tag\":\"latest\",\"Platform\":\"linux/amd64\",\"Size\":158479504,\"Created\":\"2026-11-19T09:27:15.807061653Z\"},{\"ID\":\"sha256:7f911fc136ee010230249c534b2a32a41b80da9a8022b46e6841be20fe1519ce\",\"ContainerName\":\"picturas-fiab-projects-1\",\"Repository\":\"picturas-fiab-projects\",\"Tag\":\"latest\",\"Platform\":\"linux/amd64\",\"Size\":1772561957,\"Created\":\"2026-11-19T09:27:16.415477805Z\"},{\"ID\":\"sha256:fba273059de0aa97df0fd4515cff5611646fea0e8ebf6623f43dc4882eba3cf6\",\"ContainerName\":\"picturas-fiab-frontend-1\",\"Repository\":\"picturas-fiab-frontend\",\"Tag\":\"latest\",\"Platform\":\"linux/amd64\",\"Size\":2202211537,\"Created\":\"2026-11-19T09:23:34.992041031Z\"},{\"ID\":\"sha256:460bc59777a3fc3f2fb2298d792b5b2a8e2fedae0461c7f1cc2e8572a01745e8\",\"ContainerName\":\"picturas-fiab-api_gateway-1\",\"Repository\":\"picturas-fiab-api_gateway\",\"Tag\":\"latest\",\"Platform\":\"linux/amd64\",\"Size\":1310614371,\"Created\":\"2026-11-19T09:27:15.8087812Z\"},{\"ID\":\"sha256:2aa8b236fe392d6b0680fe7a61ad0108ff1113606efefe473869116dab98d24f\",\"ContainerName\":\"picturas-fiab-brightness_tool-1\",\"Repository\":\"picturas-fiab-brightness_tool\",\"Tag\":\"latest\",\"Platform\":\"linux/amd64\",\"Size\":158480545,\"Created\":\"2026-11-19T09:27:15.805257508Z\"},{\"ID\":\"sha256:799354cad1528de2a3b457d0d90ff84b8fe0240dbe6adce23c5f31e2f89ea646\",\"ContainerName\":\"picturas-fiab-img_storage-1\",\"Repository\":\"picturas-fiab-img_storage\",\"Tag\":\"latest\",\"Platform\":\"linux/amd64\",\"Size\":1422040427,\"Created\":\"2026-11-19T09:27:15.573354233Z\"},{\"ID\":\"sha256:31d61f5e8771cbd5993912cd051be0c7bcdc207faaa12c50e1a3b8371631c927\",\"ContainerName\":\"picturas-fiab-seaweedfs-1\",\"Repository\":\"chrislusf/seaweedfs\",\"Tag\":\"4.47\",\"Platform\":\"linux/amd64\",\"Size\":532831050,\"Created\":\"2026-09-14T02:32:36.698794349Z\"},{\"ID\":\"sha256:6b3a2251264f74b53a318de93d4655ae75a38fd51ce168a4760e6d938330ff86\",\"ContainerName\":\"picturas-fiab-border_tool-1\",\"Repository\":\"picturas-fiab-border_tool\",\"Tag\":\"latest\",\"Platform\":\"linux/amd64\",\"Size\":158480017,\"Created\":\"2026-11-19T09:27:15.803151234Z\"},{\"ID\":\"sha256:0010f63d26952bd3960fac5513c64a1cf7d6299f31fa7b54ac1b36633ee04333\",\"ContainerName\":\"picturas-fiab-users_mongoDB-1\",\"Repository\":\"mongo\",\"Tag\":\"4.4\",\"Platform\":\"linux/amd64\",\"Size\":413597809,\"Created\":\"2025-12-29T20:13:14.290438749Z\"},{\"ID\":\"sha256:6bccc56edbb439dcd3e7e495b19f7a2654551d1a3478de20aa616c7d5a2495d4\",\"ContainerName\":\"picturas-fiab-rabbitmq-1\",\"Repository\":\"picturas-fiab-rabbitmq\",\"Tag\":\"latest\",\"Platform\":\"linux/amd64\",\"Size\":273545390,\"Created\":\"2026-11-19T09:22:27.577673636Z\"},{\"ID\":\"sha256:13dc5e187c3097cddd9e02164b816d914832e680c6af8e009d5ffce3ee2e7d5c\",\"ContainerName\":\"picturas-fiab-users-1\",\"Repository\":\"picturas-fiab-users\",\"Tag\":\"latest\",\"Platform\":\"linux/amd64\",\"Size\":1333130083,\"Created\":\"2026-11-19T09:22:33.53852694Z\"},{\"ID\":\"sha256:0010f63d26952bd3960fac5513c64a1cf7d6299f31fa7b54ac1b36633ee04333\",\"ContainerName\":\"picturas-fiab-projects_mongoDB-1\",\"Repository\":\"mongo\",\"Tag\":\"4.4\",\"Platform\":\"linux/amd64\",\"Size\":413597809,\"Created\":\"2025-12-29T20:13:14.290438749Z\"}]\n\n",
+    "harness_sha256": {
+      "fiab.py": "fa6bd7a9c93458fd086e6230b32ae4157cdfdec60b9048e794f69b632a5933a9",
+      "protocol.json": "f556ef9a12b4e7095e667f855cb2b783f990b2de0a691bf7b6e73313b4edd793",
+      "compose.fiab.yaml": "e6e7e8ce2c8376a76b619d09ea4cdf98fd90f1c9adf332ea390140ac3ec76134",
+      "sitecustomize.py": "b29cf49a55943f8511ba0404dcfe952779ace6e71c4647712c458d767e8e6645",
+      "fault-shim.js": "9ffa0aae0bd8dd8439274fdab8703bb9fefa76e3f1dfc81bceb69be19283b4f2"
+    }
+  }
+}

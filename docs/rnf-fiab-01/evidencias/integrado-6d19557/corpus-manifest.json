@@ -1,0 +1,72 @@
+[
+  {
+    "file": "fiab-00.png",
+    "bytes": 185693,
+    "sha256": "49dba199820b9b07fbfa3ce64670e318143ce36c54e484ae62737cf970bea9cc",
+    "width": 320,
+    "height": 240
+  },
+  {
+    "file": "fiab-01.png",
+    "bytes": 140225,
+    "sha256": "6e562c4122177aaa9b23bd9532e0d67fd830619aa3652cd506bed07635f57848",
+    "width": 320,
+    "height": 240
+  },
+  {
+    "file": "fiab-02.png",
+    "bytes": 185726,
+    "sha256": "f1307131bc1fcd9583b9900ad53a50159db104c63a9af9d5d21392d09a1f9723",
+    "width": 320,
+    "height": 240
+  },
+  {
+    "file": "fiab-03.png",
+    "bytes": 140238,
+    "sha256": "94c63446631c95cc66cb4bc84fdec6ca2baa6ad5ae9b1e0142b3d68bb9b7ed7c",
+    "width": 320,
+    "height": 240
+  },
+  {
+    "file": "fiab-04.png",
+    "bytes": 185733,
+    "sha256": "f33a128cc0f7f613562042db4a59f95a8721fd8246f7fb075bd6f1873e1da06f",
+    "width": 320,
+    "height": 240
+  },
+  {
+    "file": "fiab-05.png",
+    "bytes": 140209,
+    "sha256": "03928acda9f22283b9e29d21de214433252daf1b65329c2e1a75ecbdd6a80803",
+    "width": 320,
+    "height": 240
+  },
+  {
+    "file": "fiab-06.png",
+    "bytes": 185729,
+    "sha256": "438e4d5cbceae4aba04f02eeb5701a0b42e7b487f739ff946634290cfeaccd49",
+    "width": 320,
+    "height": 240
+  },
+  {
+    "file": "fiab-07.png",
+    "bytes": 140210,
+    "sha256": "a7887fc5399568cca66a87f72ebb1a36a3e222312a8caf4c298335a22641c23f",
+    "width": 320,
+    "height": 240
+  },
+  {
+    "file": "fiab-08.png",
+    "bytes": 185737,
+    "sha256": "aa4378863b47e56854e27d6ebe0e96ad9e41882527903cfe3ab8c278d16a34d0",
+    "width": 320,
+    "height": 240
+  },
+  {
+    "file": "fiab-09.png",
+    "bytes": 140220,
+    "sha256": "1d462a850d829a0ad80519dd428f183470a70b66dc3cbefa4cc9d185d497cae7",
+    "width": 320,
+    "height": 240
+  }
+]

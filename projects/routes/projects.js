@@ -68,6 +68,10 @@ const {
 } = require("../utils/video");
 const { persistFrameResults } = require("../utils/frameResults");
 const { dispatchProcessBatch } = require("../utils/processBatch");
+const faultHooks = require("../utils/faultHooks");
+const { createRunJobs, mongoStore, newJob, parseRequestId } = require("../utils/runJobs");
+const ProcessModel = require("../models/process");
+const ResultModel = require("../models/result");
 
 const upload = temporaryUpload();
 
@@ -82,6 +86,31 @@ const httpsAgent = new https.Agent({
 });
 
 const users_ms = "https://users:10001/";
+
+// RNF-FIAB-01: idempotent image jobs (see utils/runJobs.js).
+const runJobs = createRunJobs({
+  store: mongoStore(ProcessModel, ResultModel),
+  getProject: (user, project) => Project.getOne(user, project),
+  commitRunIfActive: (user, project, token, tools) => Project.commitRunIfActive(user, project, token, tools),
+  storage: {
+    upload: async (user, project, filePath, fileName) => {
+      const data = new FormData();
+      data.append("file", fs.createReadStream(filePath), { filename: fileName, contentType: mime.lookup(fileName) });
+      const resp = await post_image(user, project, "out", data);
+      return resp.data.data.imageKey.split("/").pop();
+    },
+    remove: (user, project, key) => delete_image(user, project, "out", key),
+  },
+  publishTool: send_msg_tool,
+  notify: {
+    success: (user) => send_msg_client(`update-client-process-${uuidv4()}`, new Date().toISOString(), user),
+    error: (user, code, message) =>
+      send_msg_client_error(`update-client-process-${uuidv4()}`, new Date().toISOString(), user, code, message),
+  },
+  hooks: faultHooks,
+  appRoot: path.resolve(__dirname, ".."),
+});
+const RECONCILE_INTERVAL_MS = 10000;
 
 const enforcePresenceLimit = require("../middleware/enforcePresenceLimit");
 
@@ -167,6 +196,31 @@ function toolsEqual(a, b) {
 // TODO process message according to type of output
 function process_msg() {
   read_msg(async (msg) => {
+    // RNF-FIAB-01: replies for image jobs (documents with a state) are handled by
+    // runJobs; this callback resolves once the reply is handled and the message is
+    // only then acknowledged. A rejection requeues it (transient failure).
+    let reply = null;
+    try { reply = JSON.parse(msg.content.toString()); } catch (_) { /* legacy handler logs it */ }
+    const hookCtx = { body: msg.content.toString(), msg: reply && reply.correlationId };
+    if (faultHooks.ENABLED) await faultHooks.faultPoint("after_receive", hookCtx);
+    if (reply && reply.correlationId) {
+      const job = await Process.getOneByMsgId(reply.correlationId);
+      if (job && job.state) {
+        console.log(`[T-03][RABBIT] msg=${reply.correlationId} status=${reply.status} outType=${reply?.output?.type} curPos=${job.cur_pos} job=${job.state}`);
+        try {
+          await runJobs.handleReply(reply, job, hookCtx);
+        } catch (err) {
+          console.error("[JOB] reply handling failed:", err);
+          await runJobs.handleFailure(reply, err);
+        }
+        return;
+      }
+      if (!job && parseRequestId(reply.correlationId)) {
+        // A job advanced past this step, or was removed by cancel/undo/new run.
+        console.log(`[JOB-DUPLICATE] msg=${reply.correlationId} job=none`);
+        return;
+      }
+    }
 
     const timestamp = new Date().toISOString();
     const user_msg_id = `update-client-process-${uuidv4()}`;
@@ -206,6 +260,8 @@ function process_msg() {
       // as barriers so another source cannot commit a partial run.
       const holdsRunCommit = project.tools.some((tool) => tool.procedure === "extract_frames") && !/preview/.test(msg_id);
       if (!holdsRunCommit) await Process.delete(process.user_id, process.project_id, process._id);
+      hookCtx.cur_pos = process.cur_pos;
+      if (faultHooks.ENABLED) await faultHooks.faultPoint("after_process_delete", hookCtx);
       
       if (msg_content.status === "error") {
         console.log(JSON.stringify(msg_content));
@@ -418,6 +474,7 @@ if (/preview/.test(msg_id) && isLast) {
         };
 
         await Result.create(result);
+        if (faultHooks.ENABLED) await faultHooks.faultPoint("after_result_persist", hookCtx);
       }
 
       // Se esta imagem acabou o pipeline, pode ser que a execução tenha terminado
@@ -432,6 +489,7 @@ if (/preview/.test(msg_id) && isLast) {
         );
 
         if (remaining === 0) {
+          if (faultHooks.ENABLED) await faultHooks.faultPoint("before_commit", hookCtx);
           // re-fetch do projeto (já tens project) mas garante que está fresh
           const freshProject = await Project.getOne(process.user_id, process.project_id);
 
@@ -513,7 +571,8 @@ if (/preview/.test(msg_id) && isLast) {
       // Making sure database entry is created before sending message to avoid conflicts
       await Process.create(new_process);
       if (holdsRunCommit) await Process.delete(process.user_id, process.project_id, process._id);
-      send_msg_tool(
+      if (faultHooks.ENABLED) await faultHooks.faultPoint("before_next_publish", hookCtx);
+      await send_msg_tool(
         new_msg_id,
         timestamp,
         new_process.og_img_uri,
@@ -537,6 +596,14 @@ if (/preview/.test(msg_id) && isLast) {
       return;
     }
   });
+
+  // RNF-FIAB-01: republish unconfirmed steps and finish interrupted commits, once
+  // the database is reachable and then periodically.
+  const reconcile = (startup) => runJobs.reconcile({ startup })
+    .then((stats) => { if (stats.redispatched || stats.committed) console.log("[RECONCILE]", JSON.stringify(stats)); })
+    .catch((err) => console.error("[RECONCILE] failed:", err.message));
+  ProcessModel.db.asPromise().then(() => reconcile(true)).catch(() => {});
+  setInterval(() => reconcile(false), RECONCILE_INTERVAL_MS);
 }
 
 async function deleteProjectAndResources(userId, projectId) {
@@ -1249,7 +1316,7 @@ router.post("/:user/:project/preview/:img", checkSharePermission, requireEditPer
             new_img_uri,
             tool_name,
             params
-          );
+          ).catch((err) => console.error("[PREVIEW] publish failed:", err.message));
           res.sendStatus(201);
         })
         .catch((err) => {
@@ -1480,13 +1547,26 @@ router.post("/:user/:project/process", checkSharePermission, requireEditPermissi
 
         fs.mkdirSync(path.join(__dirname, source_path), { recursive: true });
 
-        if (fs.existsSync(path.join(__dirname, result_path)))
-          fs.rmSync(path.join(__dirname, result_path), {
-            recursive: true,
-            force: true,
-          });
-
-        fs.mkdirSync(path.join(__dirname, result_path), { recursive: true });
+        // RNF-FIAB-01 (D5): image steps of each run write under out/runs/<token>/, so
+        // attempts of an older run can never overwrite this one. Remove the previous
+        // outputs (already uploaded) but keep this run's directory.
+        const resultDir = path.join(__dirname, result_path);
+        fs.mkdirSync(resultDir, { recursive: true });
+        for (const entry of fs.readdirSync(resultDir)) {
+          if (entry === "runs") continue;
+          fs.rmSync(path.join(resultDir, entry), { recursive: true, force: true });
+        }
+        const runsDir = path.join(resultDir, "runs");
+        if (fs.existsSync(runsDir)) {
+          for (const entry of fs.readdirSync(runsDir)) {
+            if (entry !== String(runToken)) fs.rmSync(path.join(runsDir, entry), { recursive: true, force: true });
+          }
+        }
+        // Jobs of older runs of this project are obsolete: their replies are ignored.
+        await ProcessModel.deleteMany({
+          project_id: req.params.project, token: { $ne: runToken }, state: { $exists: true },
+        }).exec();
+        const legacyJobs = project.tools.some((tool) => tool.procedure === "extract_frames");
 
         const pendingJobs = [];
 
@@ -1534,6 +1614,15 @@ router.post("/:user/:project/process", checkSharePermission, requireEditPermissi
             if (!tool) continue; // only video effects: images are left as they are
             tool_name = tool.procedure;
             params = tool.params;
+            if (!legacyJobs) {
+              // Idempotent image job (RNF-FIAB-01): deterministic request id, own output path.
+              const job = newJob({
+                project, img, token: runToken, runnerId: runnerUserId,
+                tools: imageTools(project), appRoot: path.join(__dirname, ".."),
+              });
+              pendingJobs.push({ process: job, job: true });
+              continue;
+            }
           }
 
           const process = {
@@ -1558,7 +1647,13 @@ router.post("/:user/:project/process", checkSharePermission, requireEditPermissi
           await dispatchProcessBatch(pendingJobs, {
             create: (job) => Process.create(job),
             remove: (job) => Process.delete(job.user_id, job.project_id, job._id),
-            send: (job) => send_msg_tool(job.msg_id, job.timestamp, job.og_img_uri, job.new_img_uri, job.tool_name, job.params),
+            // A job whose publish is not confirmed stays PENDING_DISPATCH and is
+            // republished by the reconciler; legacy requests keep fire-and-forget.
+            send: async (job) => {
+              if (job.job) return runJobs.dispatch(job.created);
+              send_msg_tool(job.msg_id, job.timestamp, job.og_img_uri, job.new_img_uri, job.tool_name, job.params)
+                .catch((err) => console.error("[PROCESS] publish failed:", err.message));
+            },
           });
         } catch (error) {
           return res.status(603).jsonp("Could not start all processing requests. Please try again.");
@@ -1944,6 +2039,12 @@ router.delete(
           if (project.tools[i].position > tool.position) project.tools[i].position--;
         }
 
+        // RNF-FIAB-01 (D7, K4): like cancel, undo invalidates a run in progress, so its
+        // late replies can neither commit nor publish results. Quotas are not touched.
+        const invalidatedTok = project.activeToken || 0;
+        const runInFlight = invalidatedTok !== (project.committedToken || 0);
+        project.activeToken = (project.activeToken || 0) + 1;
+
         // Persistir com controlo de versão
         const updated = await Project.updateIfVersion(
           req.params.user,
@@ -2027,6 +2128,20 @@ router.delete(
           console.log(`[UNDO-ROLLBACK][RESULTS-CLEAN] token=${oldTok} deleted=${resultsOld.length}`);
         } catch (err) {
           console.error("Error clearing token results on tool delete:", err);
+        }
+
+        // 4) RNF-FIAB-01: results already stored by the invalidated run (as cancel does).
+        if (runInFlight && invalidatedTok !== oldTok) {
+          try {
+            const partial = await Result.getAllByToken(req.params.user, req.params.project, invalidatedTok);
+            for (const r of partial) {
+              try { await delete_image(req.params.user, req.params.project, "out", r.img_key); } catch (_) {}
+            }
+            await Result.deleteByToken(req.params.user, req.params.project, invalidatedTok);
+            console.log(`[UNDO][RUN-INVALIDATED] token=${invalidatedTok} deleted=${partial.length}`);
+          } catch (err) {
+            console.error("Error clearing invalidated run results on tool delete:", err);
+          }
         }
 
         // broadcast granular op

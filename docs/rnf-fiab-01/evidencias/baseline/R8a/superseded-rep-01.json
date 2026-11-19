@@ -1,0 +1,9 @@
+{
+  "requirement": "RNF-FIAB-01",
+  "phase": "baseline",
+  "scenario": "R8a",
+  "rep": 1,
+  "harness_error": "CalledProcessError(137, ('podman', 'exec', '-i', '-e', 'RNF_FIAB_01_OBJECTS=[{\"stage\": \"out\", \"key\": \"0ed3554c-f652-46d5-83a3-dd7f8ec6d767.png\"}, {\"stage\": \"src\", \"key\": \"130a2b5a-60ed-43de-ae2f-7897840056d0.png\"}, {\"stage\": \"src\", \"key\": \"0589d7be-8ee2-4695-a02f-a264cb2ac4e5.png\"}, {\"stage\": \"src\", \"key\": \"c106b4e9-a74e-48e3-8494-fc14c23e6fdd.png\"}, {\"stage\": \"src\", \"key\": \"c3237668-df32-47b2-91e1-dcd4fda88170.png\"}, {\"stage\": \"src\", \"key\": \"6b1f7076-cfdd-44ce-bdde-0cc5c5c55978.png\"}, {\"stage\": \"src\", \"key\": \"6209d8bf-8221-4c4f-8416-7d3d13c0289b.png\"}, {\"stage\": \"src\", \"key\": \"0bf398ef-f5b2-4c7d-aa94-e724f94c5e62.png\"}, {\"stage\": \"src\", \"key\": \"7f4405d9-2888-48f5-839c-d73623c468ed.png\"}, {\"stage\": \"src\", \"key\": \"35be0bb6-8274-4ed8-87e3-0ff1fe2d176b.png\"}, {\"stage\": \"src\", \"key\": \"6089f041-bfa6-42ff-8c41-bc6ca98b46be.png\"}, {\"stage\": \"src\", \"key\": \"6128ec9f-6c8d-4268-8271-91dbb9798708.png\"}]', 'picturas-fiab-projects-1', 'node', '-', '6af8fad3b567c4ba5fbefde3', '6af8fad31b75f4b2fb4f836a'))",
+  "t_obs_s": 120.0,
+  "wall_s": 168.45
+}

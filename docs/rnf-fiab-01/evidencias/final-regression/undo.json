@@ -1,0 +1,14 @@
+{
+  "fault_reached": true,
+  "undo_status": 204,
+  "run_token": 1,
+  "active_token": 2,
+  "committed_token": 0,
+  "results_of_run": 0,
+  "pass": true,
+  "requirement": "RNF-FIAB-01",
+  "check": "undo",
+  "doc": "Undo while a run is in progress (K4): the run cannot commit nor leave results.",
+  "started": "2026-11-15T12:55:22.464545+00:00",
+  "finished": "2026-11-15T12:55:31.181400+00:00"
+}

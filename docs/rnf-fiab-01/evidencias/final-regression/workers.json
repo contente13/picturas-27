@@ -1,0 +1,21 @@
+{
+  "committed": true,
+  "results": 3,
+  "dims": [
+    [
+      240,
+      190
+    ]
+  ],
+  "per_media": [
+    "6af9abb9e59dd4c86caf0ab4",
+    "6af9abbae59dd4c86caf0ac0",
+    "6af9abbae59dd4c86caf0ad0"
+  ],
+  "pass": true,
+  "requirement": "RNF-FIAB-01",
+  "check": "workers",
+  "doc": "Five other image workers sharing Tools/utils run a chain to completion.",
+  "started": "2026-11-15T12:55:21.813746+00:00",
+  "finished": "2026-11-15T12:55:22.464331+00:00"
+}
