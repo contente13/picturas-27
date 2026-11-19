@@ -329,6 +329,25 @@ test('RNF-FIAB-01 a text output is stored and the next step reads the same image
   assert.equal(ctx.project.committedToken, 7);
 });
 
+test('RNF-FIAB-01 R5: a re-executed text step with another file name publishes one result', async () => {
+  // Text tools name their output with a per-process counter, so a request redelivered
+  // after a worker restart replies with a different file name for the same step.
+  const tools = [{ procedure: 'text_ai', params: {} }, { procedure: 'border', params: {} }];
+  const ctx = setup({ images: 1, tools });
+  await start(ctx);
+  const ocr = ctx.published[0];
+  const text = (n) => ({ correlationId: ocr.msgId, status: 'success', output: { type: 'text', imageURI: `${ocr.output}_text_ai_${n}.txt` } });
+  const outcomes = await Promise.all([reply(ctx, ocr, text(4)), reply(ctx, ocr, text(0))]);
+  assert.deepEqual(outcomes.sort(), ['advanced', 'duplicate']);
+  assert.equal(ctx.store.results.length, 1);
+  assert.deepEqual(ctx.removed, ctx.uploads.filter((k) => k !== ctx.store.results[0].img_key),
+    'the object uploaded by the losing copy is removed');
+  await reply(ctx, ocr, text(1)); // a late copy
+  await reply(ctx, ctx.published[1]);
+  assert.equal(ctx.store.results.length, 2, 'one text result and one image result');
+  assert.equal(ctx.project.committedToken, 7);
+});
+
 test('RNF-FIAB-01 the pipeline is a snapshot: editing tools mid-run does not change the chain', async () => {
   const ctx = setup({ images: 1 });
   await start(ctx);

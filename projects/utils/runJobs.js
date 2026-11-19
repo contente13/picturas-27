@@ -136,10 +136,12 @@ function createRunJobs(deps) {
     const filePath = path.resolve(appRoot, outputUri);
     const fileName = path.basename(filePath);
     const key = await timed("upload", job.msg_id, () => storage.upload(job.user_id, job.project_id, filePath, fileName));
+    // Keyed by step, not by file name: text tools name their output with a per-process
+    // counter, so a re-executed step may reply with another name for the same result.
     const doc = {
       type, file_name: fileName, img_key: key, img_id: job.img_id,
       project_id: job.project_id, user_id: job.user_id, token: job.token,
-      run_key: `${job.project_id}:${job.token}:${job.img_id}:${fileName}`,
+      run_key: `${job.project_id}:${job.token}:${job.img_id}:${job.cur_pos}`,
     };
     const { created, result } = await timed("result", job.msg_id, () => store.upsertResult(doc));
     if (!created && result.img_key !== key) {
