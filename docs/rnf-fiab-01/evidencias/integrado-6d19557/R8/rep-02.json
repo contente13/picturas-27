@@ -1,0 +1,263 @@
+{
+  "trial": "R8-02",
+  "scenario": "R8",
+  "description": "Permanent error (invalid effect parameter): no endless retries, error surfaced",
+  "rep": 2,
+  "queues_before": {
+    "saturation_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "border_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 1
+    },
+    "cut_ai_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "brightness_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 1
+    },
+    "binarization_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "obj_ai_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "contrast_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "text_ai_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "people_ai_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "project_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 1
+    },
+    "bg_remove_ai_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "upgrade_ai_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "rotate_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 1
+    },
+    "expand_ai_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "cut_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "scale_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "video_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "ws_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 1
+    },
+    "watermark_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "resize_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    }
+  },
+  "user_id": "6afed0b3b300ee006cca5a29",
+  "project_id": "6afed0b3526345600e755e44",
+  "operations_before": 5,
+  "t_start": 1795084467.8401625,
+  "process_http": "ok",
+  "completed_in_window": false,
+  "duration_s": null,
+  "evaluation": {
+    "committed": false,
+    "active_token": 1,
+    "committed_token": 0,
+    "run_token": 1,
+    "pending_processes": 0,
+    "failed_jobs": 10,
+    "results_for_run": 0,
+    "lost_files": [
+      "fiab-00.png",
+      "fiab-01.png",
+      "fiab-02.png",
+      "fiab-03.png",
+      "fiab-04.png",
+      "fiab-05.png",
+      "fiab-06.png",
+      "fiab-07.png",
+      "fiab-08.png",
+      "fiab-09.png"
+    ],
+    "duplicated_files": [],
+    "output_mismatch": [],
+    "originals_altered": [],
+    "outputs": {}
+  },
+  "operations_after": 5,
+  "timeline": {
+    "fault": null,
+    "ready_after_fault": null,
+    "resume": null,
+    "deliveries": {
+      "request-6afed0b3526345600e755e44-1-6afed0b3526345600e755e51-0": 1,
+      "request-6afed0b3526345600e755e44-1-6afed0b3526345600e755e63-0": 1,
+      "request-6afed0b3526345600e755e44-1-6afed0b3526345600e755e7a-0": 1,
+      "request-6afed0b3526345600e755e44-1-6afed0b3526345600e755e96-0": 1,
+      "request-6afed0b3526345600e755e44-1-6afed0b3526345600e755eb7-0": 1,
+      "request-6afed0b3526345600e755e44-1-6afed0b3526345600e755edd-0": 1,
+      "request-6afed0b3526345600e755e44-1-6afed0b3526345600e755f08-0": 1,
+      "request-6afed0b3526345600e755e44-1-6afed0b3526345600e755f38-0": 1,
+      "request-6afed0b3526345600e755e44-1-6afed0b3526345600e755f6d-0": 1,
+      "request-6afed0b3526345600e755e44-1-6afed0b3526345600e755fa7-0": 1
+    },
+    "fault_applied": false,
+    "max_deliveries": 1
+  },
+  "queues_after": {
+    "saturation_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "border_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 1
+    },
+    "cut_ai_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "brightness_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 1
+    },
+    "binarization_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "obj_ai_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "contrast_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "text_ai_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "people_ai_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "project_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 1
+    },
+    "bg_remove_ai_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "upgrade_ai_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "rotate_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 1
+    },
+    "expand_ai_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "cut_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "scale_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "video_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "ws_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 1
+    },
+    "watermark_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "resize_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    }
+  },
+  "cleanup": "project deleted"
+}

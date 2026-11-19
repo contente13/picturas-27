@@ -1,0 +1,392 @@
+{
+  "trial": "R1-05",
+  "scenario": "R1",
+  "description": "Worker dies after receiving the request, before any output",
+  "rep": 5,
+  "queues_before": {
+    "saturation_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "border_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 1
+    },
+    "cut_ai_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "brightness_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 1
+    },
+    "binarization_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "obj_ai_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "contrast_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "text_ai_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "people_ai_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "project_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 1
+    },
+    "bg_remove_ai_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "upgrade_ai_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "rotate_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 1
+    },
+    "expand_ai_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "cut_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "scale_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "video_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "ws_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 1
+    },
+    "watermark_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "resize_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    }
+  },
+  "user_id": "6afec687b300ee006cca4fed",
+  "project_id": "6afec687f2e0bcd669338782",
+  "operations_before": 5,
+  "t_start": 1795081864.9776568,
+  "process_http": "ok",
+  "completed_in_window": true,
+  "duration_s": 1.534,
+  "evaluation": {
+    "committed": true,
+    "active_token": 1,
+    "committed_token": 1,
+    "run_token": 1,
+    "pending_processes": 0,
+    "failed_jobs": 0,
+    "results_for_run": 10,
+    "lost_files": [],
+    "duplicated_files": [],
+    "output_mismatch": [],
+    "originals_altered": [],
+    "outputs": {
+      "fiab-00.png": [
+        {
+          "sha256": "c119e1f23d392578ca620d202784d44c42d5e588ae962fddacca458eea6da619",
+          "size": [
+            256,
+            336
+          ]
+        }
+      ],
+      "fiab-01.png": [
+        {
+          "sha256": "07e8edac5250c9870c572c87f6b7d84be72e225f6a38a2d1ad71ab06562c70ba",
+          "size": [
+            256,
+            336
+          ]
+        }
+      ],
+      "fiab-02.png": [
+        {
+          "sha256": "89e4143c4c9eb194d89566ba30e0f443d70b254639f09b4dd651fe4335a89195",
+          "size": [
+            256,
+            336
+          ]
+        }
+      ],
+      "fiab-03.png": [
+        {
+          "sha256": "dcbcfd091fc3136446957435dfc3d9212c518f3c433e53147459ccf2a0ea5e22",
+          "size": [
+            256,
+            336
+          ]
+        }
+      ],
+      "fiab-04.png": [
+        {
+          "sha256": "7b92a75c4efc6cf5f6eab70fe6c40ca62c0fb09ef65d5bdb45b2b8901d56534e",
+          "size": [
+            256,
+            336
+          ]
+        }
+      ],
+      "fiab-05.png": [
+        {
+          "sha256": "046eec7ba683214de755249aa13fb2b1b01c58e53342dcf229db12583e3458c3",
+          "size": [
+            256,
+            336
+          ]
+        }
+      ],
+      "fiab-06.png": [
+        {
+          "sha256": "c80f4719f5c9df781882c48246f4659de33c31f5ffb9be3aabe1fce5c1980b2d",
+          "size": [
+            256,
+            336
+          ]
+        }
+      ],
+      "fiab-07.png": [
+        {
+          "sha256": "342314d583dd6c31f6d59165b66fa3db566c487bf4c35165f3aad09ca15820da",
+          "size": [
+            256,
+            336
+          ]
+        }
+      ],
+      "fiab-08.png": [
+        {
+          "sha256": "fc6c2b4141ae5a114ccf7f28964cc4f05ea45073d965007f2ea2e31422945e55",
+          "size": [
+            256,
+            336
+          ]
+        }
+      ],
+      "fiab-09.png": [
+        {
+          "sha256": "da3c8de802fef90b744f160b6b7861c43fecd6f986484b58d498faa9db5aedbd",
+          "size": [
+            256,
+            336
+          ]
+        }
+      ]
+    }
+  },
+  "operations_after": 5,
+  "timeline": {
+    "fault": {
+      "ts": 1795081865.4041483,
+      "service": "rotate",
+      "pid": 1,
+      "boot": "aaf297ac749b",
+      "event": "fault",
+      "point": "after_receive",
+      "action": "crash",
+      "trial": "R1-05",
+      "msg_id": "request-6afec687f2e0bcd669338782-1-6afec688f2e0bcd6693387f5-1",
+      "t_rel": 0.426
+    },
+    "ready_after_fault": {
+      "ts": 1795081865.7912314,
+      "service": "rotate",
+      "pid": 1,
+      "boot": "e2b20e06e578",
+      "event": "start",
+      "t_rel": 0.814
+    },
+    "resume": {
+      "ts": 1795081865.8219,
+      "service": "rotate",
+      "pid": 1,
+      "boot": "e2b20e06e578",
+      "event": "receive",
+      "msg_id": "request-6afec687f2e0bcd669338782-1-6afec688f2e0bcd6693387f5-1",
+      "routing_key": "rotate_queue",
+      "delivery_tag": 1,
+      "redelivered": true,
+      "t_rel": 0.844
+    },
+    "deliveries": {
+      "request-6afec687f2e0bcd669338782-1-6afec687f2e0bcd66933878f-0": 1,
+      "request-6afec687f2e0bcd669338782-1-6afec687f2e0bcd6693387a1-0": 1,
+      "request-6afec687f2e0bcd669338782-1-6afec687f2e0bcd66933878f-1": 1,
+      "request-6afec687f2e0bcd669338782-1-6afec688f2e0bcd6693387b8-0": 1,
+      "request-6afec687f2e0bcd669338782-1-6afec687f2e0bcd6693387a1-1": 1,
+      "request-6afec687f2e0bcd669338782-1-6afec687f2e0bcd66933878f-2": 1,
+      "request-6afec687f2e0bcd669338782-1-6afec688f2e0bcd6693387d4-0": 1,
+      "request-6afec687f2e0bcd669338782-1-6afec688f2e0bcd6693387b8-1": 1,
+      "request-6afec687f2e0bcd669338782-1-6afec687f2e0bcd6693387a1-2": 1,
+      "request-6afec687f2e0bcd669338782-1-6afec688f2e0bcd6693387f5-0": 1,
+      "request-6afec687f2e0bcd669338782-1-6afec688f2e0bcd6693387d4-1": 1,
+      "request-6afec687f2e0bcd669338782-1-6afec688f2e0bcd6693387b8-2": 1,
+      "request-6afec687f2e0bcd669338782-1-6afec688f2e0bcd66933881b-0": 1,
+      "request-6afec687f2e0bcd669338782-1-6afec688f2e0bcd6693387f5-1": 2,
+      "request-6afec687f2e0bcd669338782-1-6afec688f2e0bcd6693387d4-2": 1,
+      "request-6afec687f2e0bcd669338782-1-6afec688f2e0bcd669338846-0": 1,
+      "request-6afec687f2e0bcd669338782-1-6afec688f2e0bcd669338876-0": 1,
+      "request-6afec687f2e0bcd669338782-1-6afec688f2e0bcd6693388ab-0": 1,
+      "request-6afec687f2e0bcd669338782-1-6afec688f2e0bcd6693388e5-0": 1,
+      "request-6afec687f2e0bcd669338782-1-6afec688f2e0bcd66933881b-1": 1,
+      "request-6afec687f2e0bcd669338782-1-6afec688f2e0bcd6693387f5-2": 1,
+      "request-6afec687f2e0bcd669338782-1-6afec688f2e0bcd669338846-1": 1,
+      "request-6afec687f2e0bcd669338782-1-6afec688f2e0bcd66933881b-2": 1,
+      "request-6afec687f2e0bcd669338782-1-6afec688f2e0bcd669338876-1": 1,
+      "request-6afec687f2e0bcd669338782-1-6afec688f2e0bcd669338846-2": 1,
+      "request-6afec687f2e0bcd669338782-1-6afec688f2e0bcd6693388ab-1": 1,
+      "request-6afec687f2e0bcd669338782-1-6afec688f2e0bcd669338876-2": 1,
+      "request-6afec687f2e0bcd669338782-1-6afec688f2e0bcd6693388e5-1": 1,
+      "request-6afec687f2e0bcd669338782-1-6afec688f2e0bcd6693388ab-2": 1,
+      "request-6afec687f2e0bcd669338782-1-6afec688f2e0bcd6693388e5-2": 1
+    },
+    "fault_applied": true,
+    "max_deliveries": 2
+  },
+  "queues_after": {
+    "saturation_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "border_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 1
+    },
+    "cut_ai_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "brightness_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 1
+    },
+    "binarization_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "obj_ai_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "contrast_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "text_ai_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "people_ai_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "project_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 1
+    },
+    "bg_remove_ai_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "upgrade_ai_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "rotate_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 1
+    },
+    "expand_ai_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "cut_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "scale_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "video_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "ws_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 1
+    },
+    "watermark_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "resize_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    }
+  },
+  "cleanup": "project deleted"
+}

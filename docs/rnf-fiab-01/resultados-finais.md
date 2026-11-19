@@ -140,3 +140,50 @@ Para confirmar, a versão final correu um piloto de todos os cenários (1 repeti
 [`evidencias/final-confirm-pilot/`](evidencias/final-confirm-pilot/)): 15 lotes consolidados com
 10/10 corretos, R8b como na campanha, 0 duplicados e retoma ≤ 3 ms. Houve uma ocorrência da
 anomalia da §4 em R2 e R3 (46 s).
+
+## 8. Verificação da versão integrada (`6d19557`)
+
+Verificação feita pela Pessoa 1 com o *harness* independente da Pessoa 2
+(`benchmarks/fault-tolerance/`, shims externos, sem hooks da aplicação), sobre o ramo
+`rnf-fiab-01` já integrado com `main` (inclui o *refactor* de uploads `c7e597a`) e com as
+correções `0a54f73` (resultado por etapa) e `9ca4de6` (reinício do consumidor). Não substitui a
+avaliação independente: a Pessoa 2 deve rever estes dados ou repetir um subconjunto.
+
+| Campo | Valor |
+| --- | --- |
+| Versão medida | `6d19557` (*worktree* destacada, `dirty_files: []`) |
+| Golden | gerado nesta máquina a partir de um R0 de `df5d0bc` (código original); 10 saídas 256×336 |
+| *Harness* | `fiab.py`, `protocol.json`, `compose.fiab.yaml` e shims iguais aos de `origin/main` (SHA-256 em `environment.json`) |
+| Runtime | podman 4.9.3 rootless com `docker-compose` 5.1.1 (chamado através de um *shim* `docker` → `podman`), 18 CPUs, 30 GiB; stack `picturas` do utilizador parado; volumes `picturas-fiab_*` recriados antes da baseline |
+| Execução | 2026-11-19, 09:47–10:57 UTC (70 min, 90 ensaios, nenhum repetido) |
+| Dados | [`evidencias/integrado-6d19557/`](evidencias/integrado-6d19557/): `environment.json` (caminho local removido), `summary.json`, `trials.csv`, um `rep-NN.json` por ensaio, golden e manifesto do corpus. Traces e logs: `benchmarks/fault-tolerance/runs/arquivo-integrado-6d19557.tar.gz` (fora do Git), SHA-256 `9680702932c17a845da336c93b3f806b89dfcaa55c6e04836644da7b3b9276cb` |
+
+| Cenário | Falha atingida | Lotes corretos | Perdidos | Dup. | ≠ golden | Entregas máx. | Duração mediana (máx.) | Falha → lote visível, mediana (máx.) |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| R0 | — | 10/10 | 0 | 0 | 0 | 1 | 1,00 s (1,04) | — |
+| R1 | 10/10 | 10/10 | 0 | 0 | 0 | 2 | 1,54 s (1,56) | 1,10 s (1,12) |
+| R4 | 10/10 | 10/10 | 0 | 0 | 0 | 2 | 2,60 s (2,65) | 1,10 s (1,14) |
+| R6a | 10/10 | 10/10 | 0 | 0 | 0 | 2 | 2,12 s (2,43) | 1,77 s (2,08) |
+| R6b | 10/10 | 10/10 | 0 | 0 | 0 | 1 | 2,09 s (2,35) | 1,48 s (1,73) |
+| R6c | 10/10 | 10/10 | 0 | 0 | 0 | 1 | 1,33 s (1,35) | 0,78 s (0,84) |
+| R7a | 10/10 (retenção) | 10/10 | 0 | 0 | 0 | 1 | 1,06 s (1,15) | — |
+| R7b | 10/10 (retenção) | 10/10 | 0 | 0 | 0 | 1 | 1,03 s (1,14) | — |
+| R8 | — | 10/10 controlados | — | 0 | — | 1 | — | — |
+
+- Em todos os ensaios: 0 originais alterados, 0 consolidações prematuras, 0 `Process` pendentes
+  e variação de operações diárias 0 (M6 não discrimina: o pipeline não usa ferramentas cobradas).
+- R7a/R7b: em 10/10 a tentativa antiga ficou retida, a 1.ª etapa da nova execução terminou antes
+  da libertação e a resposta antiga foi descartada (`JOB-DUPLICATE`/`RUN-GUARD` nos 20 logs).
+- R8: 100 trabalhos `FAILED`, uma notificação `[JOB-FAILED]` por trabalho, 1 entrega por pedido;
+  o lote não consolida (D6).
+- **M9** (R1, R4): mediana 0,027–0,028 s (máx. 0,037 s) na definição do *harness* (arranque do
+  processo → reentrega); mediana 0,001 s (máx. 0,003 s) desde o registo do consumidor.
+- **Anomalia do ambiente.** No piloto anterior à campanha, o primeiro reinício do `rotate_tool`
+  depois de `up` levou 10,0 s entre o arranque do processo e a ligação ao broker (o broker só
+  aceitou a ligação TCP 10,1 s depois; nenhum erro no worker). Não se repetiu em 7 reinícios de
+  diagnóstico nem nas 20 quedas de worker da campanha; o DNS e o TCP respondem em cerca de 1 ms
+  logo após um reinício. O valor coincide com o `socket_timeout` do pika (10 s) e com duas
+  esperas de 5 s do *resolver*; é coerente com a anomalia da §4 (podman rootless). A reentrega
+  em si foi imediata (3 ms).
+- **M11 não avaliado** nesta verificação: só existe um R0 da baseline nesta máquina (usado para o
+  golden). A medição válida de M11 continua a ser a da §5.

@@ -1,0 +1,382 @@
+{
+  "trial": "R7b-02",
+  "scenario": "R7b",
+  "description": "Cancel and restart while an old write is held; the old write then lands on the new run",
+  "rep": 2,
+  "queues_before": {
+    "saturation_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "border_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 1
+    },
+    "cut_ai_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "brightness_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 1
+    },
+    "binarization_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "obj_ai_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "contrast_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "text_ai_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "people_ai_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "project_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 1
+    },
+    "bg_remove_ai_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "upgrade_ai_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "rotate_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 1
+    },
+    "expand_ai_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "cut_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "scale_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "video_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "ws_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 1
+    },
+    "watermark_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "resize_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    }
+  },
+  "user_id": "6afecee1b300ee006cca588f",
+  "project_id": "6afecee1526345600e74dab4",
+  "operations_before": 5,
+  "t_start": 1795084002.057075,
+  "process_http": "ok",
+  "held": true,
+  "t_cancel": 0.2519559860229492,
+  "new_run_first_step_done": true,
+  "t_release": 0.446638822555542,
+  "completed_in_window": true,
+  "duration_s": 0.995,
+  "evaluation": {
+    "committed": true,
+    "active_token": 3,
+    "committed_token": 3,
+    "run_token": 3,
+    "pending_processes": 0,
+    "failed_jobs": 0,
+    "results_for_run": 10,
+    "lost_files": [],
+    "duplicated_files": [],
+    "output_mismatch": [],
+    "originals_altered": [],
+    "outputs": {
+      "fiab-00.png": [
+        {
+          "sha256": "c119e1f23d392578ca620d202784d44c42d5e588ae962fddacca458eea6da619",
+          "size": [
+            256,
+            336
+          ]
+        }
+      ],
+      "fiab-01.png": [
+        {
+          "sha256": "07e8edac5250c9870c572c87f6b7d84be72e225f6a38a2d1ad71ab06562c70ba",
+          "size": [
+            256,
+            336
+          ]
+        }
+      ],
+      "fiab-02.png": [
+        {
+          "sha256": "89e4143c4c9eb194d89566ba30e0f443d70b254639f09b4dd651fe4335a89195",
+          "size": [
+            256,
+            336
+          ]
+        }
+      ],
+      "fiab-03.png": [
+        {
+          "sha256": "dcbcfd091fc3136446957435dfc3d9212c518f3c433e53147459ccf2a0ea5e22",
+          "size": [
+            256,
+            336
+          ]
+        }
+      ],
+      "fiab-04.png": [
+        {
+          "sha256": "7b92a75c4efc6cf5f6eab70fe6c40ca62c0fb09ef65d5bdb45b2b8901d56534e",
+          "size": [
+            256,
+            336
+          ]
+        }
+      ],
+      "fiab-05.png": [
+        {
+          "sha256": "046eec7ba683214de755249aa13fb2b1b01c58e53342dcf229db12583e3458c3",
+          "size": [
+            256,
+            336
+          ]
+        }
+      ],
+      "fiab-06.png": [
+        {
+          "sha256": "c80f4719f5c9df781882c48246f4659de33c31f5ffb9be3aabe1fce5c1980b2d",
+          "size": [
+            256,
+            336
+          ]
+        }
+      ],
+      "fiab-07.png": [
+        {
+          "sha256": "342314d583dd6c31f6d59165b66fa3db566c487bf4c35165f3aad09ca15820da",
+          "size": [
+            256,
+            336
+          ]
+        }
+      ],
+      "fiab-08.png": [
+        {
+          "sha256": "fc6c2b4141ae5a114ccf7f28964cc4f05ea45073d965007f2ea2e31422945e55",
+          "size": [
+            256,
+            336
+          ]
+        }
+      ],
+      "fiab-09.png": [
+        {
+          "sha256": "da3c8de802fef90b744f160b6b7861c43fecd6f986484b58d498faa9db5aedbd",
+          "size": [
+            256,
+            336
+          ]
+        }
+      ]
+    }
+  },
+  "operations_after": 5,
+  "timeline": {
+    "fault": null,
+    "ready_after_fault": null,
+    "resume": null,
+    "deliveries": {
+      "request-6afecee1526345600e74dab4-1-6afecee1526345600e74dac1-0": 1,
+      "request-6afecee1526345600e74dab4-1-6afecee1526345600e74dad3-0": 1,
+      "request-6afecee1526345600e74dab4-1-6afecee1526345600e74dac1-1": 1,
+      "request-6afecee1526345600e74dab4-1-6afecee1526345600e74daea-0": 1,
+      "request-6afecee1526345600e74dab4-1-6afecee1526345600e74db06-0": 1,
+      "request-6afecee1526345600e74dab4-1-6afecee1526345600e74db27-0": 1,
+      "request-6afecee1526345600e74dab4-1-6afecee1526345600e74db4d-0": 1,
+      "request-6afecee1526345600e74dab4-1-6afecee1526345600e74db78-0": 1,
+      "request-6afecee1526345600e74dab4-1-6afecee1526345600e74dba8-0": 1,
+      "request-6afecee1526345600e74dab4-1-6afecee1526345600e74dbdd-0": 1,
+      "request-6afecee1526345600e74dab4-1-6afecee1526345600e74dc17-0": 1,
+      "request-6afecee1526345600e74dab4-3-6afecee1526345600e74dac1-0": 1,
+      "request-6afecee1526345600e74dab4-3-6afecee1526345600e74dad3-0": 1,
+      "request-6afecee1526345600e74dab4-3-6afecee1526345600e74daea-0": 1,
+      "request-6afecee1526345600e74dab4-3-6afecee1526345600e74db06-0": 1,
+      "request-6afecee1526345600e74dab4-3-6afecee1526345600e74db27-0": 1,
+      "request-6afecee1526345600e74dab4-1-6afecee1526345600e74dad3-1": 1,
+      "request-6afecee1526345600e74dab4-1-6afecee1526345600e74daea-1": 1,
+      "request-6afecee1526345600e74dab4-1-6afecee1526345600e74db06-1": 1,
+      "request-6afecee1526345600e74dab4-1-6afecee1526345600e74db27-1": 1,
+      "request-6afecee1526345600e74dab4-3-6afecee1526345600e74dac1-1": 1,
+      "request-6afecee1526345600e74dab4-3-6afecee1526345600e74db4d-0": 1,
+      "request-6afecee1526345600e74dab4-3-6afecee1526345600e74dad3-1": 1,
+      "request-6afecee1526345600e74dab4-3-6afecee1526345600e74dac1-2": 1,
+      "request-6afecee1526345600e74dab4-3-6afecee1526345600e74db78-0": 1,
+      "request-6afecee1526345600e74dab4-3-6afecee1526345600e74daea-1": 1,
+      "request-6afecee1526345600e74dab4-3-6afecee1526345600e74dad3-2": 1,
+      "request-6afecee1526345600e74dab4-3-6afecee1526345600e74dba8-0": 1,
+      "request-6afecee1526345600e74dab4-3-6afecee1526345600e74dbdd-0": 1,
+      "request-6afecee1526345600e74dab4-3-6afecee1526345600e74db06-1": 1,
+      "request-6afecee1526345600e74dab4-3-6afecee1526345600e74daea-2": 1,
+      "request-6afecee1526345600e74dab4-3-6afecee1526345600e74db27-1": 1,
+      "request-6afecee1526345600e74dab4-3-6afecee1526345600e74dc17-0": 1,
+      "request-6afecee1526345600e74dab4-3-6afecee1526345600e74db06-2": 1,
+      "request-6afecee1526345600e74dab4-3-6afecee1526345600e74db4d-1": 1,
+      "request-6afecee1526345600e74dab4-3-6afecee1526345600e74db27-2": 1,
+      "request-6afecee1526345600e74dab4-3-6afecee1526345600e74db78-1": 1,
+      "request-6afecee1526345600e74dab4-3-6afecee1526345600e74db4d-2": 1,
+      "request-6afecee1526345600e74dab4-3-6afecee1526345600e74dba8-1": 1,
+      "request-6afecee1526345600e74dab4-3-6afecee1526345600e74db78-2": 1,
+      "request-6afecee1526345600e74dab4-3-6afecee1526345600e74dbdd-1": 1,
+      "request-6afecee1526345600e74dab4-3-6afecee1526345600e74dba8-2": 1,
+      "request-6afecee1526345600e74dab4-3-6afecee1526345600e74dc17-1": 1,
+      "request-6afecee1526345600e74dab4-3-6afecee1526345600e74dbdd-2": 1,
+      "request-6afecee1526345600e74dab4-3-6afecee1526345600e74dc17-2": 1
+    },
+    "fault_applied": true,
+    "max_deliveries": 1
+  },
+  "queues_after": {
+    "saturation_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "border_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 1
+    },
+    "cut_ai_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "brightness_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 1
+    },
+    "binarization_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "obj_ai_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "contrast_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "text_ai_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "people_ai_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "project_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 1
+    },
+    "bg_remove_ai_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "upgrade_ai_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "rotate_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 1
+    },
+    "expand_ai_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "cut_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "scale_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "video_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "ws_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 1
+    },
+    "watermark_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    },
+    "resize_queue": {
+      "ready": 0,
+      "unacked": 0,
+      "consumers": 0
+    }
+  },
+  "cleanup": "project deleted"
+}
