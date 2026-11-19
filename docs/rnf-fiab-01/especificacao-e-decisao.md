@@ -49,6 +49,13 @@ pedido — ver §5, I4).
 | **Permanente — entrada/efeito** | Ficheiro não é imagem (`UnidentifiedImageError`), parâmetros inválidos (`KeyError`/`ValueError`), `procedure` errado, entrada estável inexistente | Worker responde `status=error` com o `correlationId` correto e faz ACK; o orquestrador marca `T` e `J` como `FAILED`. Sem novas tentativas. |
 | **Permanente — limite** | Tentativas esgotadas (§3) | Tratado como erro permanente com código `attempts_exhausted`. |
 
+No worker, qualquer exceção levantada pelo efeito é tratada como permanente, incluindo erros de
+E/S ou de rede de uma ferramenta de IA (por exemplo, o `expand_ai` sem resposta do
+`generative-mock`). O worker não distingue de forma fiável uma entrada inválida de uma falha
+externa passageira, e repetir uma entrada inválida até ao limite atrasaria o lote sem a
+corrigir. O trabalho fica `FAILED`, o utilizador é notificado e pode reprocessar. Só a falta de
+confirmação da resposta pelo broker é transitória no worker (sem ACK, reentrega até ao limite).
+
 ## 3. Limites de repetição
 
 | Limite | Valor proposto | Onde se conta | Porquê |
@@ -121,23 +128,25 @@ Mantém as filas *classic* e as definições existentes (sem recriar filas no vo
 | --- | --- | --- | --- |
 | D1 | **Workers `Tools/utils`**: `auto_ack=False`, `prefetch_count=1`, *publisher confirms* + `delivery_mode=2` na resposta, ACK **só depois** da confirmação; registo de tentativas por `messageId` com limite; corrigir argumentos das respostas de erro e o `correlationId`; escrita atómica (ficheiro temporário com a mesma extensão + `os.replace`); efeito executado de forma a não bloquear o *heartbeat* (fio de trabalho + `add_callback_threadsafe`, padrão já usado pelo watermark). | W1–W5, W7 | Resposta de erro: `correlationId` passa a ser o pedido (já é assim no vídeo e no watermark). Único consumidor: `projects`. |
 | D2 | **Mensageria de `projects`**: uma ligação/canal de confirmação reutilizados, com reconexão; `publish` devolve promessa resolvida na confirmação; mensagens persistentes; consumidor com `prefetch` limitado que faz `ack` **depois** de a promessa do tratamento terminar e `nack(requeue)` em falha transitória, com o limite de §3. | P1, P6, P12 | Nenhum formato muda. `ws_queue` mantém-se. |
-| D3 | **Identidade e unicidade**: `messageId` determinístico; estado da etapa/trabalho persistido com índice único `(project_id, token, img_id)`; `Process.msg_id` único; `Result` com índice único `(project_id, token, img_id, file_name)` e criação por *upsert*. *Snapshot* do pipeline na execução. | P3, R5 | Coleções internas de `projects`; migração compatível (documentos antigos sem os novos campos tratados como legado). |
+| D3 | **Identidade e unicidade**: `messageId` determinístico; estado da etapa/trabalho persistido com índice único `(project_id, token, img_id)`; `Process.msg_id` único; `Result` com índice único por etapa (`run_key = <project>:<token>:<img_id>:<etapa>`) e criação por *upsert*; a chave não usa o nome do ficheiro, porque as ferramentas de texto o geram com um contador do processo. *Snapshot* do pipeline na execução. | P3, R5 | Coleções internas de `projects`; migração compatível (documentos antigos sem os novos campos tratados como legado). |
 | D4 | **Transições idempotentes + *outbox***: a resposta é tratada por comparar-e-trocar; o sucessor é gravado como `PENDING_DISPATCH` **na mesma escrita** que avança `J`, publicado com confirmação e marcado `DISPATCHED`. Reconciliação no arranque e periódica republica `PENDING_DISPATCH` de execuções ativas e reavalia consolidações pendentes. O `Process` deixa de ser apagado antes de o resultado estar persistido. | P1, P4–P9 | — |
-| D5 | **Saídas estáveis por execução e etapa** (`out/runs/<token>/<img_id>/<k>/<nome>`), entrada ≠ saída; `POST /process` deixa de apagar o diretório da execução anterior enquanto houver tentativas antigas a correr (limpeza só de execuções terminadas). | W2, W3, X1, X2, K3 | Valores de `inputImageURI`/`outputImageURI` mudam; formato igual. Consumidores: todos os workers de imagem, watermark (aceita qualquer caminho em `/images`). |
+| D5 | **Saídas estáveis por execução e etapa** (`out/runs/<token>/<img_id>/<k>/<nome>`), entrada ≠ saída. `POST /process` apaga os diretórios `runs/<token>` das execuções anteriores e os seus trabalhos; uma tentativa antiga ainda a correr falha ou escreve no diretório da sua execução, e a sua resposta é descartada (D7). | W2, W3, X1, X2, K3 | Valores de `inputImageURI`/`outputImageURI` mudam; formato igual. Consumidores: todos os workers de imagem, watermark (aceita qualquer caminho em `/images`). |
 | D6 | **Consolidação**: só quando **todos** os `J` estão em estado terminal **e** a execução está ativa, numa transição condicional; notificação de conclusão enviada só por quem efetua a transição. **Proposta para `J FAILED` (erro permanente):** a execução consolida com os resultados dos `J COMPLETED` e reporta explicitamente as medias falhadas (preserva o comportamento visível atual de resultados parciais, mas deixa de ser prematuro). Alternativa: não consolidar e manter o commit anterior. | P8, P10, R8 | `ws_queue`: mesma mensagem de sucesso/erro; nenhuma mensagem nova obrigatória. |
 | D7 | **Cancelamento e respostas antigas**: respostas cujo `token ≠ activeToken` ou cuja etapa não está no estado esperado são descartadas com ACK; tentativas antigas escrevem apenas no seu diretório de execução. O *undo* (`DELETE …/tool/:tool`) passa a invalidar a execução em curso como o cancelamento (K4), **sem** alterar quotas. | K1–K4, R7 | — |
-| D8 | **Hooks de injeção** (Fase 2): desligados por omissão, ativos só com `RNF_FIAB_01_FAULT_POINT` no projeto Compose de ensaio; linha de log `RNF-FIAB-01 FAULT-POINT` e bloqueio numa barreira (ficheiro) até o *harness* matar o processo. Linhas `RNF-FIAB-01 READY` e `RECEIVED` para medir M9. | todos | Nenhum. |
+| D8 | **Hooks de injeção** (Fase 2): desligados por omissão, ativos só com `RNF_FIAB_01_HOOKS=1` no projeto Compose de ensaio; linha de log `RNF-FIAB-01 FAULT-POINT` e bloqueio numa barreira (ficheiro) até o *harness* matar o processo. Linhas `RNF-FIAB-01 READY` e `RECEIVED` para medir M9. | todos | Nenhum. |
 
 Princípios transversais: não alterar `users`/quotas (a cobrança continua apenas em
 `POST /process`; a recuperação nunca o reinvoca); não alterar `video_tool`; *previews* continuam a
 usar o caminho atual (beneficiam de D1/D2, não são medidos); extração de frames mantém as
-garantias existentes (barreiras e `persistFrameResults`) adaptadas ao novo estado.
+garantias existentes (barreiras e `persistFrameResults`). Num projeto com `extract_frames`, também
+as imagens seguem o caminho antigo (um documento `Process` por etapa), porque a consolidação
+desses lotes usa as barreiras do caminho antigo (`holdsRunCommit` em `routes/projects.js`); essas imagens não são trabalhos recuperáveis (§8).
 
 ## 7. Riscos e limitações conhecidos da decisão
 
 | Risco | Mitigação / registo |
 | --- | --- |
-| Watermark externo sem confirms nem limite de tentativas | As saídas estáveis (D5) tornam a reexecução inofensiva; ciclo infinito com entrada "assassina" fica como limitação documentada. |
+| Watermark externo sem confirms nem limite de tentativas | As saídas estáveis (D5) tornam a reexecução inofensiva; ciclo infinito com entrada "assassina" fica como limitação documentada. O worker confirma ao receber e troca os identificadores nas respostas de erro: se morrer ou falhar, a etapa fica `DISPATCHED` sem resposta e o lote não consolida (não há prazo por etapa, alternativa B rejeitada). Por isso um trabalho com watermark **não é recuperável** (§8). |
 | Tentativa "zombie" (worker desligado do broker mas ainda a processar) | Saídas determinísticas e escrita atómica: o conteúdo final é idêntico; a resposta tardia é descartada por D4. |
 | Objetos órfãos em S3 (upload feito, morte antes do `Result`) | Não publicados (sem `Result`); registados como limitação, com contagem nas evidências. |
 | Migração de documentos `Process` existentes | Execuções em curso no momento da atualização são tratadas como legado (caminho antigo) ou canceladas; documentado na Fase 3. |
@@ -148,7 +157,9 @@ garantias existentes (barreiras e `persistFrameResults`) adaptadas ao novo estad
 
 - Perda de dados persistidos pelo RabbitMQ ou MongoDB; partições de rede prolongadas.
 - Falhas permanentes do `img_storage`/SeaweedFS (tratadas como erros, não como recuperação).
-- Modificação do worker externo de watermark.
+- Modificação do worker externo de watermark; os trabalhos cujo pipeline inclui watermark não são
+  recuperáveis (§7).
+- Imagens de projetos com `extract_frames` (caminho antigo, §6).
 - Vídeo (`video_tool`): só regressão.
 - *Previews*: não medidos; apenas regressão funcional.
 - Notificações `ws_queue` perdidas (não são resultados).

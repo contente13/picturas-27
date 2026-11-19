@@ -77,7 +77,8 @@ alterada.
 - O consumidor da `project_queue` usa `prefetch(20)` e confirma a mensagem **depois** de o
   *callback* terminar; se o *callback* rejeitar (falha transitória), faz `nack(requeue)` 1 s
   depois. Antes confirmava logo após invocar o *callback* assíncrono (P1).
-- Ambos voltam a ligar-se após um reinício do broker.
+- Ambos voltam a ligar-se após um reinício do broker. Se só o canal do consumidor fechar (erro
+  de canal), a ligação é fechada e o consumidor reinicia uma vez.
 
 ## 4. Estado idempotente, *outbox* e reconciliação (D3, D4)
 
@@ -99,7 +100,8 @@ Novo módulo `projects/utils/runJobs.js`, sem dependências de base de dados ou 
   trabalho, publicado com confirmação e marcado `DISPATCHED`. Se o `projects` morrer entre a
   escrita e a confirmação, o passo fica `PENDING_DISPATCH`.
 - **Resultado único.** O resultado final é criado por *upsert* numa chave
-  `run_key = <project>:<token>:<img_id>:<file_name>` com índice único parcial. Uma cópia que
+  `run_key = <project>:<token>:<img_id>:<etapa>` com índice único parcial (a etapa, e não o nome do
+  ficheiro, porque as ferramentas de texto acrescentam um contador ao nome). Uma cópia que
   chega depois encontra o resultado existente e apaga o objeto que acabou de carregar.
 - **Reconciliação** no arranque (quando o MongoDB está acessível) e a cada 10 s: republica
   passos `PENDING_DISPATCH` de execuções ativas (no arranque todos; depois, os que têm mais de
@@ -191,7 +193,8 @@ e eram apagados no fim):
 | Suite | Testes | Resultado |
 | --- | --- | --- |
 | `tests/rnf-fiab-01` (Python, host): hooks + `test_worker_messaging.py` (substitui e inverte `test_baseline_characterization.py`) | 17 | 17/17 |
-| `projects/tests/run-jobs.test.js` (novo, host e contentor) | 15 | 15/15 |
+| `projects/tests/run-jobs.test.js` (novo, host e contentor) | 16 | 16/16 |
+| `projects/tests/rabbit-mq.test.js` (novo, host; `amqplib` simulado) | 1 | 1/1 |
 | `projects/tests/*.test.js` (suite completa, contentor `picturas-fiab-projects-1`) | 36 | 36/36 |
 
 `test_worker_messaging.py` verifica: `auto_ack=False`, *prefetch* 1, *confirms*; resposta
@@ -204,7 +207,9 @@ o nome final; nova tentativa de ligação quando o nome do broker não resolve.
 `run-jobs.test.js` cobre R0, R5a/R5b (cópias concorrentes), R6b/c (sucessor não publicado),
 R6d (repetição depois de guardar o resultado), R6e (consolidação interrompida), R7/K3 (execução
 substituída), K4 (trabalho removido durante a gravação), R8/R8b (D6), falhas repetidas no
-tratamento, saídas de texto e *snapshot* do pipeline.
+tratamento, saídas de texto (incluindo uma etapa de texto reexecutada com outro nome de ficheiro)
+e *snapshot* do pipeline. `rabbit-mq.test.js` verifica que o consumidor reinicia uma vez quando
+fecha só o canal ou a ligação.
 
 ## 10. Verificação preliminar com o stack de ensaio
 
@@ -243,10 +248,11 @@ repetido com o resultado da tabela. Para a Fase 4, reconstruir serviços com `--
 - **Objetos órfãos.** Se o `projects` morrer entre carregar o resultado e criar o `Result`, o
   objeto carregado fica órfão no armazenamento (não publicado). A repetição carrega outro.
 - **Watermark externo.** Continua sem *confirms* nem limite de entregas (imagem pré-construída);
-  beneficia das saídas por passo e do tratamento idempotente das respostas.
-- **Ferramentas de texto** (`obj_ai`, `people_ai`) acrescentam um contador ao nome do ficheiro
-  de texto; uma repetição produz um segundo nome e, por isso, um segundo resultado de texto.
-  Fora do âmbito medido (imagens), registado.
+  beneficia das saídas por passo e do tratamento idempotente das respostas, mas uma falha deixa
+  a etapa sem resposta e o lote sem consolidar: não é recuperável (especificação §7–§8).
+- **Ferramentas de texto** (`text_ai`, `obj_ai`, `people_ai`) acrescentam um contador ao nome do
+  ficheiro de texto. O `run_key` usa a etapa, por isso uma repetição não cria um segundo
+  resultado; o objeto carregado pela cópia que perde é apagado.
 - **Ligações por mensagem no `projects`.** As notificações partilham a ligação de publicação;
   se o broker estiver em baixo, são registadas e perdidas (exclusão: notificações `ws_queue`).
 - Registo de tentativas e pastas `runs/` antigas não são limpos automaticamente além do que

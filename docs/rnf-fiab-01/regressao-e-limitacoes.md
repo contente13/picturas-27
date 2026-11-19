@@ -52,8 +52,9 @@ alterado e o worker passou nas verificações `mixed`, `video` e `frames`.
 | --- | --- | --- |
 | Uma única réplica do `projects` | A reconciliação e as transições assumem uma instância (como hoje); várias instâncias seriam seguras para as transições (comparar-e-trocar), mas republicariam passos `PENDING_DISPATCH` em duplicado (inofensivo: pedido idempotente) | [implementacao.md](implementacao.md) §11 |
 | Previews, vídeos e extração de frames continuam no modelo antigo | Beneficiam do ACK depois do tratamento e da consolidação única, mas um `projects` que morre a meio do tratamento de uma resposta de vídeo pode deixar essa execução pendurada | Exclusão aceite na especificação §8 (vídeo e previews só em regressão) |
-| Watermark externo | Sem *confirms* nem limite de entregas (imagem pré-construída); as saídas por passo e o tratamento idempotente protegem os resultados | especificação §7 |
-| Ferramentas de texto `obj_ai`/`people_ai` | O nome do ficheiro de texto tem um contador: uma repetição gera um segundo resultado de texto | Fora do corpus medido |
+| Watermark externo | Sem *confirms* nem limite de entregas (imagem pré-construída); as saídas por passo e o tratamento idempotente protegem os resultados, mas uma falha do worker deixa o lote por consolidar: trabalhos com watermark não são recuperáveis | especificação §7–§8 |
+| Imagens de projetos com `extract_frames` | Seguem o caminho antigo; não são trabalhos recuperáveis | especificação §6, §8 |
+| Erros do efeito no worker | Qualquer exceção do efeito (incluindo E/S ou rede numa ferramenta de IA) termina o trabalho como `FAILED` | especificação §2 |
 | Objetos órfãos no armazenamento | Se o `projects` morrer entre carregar o resultado e criar o `Result`, o objeto fica órfão (não publicado) | — |
 | Registo de tentativas e pastas `runs/` | Não há limpeza automática além do que `POST /process` remove | Ocupação pequena (1 byte por entrega) |
 | Medições numa única máquina, podman rootless | Tempos absolutos não transferíveis; `restart: "no"` no ensaio (M9 exclui o arranque do contentor) | protocolo §10 |
