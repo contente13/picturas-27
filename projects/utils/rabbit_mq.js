@@ -63,6 +63,11 @@ function read_rabbit_msg(queue, callback) {
     });
     const channel = await connection.createChannel();
     channel.on('error', (err) => console.error('[rabbit_mq] consumer channel error:', err.message));
+    // A channel error (e.g. a precondition failure) closes only the channel: close the
+    // connection too, so the 'close' handler above restarts the consumer once.
+    channel.on('close', () => {
+      Promise.resolve().then(() => connection.close()).catch(() => { /* already closing */ });
+    });
     await channel.assertExchange(exchange, 'direct', { durable: true });
     const q = await channel.assertQueue(queue, { durable: true });
     await channel.prefetch(CONSUMER_PREFETCH);
