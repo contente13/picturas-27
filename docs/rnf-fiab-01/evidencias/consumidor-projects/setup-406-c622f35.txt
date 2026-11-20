@@ -1,0 +1,23 @@
+== 1. estado inicial
+consumers=1 args={'x-queue-type': 'classic'}
+connections=1 ['10.89.2.7']
+== 2. apagar e redeclarar a fila com argumento incompatível
+delete 204
+redeclare-bad 201
+consumers=None args={'x-max-length': 1, 'x-queue-type': 'classic'}
+connections=1 ['10.89.2.7']
+== 3. fechar a ligação do projects
+close-conn 204
+t=3s: connections=0 []
+t=6s: connections=0 []
+t=9s: connections=0 []
+t=12s: connections=0 []
+t=15s: connections=0 []
+== 5. repor a fila correta
+delete 204
+redeclare-ok 201
+bind 201
+consumers=1 args={'x-queue-type': 'classic'}
+connections=1 ['10.89.2.7']
+consumers(all queues)=1 ['project_queue']
+== logs do projects (rabbit_mq)

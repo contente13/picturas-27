@@ -77,8 +77,22 @@ alterada.
 - O consumidor da `project_queue` usa `prefetch(20)` e confirma a mensagem **depois** de o
   *callback* terminar; se o *callback* rejeitar (falha transitória), faz `nack(requeue)` 1 s
   depois. Antes confirmava logo após invocar o *callback* assíncrono (P1).
-- Ambos voltam a ligar-se após um reinício do broker. Se só o canal do consumidor fechar (erro
-  de canal), a ligação é fechada e o consumidor reinicia uma vez.
+- Ambos voltam a ligar-se após um reinício do broker. No consumidor, cada tentativa de arranque
+  encaminha todas as falhas para uma única função (`restartOnce`), que fecha a ligação e agenda
+  **uma** nova tentativa 2 s depois:
+  - fecho da ligação (reinício do broker);
+  - fecho só do canal (erro de canal, p. ex. `406 PRECONDITION_FAILED`);
+  - rejeição de uma chamada de configuração (`connect`, `createChannel`, `assertQueue`, …);
+  - cancelamento do consumidor pelo broker (o `amqplib` entrega `msg == null`, p. ex. quando a
+    fila é apagada), em que a ligação e o canal continuam abertos.
+- O consumidor declara a fila e faz `bindQueue(project_queue, picturas, project_queue)`,
+  idempotente, como o `video_tool`. Se a fila tiver sido apagada, volta a existir com o
+  *binding* de `rabbitMQ/definitions.json`.
+- Correções feitas depois da revisão da Pessoa 2 (ver
+  [resultados-finais.md](resultados-finais.md) §9): antes, uma falha na configuração era
+  tratada por dois caminhos (fecho do canal → fecho da ligação → reinício, e `catch` →
+  reinício), e os consumidores duplicavam a cada falha; um cancelamento pelo broker era
+  ignorado e o `projects` ficava sem consumidor até a ligação cair.
 
 ## 4. Estado idempotente, *outbox* e reconciliação (D3, D4)
 
@@ -194,7 +208,7 @@ e eram apagados no fim):
 | --- | --- | --- |
 | `tests/rnf-fiab-01` (Python, host): hooks + `test_worker_messaging.py` (substitui e inverte `test_baseline_characterization.py`) | 17 | 17/17 |
 | `projects/tests/run-jobs.test.js` (novo, host e contentor) | 16 | 16/16 |
-| `projects/tests/rabbit-mq.test.js` (novo, host; `amqplib` simulado) | 1 | 1/1 |
+| `projects/tests/rabbit-mq.test.js` (novo, host; `amqplib` simulado) | 3 | 3/3 (1/1 na versão da campanha; +2 em §9 de [resultados-finais.md](resultados-finais.md)) |
 | `projects/tests/*.test.js` (suite completa, contentor `picturas-fiab-projects-1`) | 36 | 36/36 |
 
 `test_worker_messaging.py` verifica: `auto_ack=False`, *prefetch* 1, *confirms*; resposta
@@ -209,7 +223,8 @@ R6d (repetição depois de guardar o resultado), R6e (consolidação interrompid
 substituída), K4 (trabalho removido durante a gravação), R8/R8b (D6), falhas repetidas no
 tratamento, saídas de texto (incluindo uma etapa de texto reexecutada com outro nome de ficheiro)
 e *snapshot* do pipeline. `rabbit-mq.test.js` verifica que o consumidor reinicia uma vez quando
-fecha só o canal ou a ligação.
+fecha só o canal ou a ligação, quando a configuração falha com um erro de canal (fica um único
+consumidor) e quando o broker cancela o consumidor.
 
 ## 10. Verificação preliminar com o stack de ensaio
 

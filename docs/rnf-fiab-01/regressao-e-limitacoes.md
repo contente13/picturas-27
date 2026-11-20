@@ -59,6 +59,8 @@ alterado e o worker passou nas verificações `mixed`, `video` e `frames`.
 | Registo de tentativas e pastas `runs/` | Não há limpeza automática além do que `POST /process` remove | Ocupação pequena (1 byte por entrega) |
 | Medições numa única máquina, podman rootless | Tempos absolutos não transferíveis; `restart: "no"` no ensaio (M9 exclui o arranque do contentor) | protocolo §10 |
 | M6 com ferramentas não cobradas | border/brightness/rotate não descontam quota; a não-recobrança foi verificada na regressão com efeitos de vídeo | §1 |
+| Workers de imagem e fila apagada | `Tools/utils` declara a sua fila mas não faz `queue_bind`, e o tratamento de um cancelamento do consumidor pelo broker (fila apagada) no pika não foi verificado. Se a fila de um worker for apagada com o broker a correr, o *binding* só volta com o próximo arranque do broker (`definitions.json`). O `projects` e o `video_tool` já repõem o *binding* | [resultados-finais.md](resultados-finais.md) §9 |
+| Correções ao consumidor do `projects` (§9 dos resultados) | Não medidas pela campanha (nenhum cenário R0–R8 passa por esse código); verificadas por testes automáticos e por reprodução com o RabbitMQ real | [resultados-finais.md](resultados-finais.md) §9 |
 | Alterações depois da campanha | Registo `[JOB-SLOW]` e limpeza no *undo* (rota que R0–R8 não usam); confirmadas por um piloto de todos os cenários e pela regressão | [resultados-finais.md](resultados-finais.md) §7 |
 
 ## 3. Riscos e recomendações

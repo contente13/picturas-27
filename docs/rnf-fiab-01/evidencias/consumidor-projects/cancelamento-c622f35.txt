@@ -1,0 +1,22 @@
+== 1. estado inicial
+consumers=1 args={'x-queue-type': 'classic'}
+connections=1 ['10.89.2.13']
+== 2. apagar project_queue (o broker cancela o consumidor; a ligação continua aberta)
+delete 204
+t~2s: {'error': 'Object Not Found', 'reason': 'Not Found'}
+t~4s: {'error': 'Object Not Found', 'reason': 'Not Found'}
+t~6s: {'error': 'Object Not Found', 'reason': 'Not Found'}
+t~8s: {'error': 'Object Not Found', 'reason': 'Not Found'}
+t~10s: {'error': 'Object Not Found', 'reason': 'Not Found'}
+t~15s: {'error': 'Object Not Found', 'reason': 'Not Found'}
+t~20s: {'error': 'Object Not Found', 'reason': 'Not Found'}
+t~30s: {'error': 'Object Not Found', 'reason': 'Not Found'}
+binding: []
+connections=1 ['10.89.2.13']
+== 3. mensagem publicada no exchange picturas
+{"routed":false}
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+    import json,sys;d=json.load(sys.stdin);print('ready=%s unacked=%s consumers=%s'%(d['messages_ready'],d['messages_unacknowledged'],d['consumers']))
+                                                                                     ~^^^^^^^^^^^^^^^^^^
+KeyError: 'messages_ready'

@@ -1,0 +1,3 @@
+      8 [rabbit_mq] consumer channel error: Channel closed by server: 406 (PRECONDITION-FAILED) with message "PRECONDITION_FAILED - inequivalent arg 'x-max-length' for queue 'project_queue' in vhost '/': received none but current is the value '1' of type 'long'"
+      8 [rabbit_mq] consumer channel closed, reconnecting
+      2 [rabbit_mq] consumer cancelled by the broker, reconnecting
