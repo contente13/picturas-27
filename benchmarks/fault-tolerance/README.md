@@ -4,10 +4,11 @@ Measures whether image-processing jobs survive the failure of a worker (or of th
 orchestrator) and finish without lost jobs, duplicated results, re-applied effects or
 altered originals. The same protocol runs on the baseline and on the refactored version.
 
-Measured versions: baseline `df5d0bc` (`main`) and final `cab1b35` (branch `rnf-fiab-01`).
-`protocol.json` still names `0523102` as `baseline_commit` (the protocol predates `df5d0bc`); the
-commit actually measured is recorded in each campaign's `environment.json`. Results and analysis:
-`RELATORIO-RNF-FIAB-01.md`.
+Measured versions: baseline `df5d0bc`, final `cab1b35` (now squashed into `main` as `5d084ce`;
+history in tag `rnf-fiab-01-verificacao`) and the integrated `main` (`35fdd36`). The commit
+actually measured is recorded in each campaign's `environment.json`. Until 2026-11-20
+`protocol.json` named `0523102` as `baseline_commit` and described R5a as concurrent; only those
+two labels changed. Results and analysis: `RELATORIO-RNF-FIAB-01.md`.
 
 ## How faults are injected
 
@@ -61,7 +62,7 @@ frozen from the first R0 trial of the `baseline` phase (pilots never freeze it) 
 | R2 | worker dies while writing the output (truncated file left behind) |
 | R3 | worker dies after writing the output, before replying |
 | R4 | worker dies 1 s after publishing the reply, before acknowledging the request |
-| R5a / R5b | the reply is delivered twice, at once / 2 s apart |
+| R5a / R5b | the reply is delivered twice, back to back / 2 s apart (sequential copies) |
 | R6a / R6b / R6c | `projects` dies before registering a successor step / before persisting a final result / before committing the run |
 | R7a / R7b | first rotate job held at reply / at write. The run is cancelled and restarted, then the held job is released into the new run |
 | R8 | permanent error (invalid brightness parameter): no endless retries, error surfaced |
@@ -91,6 +92,8 @@ git worktree add ../picturas-fiab-baseline df5d0bc               # once (final: 
 python3 $H/fiab.py corpus                                            # once; never regenerate
 python3 $H/fiab.py up --source ../picturas-fiab-baseline --build     # first time: long build
 python3 $H/fiab.py preflight --source ../picturas-fiab-baseline
+# preflight and run stop if a shim mount is empty (Docker Desktop right after it starts):
+# recreate the containers with `docker compose ... up -d --force-recreate --no-build`.
 python3 $H/fiab.py run --source ../picturas-fiab-baseline --phase pilot --scenarios R0,R1 --reps 1
 python3 $H/fiab.py run --source ../picturas-fiab-baseline --phase baseline
 python3 $H/fiab.py summarize <campaign-folder>

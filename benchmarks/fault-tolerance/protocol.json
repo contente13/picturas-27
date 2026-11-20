@@ -1,7 +1,7 @@
 {
   "protocol": 1,
   "requirement": "RNF-FIAB-01",
-  "baseline_commit": "052310226c51fa57a17101c7bd1ad795674aac95",
+  "baseline_commit": "df5d0bc2a53ba8fb677987e2e1d69e939017418a",
   "compose_project": "picturas-fiab",
   "base_url": "https://localhost:8443/api-gateway",
   "lot": {"images": 10, "width": 320, "height": 240},
@@ -26,7 +26,7 @@
             "arm": {"service": "rotate", "point": "after_write", "action": "crash", "nth": 5}},
     "R4":  {"description": "Worker dies after the reply reached the broker, before acknowledging the request",
             "arm": {"service": "rotate", "point": "after_publish", "action": "crash", "nth": 5, "post_publish_wait_s": 1.0}},
-    "R5a": {"description": "Reply delivered twice at once (concurrent duplicates)",
+    "R5a": {"description": "Reply delivered twice back to back (sequential duplicates, P2)",
             "arm": {"service": "rotate", "point": "after_publish", "action": "duplicate", "nth": 5, "copies": 2, "gap_s": 0}},
     "R5b": {"description": "Reply delivered twice, 2 s apart (late duplicate)",
             "arm": {"service": "rotate", "point": "after_publish", "action": "duplicate", "nth": 5, "copies": 2, "gap_s": 2}},

@@ -2,7 +2,7 @@
 
 > Secção da Pessoa 2: medição externa, por injeção de falhas sem alterar a aplicação, da versão
 > base e da versão corrigida pela Pessoa 1. O diagnóstico detalhado, a especificação e a decisão
-> são da Pessoa 1 e estão no ramo `rnf-fiab-01`, em `docs/rnf-fiab-01/` (`diagnostico.md`,
+> são da Pessoa 1 e estão no `main`, em `docs/rnf-fiab-01/` (`diagnostico.md`,
 > `especificacao-e-decisao.md`, `implementacao.md`, `resultados-finais.md`). Aqui usam-se os
 > mesmos identificadores: fragilidades W (workers), X (watermark), P (`projects`), K
 > (cancelamento/undo), métricas M1–M12 e decisões de desenho D1–D8.
@@ -13,6 +13,8 @@ trabalhos perdidos, 10 lotes nunca consolidados e 88 saídas com efeito reaplica
 corrigida, os mesmos 100 lotes terminaram todos corretos, sem perdas, duplicados nem
 reaplicações, e os 10 lotes com erro permanente (R8) terminaram de forma controlada, com cada
 trabalho marcado `FAILED` e notificado uma vez. Sem falhas, o lote é 35 % mais rápido.
+Uma repetição parcial (R0, R1, R6a, R7b) sobre o `main` integrado (`35fdd36`) confirmou o
+mesmo comportamento: 40/40 lotes corretos (§8).
 
 ## 1. Diagnóstico
 
@@ -69,7 +71,7 @@ Lote de medição: 10 imagens PNG 320×240 determinísticas e o pipeline
 | M6 | Cobranças adicionais | variação das operações diárias restantes antes/depois do ensaio | 0 | 0 |
 | M7 | Sobrescrita por tentativa antiga | R7: saídas da execução nova que diferem do golden | 0 | 0 |
 | M8 | Consolidação prematura | ensaios consolidados com algum ficheiro em falta | 0 | 0 |
-| M9 | Tempo de retoma | do registo do consumidor reiniciado até à reentrega da mensagem interrompida (traces dos shims) | ≤ 5 s | ≤ 15 s |
+| M9 | Tempo de retoma | do arranque do processo reiniciado (primeiro evento `start` do shim) até à reentrega da mensagem interrompida | ≤ 5 s | ≤ 15 s |
 | M10 | Tempo até à conclusão | da falha até ao lote consolidado ser visível na API | reportado | reportado |
 | M11 | Sobrecarga sem falhas | variação da mediana da duração do R0 | ≤ 5 % | ≤ 10 % |
 | M12 | Fim controlado de erro permanente | R8: os 10 trabalhos `FAILED`, ≤ `MAX_DELIVERIES` (3) entregas por mensagem, uma notificação `[JOB-FAILED]` por trabalho | 100 % | 100 % |
@@ -96,7 +98,7 @@ interativo, e 5 % é o custo aceitável de durabilidade num lote que dura menos 
 
 | Campo | Baseline | Final |
 | --- | --- | --- |
-| Versão | `df5d0bc` (`main`, worktree limpa) | `56e7410` em `rnf-fiab-01` (código = `cab1b35`, worktree limpa) |
+| Versão | `df5d0bc` (`main`, worktree limpa) | `56e7410` do ramo `rnf-fiab-01` (código = `cab1b35`, worktree limpa). O ramo foi integrado no `main` num único commit (`5d084ce`) e apagado; o histórico está na tag `rnf-fiab-01-verificacao` |
 | Campanha | `runs/baseline-df5d0bc/` (15–17 nov 2026) | `runs/final-cab1b35/` (17 nov 2026, 22:49–00:20) |
 | Máquina | Docker Desktop 29.8.2 sobre WSL2 (kernel 6.18.58.1), 16 CPUs, 15 GiB; Compose 5.5.1 | a mesma |
 | Corpus, golden, protocolo | `runs/corpus/manifest.json`, `runs/golden.json`, `protocol.json` | os mesmos |
@@ -125,8 +127,15 @@ Desvios e notas do processo:
   do R4-05 da baseline. Os traces dos contentores mostram que esses lotes duraram o normal (cerca
   de 0,5 s). Estes valores foram excluídos das estatísticas de tempo, sem alterar nenhuma
   conclusão. Depois das campanhas, o `fiab.py` passou a medir a duração com `time.monotonic()`.
-- O campo `baseline_commit` de `protocol.json` ainda diz `0523102`, de quando o protocolo foi
-  escrito. A versão medida é a registada em `environment.json` de cada campanha (`df5d0bc`).
+- Até 20 nov 2026 o campo `baseline_commit` de `protocol.json` dizia `0523102`, de quando o
+  protocolo foi escrito, e o R5a estava descrito como "concurrent", embora as cópias sejam
+  sequenciais. Só estes dois textos mudaram. A versão medida é a registada no `environment.json`
+  de cada campanha.
+- **Dados brutos.** A pasta `runs/` não está no Git. Todas as campanhas da Pessoa 2 (corpus,
+  golden, baseline, final, piloto de equivalência, confirmação no `main`, ensaios interrompidos e
+  invalidados, com traces e logs) estão em `arquivo-p2-fiab.tar.gz` (3,6 MB), SHA-256
+  `bf799cce4e74f8e06e3ba7f7005caf5dc38497baabc28c4a924b3596c7f69460`, partilhado com a equipa
+  fora do Git.
 
 ## 5. Medição inicial (baseline, `df5d0bc`)
 
@@ -235,8 +244,10 @@ consequência para a medição foi a adaptação dos shims descrita no §4.
 | M11 Sobrecarga sem falhas | ≤ 5 % | 0,829 s (IQR 0,794–0,857) | **0,535 s (IQR 0,526–0,581): −35 %** | Sim |
 | M12 Fim controlado de erro permanente | 100 % | 0/10 (worker termina, nada notificado) | **10/10** (1 entrega, `FAILED`, 1 notificação por trabalho) | Sim |
 
-Do registo do consumidor reiniciado até à falha passaram cerca de 0,3 s nos workers e 0,4–0,5 s
-no `projects` (arranque do contentor; não conta para M9).
+Da falha até ao arranque do processo reiniciado passaram cerca de 0,3 s nos workers e 0,4–0,5 s
+no `projects` (reinício do contentor; não conta para M9). M9 começa no arranque do processo,
+não no registo do consumidor, por isso inclui a ligação ao broker. A Pessoa 1 mediu também a
+partir do registo do consumidor (§8 de `resultados-finais.md`): cerca de 1 ms.
 
 ### Comparação com a medição da Pessoa 1
 
@@ -290,8 +301,50 @@ provável: a ligação reutilizada do `projects` (D2), em vez de uma por mensage
   iguais ao golden da base. R7 mostra o cancelamento e o reinício corretos.
 - A regressão funcional de imagem e vídeo, cancelamento, *undo* (K4), quotas e permissões é da
   Pessoa 1: `docs/rnf-fiab-01/regressao-e-limitacoes.md`.
-- **[POR FAZER depois da integração:** repetir R0, R1, R6a e R7b sobre o `main` com o ramo
-  `rnf-fiab-01` integrado, que inclui também o *refactor* de uploads `c7e597a` da Pessoa 3.**]**
+
+### Confirmação sobre o `main` integrado (`35fdd36`)
+
+O ramo foi integrado no `main` (`5d084ce`) junto com o *refactor* de uploads `c7e597a` da
+Pessoa 3. Depois disso o `main` recebeu ainda as correções do consumidor da `project_queue`
+(`a6c0f18`). Para confirmar de forma independente, R0, R1, R6a e R7b correram com 10
+repetições cada sobre `35fdd36`, na mesma máquina e com o mesmo golden
+(`runs/main-35fdd36/`, 20 nov 2026).
+
+| Cenário | Falha atingida | Lotes corretos | Perdidos | Dup. | ≠ golden | Entregas máx. | Duração mediana (máx.) | M9 mediana (máx.) |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| R0 | — | 10/10 | 0 | 0 | 0 | 1 | 0,76 s (0,79) | — |
+| R1 | 10/10 | 10/10 | 0 | 0 | 0 | 2 | 1,01 s (1,29) | 0,021 s (0,025) |
+| R6a | 10/10 | 10/10 | 0 | 0 | 0 | — | 1,29 s (4,38) | — |
+| R7b | 10/10 (retenção) | 10/10 | 0 | 0 | 0 | 1 | 1,04 s (1,16) | — |
+
+Em todos os ensaios: 0 originais alterados, 0 `Process` pendentes e variação de operações 0.
+**O comportamento medido em `cab1b35` mantém-se na versão integrada.**
+
+- **Ensaios invalidados.** Na primeira tentativa, os contentores dos workers arrancaram com a
+  pasta dos shims vazia: o Docker Desktop tinha acabado de iniciar e os *bind mounts* vieram
+  vazios. Por isso o R1 correu sem falha, e o R0 sem traces dos workers. Esses 20 ensaios estão
+  em `runs/invalid/main-35fdd36-no-worker-shims/` e não contam. Foram repetidos depois de
+  recriar os contentores. Um ensaio R7b interrompido pelo fim da sessão de trabalho está em
+  `runs/interrupted/`. O R6a da primeira tentativa é válido: a falha é no `projects`, cujo shim
+  estava montado, e disparou em 10/10. Faltam-lhe apenas os traces dos workers, por isso não tem
+  entregas máximas. Desde então, o `preflight` e o `run` verificam que os shims estão montados em
+  todos os serviços instrumentados e param se não estiverem.
+- **R0 mais lento do que na campanha final** (0,76 s contra 0,53 s), mas ainda 9 % abaixo da
+  baseline (0,83 s). Não foi investigado. A versão integrada inclui também o *refactor* de
+  uploads `c7e597a`, e 10 repetições de lotes de menos de 1 s são sensíveis ao estado da
+  máquina. M11 continua a ser avaliado com a campanha final (§7).
+
+### Revisão da verificação da Pessoa 1 (`6d19557`)
+
+A Pessoa 1 correu este mesmo harness, sem alterações, sobre `6d19557` (90 ensaios, podman
+rootless; `docs/rnf-fiab-01/resultados-finais.md` §8). Verificações da Pessoa 2:
+- O arquivo `arquivo-integrado-6d19557.tar.gz` tem o SHA-256 indicado (`9680702932c1…b9276cb`).
+- O harness usado tem o mesmo SHA-256 que o do `main` (`fiab.py` `fa6bd7a9…`). O golden e o
+  manifesto do corpus são idênticos aos desta medição.
+- Os resultados foram recalculados a partir dos `trial.json` do arquivo e coincidem com a tabela
+  da §8 dela: 80/80 lotes recuperáveis corretos, 0 perdidos, 0 duplicados, 0 saídas diferentes do
+  golden. No R8 há 100 trabalhos `FAILED` e 10 `[JOB-FAILED]` em cada um dos 10 logs.
+- A medição dela é anterior a `a6c0f18`. A confirmação acima cobre essa correção.
 
 ## 9. Apoio de IA
 
@@ -305,4 +358,8 @@ provável: a ligação reutilizada do `projects` (D2), em vez de uma por mensage
   - a Pessoa 1 reviu o diagnóstico (`ENTREGA-P1-FIAB-2.md`) e confirmou a numeração W/X/P/K e
     M1–M12;
   - os resultados foram confrontados com a campanha independente da Pessoa 1;
-  - **[POR PREENCHER:** revisão final deste texto pela equipa.**]**
+  - a Pessoa 1 reviu este relatório e o harness, e pediu as correções feitas a 20 nov 2026:
+    definição de M9, descrição do R5a e `baseline_commit` em `protocol.json`, referências ao
+    ramo integrado e arquivo dos dados brutos;
+  - a Pessoa 1 verificou a versão integrada com este harness, e a Pessoa 2 reviu essa
+    verificação (§8).

@@ -106,6 +106,18 @@ class Stack:
         CTL.mkdir(parents=True, exist_ok=True)
         self.compose("up", "-d", *(["--build"] if build else ["--no-build"]), *self.services(), timeout=3600)
 
+    def check_shims(self):
+        """Docker Desktop can start containers with empty bind mounts (e.g. right after it
+        starts); a worker then runs without its shim and an armed fault never fires."""
+        files = {f"{s}_tool": "/fault/shim/sitecustomize.py" for s in PROTOCOL["fault_services"]}
+        files["projects"] = "/fault/shim/node/fault-shim.js"
+        missing = [svc for svc, path in files.items()
+                   if self.compose("exec", "-T", svc, "sh", "-c", f"test -s {path} && echo mounted",
+                                   timeout=60, check=False).strip() != "mounted"]
+        if missing:
+            raise SystemExit(f"fault shims not mounted in {', '.join(missing)}: recreate the containers "
+                             "(docker compose ... up -d --force-recreate --no-build) and run preflight again")
+
     def mongo(self, script):
         out = self.compose("exec", "-T", "projects_mongoDB", "mongo", "--quiet", "--port", "27018", "project",
                            "--eval", script, timeout=60)
@@ -582,10 +594,12 @@ def main():
         load_corpus()
         print(json.dumps(stack.inventory(), indent=2)[:3000])
         print(json.dumps(wait_ready(stack, PROTOCOL["ready_timeout_s"]), indent=2))
+        stack.check_shims()
         api.register("preflight")
         return print("preflight ok")
 
     corpus = load_corpus()
+    stack.check_shims()
     name = args.campaign or f"{args.phase}-{uuid.uuid4().hex[:6]}"
     folder = RUNS / name
     folder.mkdir(parents=True, exist_ok=True)
