@@ -6,6 +6,7 @@ const EventEmitter = require('events');
 const Module = require('module');
 
 const connections = [];
+let failSetups = 0; // the next N assertQueue calls fail like a broker channel error
 
 function fakeConnection() {
   const connection = new EventEmitter();
@@ -19,7 +20,16 @@ function fakeConnection() {
   connection.createChannel = async () => {
     const channel = new EventEmitter();
     channel.assertExchange = async () => {};
-    channel.assertQueue = async (queue) => ({ queue });
+    channel.assertQueue = async (queue) => {
+      if (failSetups > 0) {
+        // amqplib on e.g. 406 PRECONDITION_FAILED: the channel closes and the call rejects.
+        failSetups -= 1;
+        channel.emit('error', new Error('PRECONDITION_FAILED'));
+        channel.emit('close');
+        throw new Error('Channel closed by server: 406 PRECONDITION_FAILED');
+      }
+      return { queue };
+    };
     channel.prefetch = async () => {};
     channel.consume = async (queue, handler) => { connection.consumers.push(handler); };
     channel.ack = () => {};
@@ -69,5 +79,20 @@ test('RNF-FIAB-01 a closed consumer channel restarts the consumer once', async (
   await waitFor(() => connections.length === 3 && connections[2].consumers.length === 1);
   await new Promise((resolve) => setTimeout(resolve, 2300));
   assert.equal(connections.length, 3);
-  connections[2].close(); // stop the reconnect loop
+});
+
+test('RNF-FIAB-01 a failed consumer setup restarts it once, leaving one consumer', async () => {
+  const base = connections.length;
+  failSetups = 1;
+  read_rabbit_msg('project_queue', async () => {});
+
+  await waitFor(() => connections.length === base + 2 && connections[base + 1].consumers.length === 1);
+  // The channel close, the connection close and the rejected setup report the same failure.
+  await new Promise((resolve) => setTimeout(resolve, 2300));
+  const mine = connections.slice(base);
+  assert.equal(mine.length, 2, 'one reconnection');
+  assert.equal(mine[0].closed, true, 'the failed connection is closed');
+  const open = mine.filter((c) => !c.closed);
+  assert.equal(open.length, 1);
+  assert.equal(open[0].consumers.length, 1, 'exactly one consumer');
 });

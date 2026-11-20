@@ -55,45 +55,52 @@ function send_rabbit_msg(msg, queue) {
 // A rejection means a transient failure: the message is requeued after a short delay.
 function read_rabbit_msg(queue, callback) {
   const start = async () => {
-    const connection = await amqp.connect(rabbit_mq_sv);
-    connection.on('error', (err) => console.error('[rabbit_mq] consumer connection error:', err.message));
-    connection.on('close', () => {
-      console.error('[rabbit_mq] consumer connection closed, reconnecting');
-      setTimeout(restart, RECONNECT_DELAY_MS);
-    });
-    const channel = await connection.createChannel();
-    channel.on('error', (err) => console.error('[rabbit_mq] consumer channel error:', err.message));
-    // A channel error (e.g. a precondition failure) closes only the channel: close the
-    // connection too, so the 'close' handler above restarts the consumer once.
-    channel.on('close', () => {
-      Promise.resolve().then(() => connection.close()).catch(() => { /* already closing */ });
-    });
-    await channel.assertExchange(exchange, 'direct', { durable: true });
-    const q = await channel.assertQueue(queue, { durable: true });
-    await channel.prefetch(CONSUMER_PREFETCH);
-    // READY before registering: redeliveries can arrive before consume() resolves.
-    faultHooks.ready();
-    await channel.consume(q.queue, (msg) => {
-      if (msg == null) return;
-      if (faultHooks.ENABLED) faultHooks.received(msg);
-      Promise.resolve()
-        .then(() => callback(msg))
-        .then(
-          () => channel.ack(msg),
-          (err) => {
-            console.error('[rabbit_mq] message not handled, requeueing:', err && err.message);
-            setTimeout(() => {
-              try { channel.nack(msg, false, true); } catch (_) { /* channel closed: redelivered */ }
-            }, NACK_DELAY_MS);
-          })
-        .catch((err) => console.error('[rabbit_mq] ack failed (channel closed?):', err.message));
-    }, { noAck: false });
+    let connection = null;
+    let restarting = false;
+    // A failure can be reported more than once (channel close, connection close and the
+    // rejected setup call): only the first schedules a restart, so one consumer remains.
+    const restartOnce = (reason) => {
+      if (restarting) return;
+      restarting = true;
+      console.error(`[rabbit_mq] consumer ${reason}, reconnecting`);
+      if (connection) {
+        Promise.resolve().then(() => connection.close()).catch(() => { /* already closing */ });
+      }
+      setTimeout(start, RECONNECT_DELAY_MS);
+    };
+    try {
+      connection = await amqp.connect(rabbit_mq_sv);
+      connection.on('error', (err) => console.error('[rabbit_mq] consumer connection error:', err.message));
+      connection.on('close', () => restartOnce('connection closed'));
+      const channel = await connection.createChannel();
+      channel.on('error', (err) => console.error('[rabbit_mq] consumer channel error:', err.message));
+      // A channel error (e.g. a precondition failure) closes only the channel.
+      channel.on('close', () => restartOnce('channel closed'));
+      await channel.assertExchange(exchange, 'direct', { durable: true });
+      const q = await channel.assertQueue(queue, { durable: true });
+      await channel.prefetch(CONSUMER_PREFETCH);
+      // READY before registering: redeliveries can arrive before consume() resolves.
+      faultHooks.ready();
+      await channel.consume(q.queue, (msg) => {
+        if (msg == null) return;
+        if (faultHooks.ENABLED) faultHooks.received(msg);
+        Promise.resolve()
+          .then(() => callback(msg))
+          .then(
+            () => channel.ack(msg),
+            (err) => {
+              console.error('[rabbit_mq] message not handled, requeueing:', err && err.message);
+              setTimeout(() => {
+                try { channel.nack(msg, false, true); } catch (_) { /* channel closed: redelivered */ }
+              }, NACK_DELAY_MS);
+            })
+          .catch((err) => console.error('[rabbit_mq] ack failed (channel closed?):', err.message));
+      }, { noAck: false });
+    } catch (err) {
+      restartOnce(`start failed (${err.message})`);
+    }
   };
-  const restart = () => start().catch((err) => {
-    console.error('[rabbit_mq] consumer start failed, retrying:', err.message);
-    setTimeout(restart, RECONNECT_DELAY_MS);
-  });
-  restart();
+  start();
 }
 
 module.exports = { publish, send_rabbit_msg, read_rabbit_msg };
