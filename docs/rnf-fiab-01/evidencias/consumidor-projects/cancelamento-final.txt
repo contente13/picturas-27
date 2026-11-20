@@ -1,0 +1,13 @@
+== 1. estado inicial
+consumers=1 args={'x-queue-type': 'classic'}
+connections=1 ['10.89.2.10']
+== 2. apagar project_queue (o broker cancela o consumidor; a ligação continua aberta)
+delete 204
+t~1s: {'error': 'Object Not Found', 'reason': 'Not Found'}
+t~3s: consumers=None args={'x-queue-type': 'classic'}
+t~5s: consumers=1 args={'x-queue-type': 'classic'}
+binding: [('picturas', 'project_queue')]
+connections=1 ['10.89.2.10']
+== 3. mensagem publicada no exchange picturas
+{"routed":true}
+ready=0 unacked=0 consumers=1

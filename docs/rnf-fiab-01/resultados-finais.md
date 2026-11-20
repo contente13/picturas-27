@@ -187,3 +187,42 @@ avaliação independente: a Pessoa 2 deve rever estes dados ou repetir um subcon
   em si foi imediata (3 ms).
 - **M11 não avaliado** nesta verificação: só existe um R0 da baseline nesta máquina (usado para o
   golden). A medição válida de M11 continua a ser a da §5.
+
+## 9. Correções ao consumidor do `projects` depois da revisão da Pessoa 2
+
+Na revisão do código integrado (`5d084ce`), a Pessoa 2 identificou um defeito em
+`projects/utils/rabbit_mq.js` e confirmou-o com um RabbitMQ simulado. A Pessoa 1 reproduziu-o
+com o RabbitMQ real e encontrou um segundo defeito no mesmo consumidor. Os dois estão corrigidos
+(descrição em [implementacao.md](implementacao.md) §3).
+
+| # | Defeito | Causa | Efeito |
+| --- | --- | --- | --- |
+| 1 | Consumidores duplicados após uma falha na configuração | Um erro de canal durante a configuração (p. ex. `assertQueue` com `406 PRECONDITION_FAILED`) era tratado por dois caminhos: fecho do canal → fecho da ligação → reinício, e rejeição da configuração → outro reinício. Introduzido pela correção `9ca4de6` (reinício quando só o canal fecha). | Cada falha duplicava os consumidores e as ligações. Cada mensagem continua a ir para um só consumidor, por isso não há resultados duplicados, mas o *prefetch* efetivo multiplica-se e as ligações acumulam-se. |
+| 2 | Consumidor cancelado pelo broker não volta | O `amqplib` entrega `msg == null` quando o broker cancela o consumidor (p. ex. a fila foi apagada), e o código ignorava esse caso. O consumidor também não fazia `bindQueue`. | O `projects` ficava ligado mas sem consumidor até a ligação cair. Se a fila tinha sido apagada, as respostas dos workers ficavam sem rota e perdiam-se. |
+
+**Verificação com o RabbitMQ real.** Stack isolado `picturas-fixtest` (só `rabbitmq`,
+`projects_mongoDB` e `projects`, podman 4.9.3 rootless), 2026-11-20. Faltas induzidas pela API
+de gestão do RabbitMQ. Scripts e saídas em
+[`evidencias/consumidor-projects/`](evidencias/consumidor-projects/) (`RMQ_AUTH` com as
+credenciais do `docker-compose.yaml`).
+
+| Cenário | `5d084ce` (antes) | `c622f35` (defeito 1 corrigido) | Versão final |
+| --- | --- | --- | --- |
+| Setup com `406` repetido durante ~16 s (fila recriada com `x-max-length`, ligação fechada) e depois reposta: consumidores em `project_queue` | **128** (2⁷, em 128 ligações) | 1 | 1 |
+| `project_queue` apagada com a ligação aberta: consumidor | — | **nunca volta** (30 s observados; fila inexistente) | volta em ≈ 4 s, com o *binding* `picturas`/`project_queue` |
+| Mensagem publicada no exchange `picturas` depois disso | — | `routed: false` (perdida) | consumida e confirmada (`ready=0`, `unacked=0`) |
+
+Os logs confirmam o mecanismo: em `5d084ce`, cada falha regista "connection closed" e "start
+failed" (128 e 127 linhas); na versão final regista uma só linha "reconnecting" por falha.
+
+**Testes automáticos.** `projects/tests/rabbit-mq.test.js` passa de 1 para 3 testes, um por
+defeito, e cada teste novo falha sem a respetiva correção. No host, todas as suites de
+`projects/tests` passam (30/30), exceto `media-upload.test.js`, que não arranca porque falta o
+módulo `form-data` neste ambiente (já acontecia antes destas alterações).
+
+**Âmbito.** As campanhas das §§2 e 8 mediram versões sem estas correções. Nenhum cenário R0–R8
+passa por este código: nenhum reinicia o broker nem fecha o consumidor, e R6 mata o processo
+`projects` inteiro, que arranca um consumidor novo. Por isso os resultados dessas campanhas
+continuam válidos, mas não cobrem estas correções. Os workers (`Tools/utils`) também não fazem
+`queue_bind`, e o tratamento de um cancelamento pelo broker no pika não foi verificado; ficam
+registados em [regressao-e-limitacoes.md](regressao-e-limitacoes.md) §2.
