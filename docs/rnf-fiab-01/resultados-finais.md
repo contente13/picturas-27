@@ -188,9 +188,9 @@ avaliação independente: a Pessoa 2 deve rever estes dados ou repetir um subcon
 - **M11 não avaliado** nesta verificação: só existe um R0 da baseline nesta máquina (usado para o
   golden). A medição válida de M11 continua a ser a da §5.
 
-## 9. Correções ao consumidor do `projects` depois da revisão da Pessoa 2
+## 9. Correções ao consumidor do `projects` depois da revisão do Francisco
 
-Na revisão do código integrado (`5d084ce`), a Pessoa 2 identificou um defeito em
+Na revisão do código integrado (`5d084ce`), o Francisco identificou um defeito em
 `projects/utils/rabbit_mq.js` e confirmou-o com um RabbitMQ simulado. A Pessoa 1 reproduziu-o
 com o RabbitMQ real e encontrou um segundo defeito no mesmo consumidor. Os dois estão corrigidos
 (descrição em [implementacao.md](implementacao.md) §3).

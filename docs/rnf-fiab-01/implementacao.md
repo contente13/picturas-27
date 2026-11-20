@@ -88,7 +88,7 @@ alterada.
 - O consumidor declara a fila e faz `bindQueue(project_queue, picturas, project_queue)`,
   idempotente, como o `video_tool`. Se a fila tiver sido apagada, volta a existir com o
   *binding* de `rabbitMQ/definitions.json`.
-- Correções feitas depois da revisão da Pessoa 2 (ver
+- Correções feitas depois da revisão do Francisco (ver
   [resultados-finais.md](resultados-finais.md) §9): antes, uma falha na configuração era
   tratada por dois caminhos (fecho do canal → fecho da ligação → reinício, e `catch` →
   reinício), e os consumidores duplicavam a cada falha; um cancelamento pelo broker era
