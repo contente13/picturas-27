@@ -78,11 +78,19 @@ function read_rabbit_msg(queue, callback) {
       channel.on('close', () => restartOnce('channel closed'));
       await channel.assertExchange(exchange, 'direct', { durable: true });
       const q = await channel.assertQueue(queue, { durable: true });
+      // Idempotent; restores the binding of rabbitMQ/definitions.json if the queue was
+      // deleted and has just been declared again (routing key = queue name).
+      await channel.bindQueue(q.queue, exchange, queue);
       await channel.prefetch(CONSUMER_PREFETCH);
       // READY before registering: redeliveries can arrive before consume() resolves.
       faultHooks.ready();
       await channel.consume(q.queue, (msg) => {
-        if (msg == null) return;
+        // null: the broker cancelled the consumer (e.g. the queue was deleted) while the
+        // connection stays open. Reconnect, so the queue is declared and consumed again.
+        if (msg == null) {
+          restartOnce('cancelled by the broker');
+          return;
+        }
         if (faultHooks.ENABLED) faultHooks.received(msg);
         Promise.resolve()
           .then(() => callback(msg))

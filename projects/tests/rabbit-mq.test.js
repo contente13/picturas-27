@@ -30,6 +30,7 @@ function fakeConnection() {
       }
       return { queue };
     };
+    channel.bindQueue = async () => {};
     channel.prefetch = async () => {};
     channel.consume = async (queue, handler) => { connection.consumers.push(handler); };
     channel.ack = () => {};
@@ -95,4 +96,18 @@ test('RNF-FIAB-01 a failed consumer setup restarts it once, leaving one consumer
   const open = mine.filter((c) => !c.closed);
   assert.equal(open.length, 1);
   assert.equal(open[0].consumers.length, 1, 'exactly one consumer');
+});
+
+test('RNF-FIAB-01 a consumer cancelled by the broker is registered again', async () => {
+  const base = connections.length;
+  read_rabbit_msg('project_queue', async () => {});
+  await waitFor(() => connections.length === base + 1 && connections[base].consumers.length === 1);
+
+  // amqplib delivers null when the broker cancels the consumer (e.g. the queue was
+  // deleted); the connection and the channel stay open.
+  connections[base].consumers[0](null);
+  await waitFor(() => connections.length === base + 2 && connections[base + 1].consumers.length === 1);
+  assert.equal(connections[base].closed, true, 'the cancelled connection is closed');
+  await new Promise((resolve) => setTimeout(resolve, 2300));
+  assert.equal(connections.length, base + 2, 'one reconnection');
 });
