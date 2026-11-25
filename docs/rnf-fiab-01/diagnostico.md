@@ -1,9 +1,10 @@
 # RNF-FIAB-01 — Diagnóstico do fluxo de processamento de imagens
 
-Fase 1. Base analisada: `main` @ `df5d0bc2a53ba8fb677987e2e1d69e939017418a`. Análise estática do
+Base analisada: `main` @ `df5d0bc2a53ba8fb677987e2e1d69e939017418a`. Análise estática do
 código do repositório e do código do worker de watermark lido dentro do contentor
-`prcsousa/picturas-watermark-tool-ms` (digest `sha256:534007b3…5835`). Os comportamentos marcados
-**[confirmar]** são inferidos do código e serão demonstrados empiricamente na Fase 2.
+`prcsousa/picturas-watermark-tool-ms` (digest `sha256:534007b3…5835`). As janelas inferidas do
+código foram depois medidas na baseline (§7). A §8 relaciona esta numeração com o diagnóstico
+do relatório da Pessoa 2.
 
 ## 1. Contratos de mensagens: produtores e consumidores
 
@@ -121,8 +122,8 @@ duplicado publicado, **A** reaplicação de efeito, **C** consolidação prematu
 | W1  | Entregue, antes de produzir saída                           | `auto_ack`: o broker já apagou o pedido. Morte do worker → nenhuma reentrega, `Process` fica para sempre.                                                                  | P      | R1      |
 | W2  | Durante a escrita do ficheiro                               | `Image.save` escreve diretamente no destino → ficheiro truncado. Sem reentrega. No passo ≥ 1 o ficheiro de entrada (o mesmo) fica **corrompido**.                        | P (+ corrupção) | R2 |
 | W3  | Saída escrita, antes de publicar a resposta                 | Sem reentrega. Se houvesse reentrega, no passo ≥ 1 o efeito seria aplicado sobre a própria saída.                                                                         | P (A latente) | R3 |
-| W4  | Resposta publicada, antes do ACK do pedido                  | Com `auto_ack` a janela não existe (o ACK foi na entrega). A publicação não é confirmada: morrer logo após `basic_publish` pode perder a resposta ainda no *buffer* **[confirmar]**. | P (raro) | R4 |
-| W5  | Erro permanente (imagem inválida, parâmetro inválido)       | Os workers simples chamam `send_msg` com argumentos desalinhados (ex. `brightness.py:63-73`, `resize.py:52,69`): `og_img_uri=None` → `tool_msg.py:62-63` lança exceção e **nenhuma resposta sai**. Mesmo quando sai, `correlationId` está trocado e o `Process` não é encontrado. O ciclo `while True: read_msg` volta a registar o consumidor no mesmo canal **[confirmar]**. | P | R8 |
+| W4  | Resposta publicada, antes do ACK do pedido                  | Com `auto_ack` a janela não existe (o ACK foi na entrega). A publicação não é confirmada: morrer logo após `basic_publish` pode perder a resposta ainda no *buffer* (não observado na baseline, §7). | P (raro) | R4 |
+| W5  | Erro permanente (imagem inválida, parâmetro inválido)       | Os workers simples chamam `send_msg` com argumentos desalinhados (ex. `brightness.py:63-73`, `resize.py:52,69`): `og_img_uri=None` → `tool_msg.py:62-63` lança exceção e **nenhuma resposta sai**. Mesmo quando sai, `correlationId` está trocado e o `Process` não é encontrado. O ciclo `while True: read_msg` volta a registar o consumidor no mesmo canal (confirmado na baseline, §7). | P | R8 |
 | W6  | Broker reinicia com mensagens em fila                       | Mensagens não persistentes perdem-se mesmo em filas duráveis.                                                                                                             | P      | (exclusão parcial, ver §6) |
 | W7  | Processamento longo (IA) com ACK manual futuro              | `BlockingConnection` com *heartbeat* por omissão bloqueado durante o efeito → o broker fecha a ligação e reentrega enquanto o worker ainda corre. Hoje mascarado pelo `auto_ack`. | A/D (risco da solução) | — |
 
@@ -184,14 +185,36 @@ duplicado publicado, **A** reaplicação de efeito, **C** consolidação prematu
   tratamento em `projects` partilha as janelas P1–P12 e beneficiará das alterações do
   orquestrador, mas a reexecução de vídeo não é medida por este requisito.
 
-## 7. A confirmar empiricamente na Fase 2
+## 7. Confirmação empírica (baseline)
 
-| Item                                                                                       | Como                                                                                 |
-| ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------ |
-| W1–W3: trabalho perdido e lote sem consolidação                                            | Hooks `after_receive`, `during_write`, `after_output_before_reply` + `podman kill`   |
-| W4: perda da resposta não confirmada                                                       | Hook `after_reply_before_ack`                                                        |
-| W5: erro permanente não chega ao orquestrador; estado do consumidor após a exceção         | Imagem inválida no corpus R8; inspeção da fila e dos logs                            |
-| P3: duplicados concorrentes publicam dois `Result`                                          | *Harness* publica duas respostas iguais em simultâneo                                |
-| P1, P4, P5, P7, P9                                                                         | Hooks em `projects` + `podman kill`                                                  |
-| P8: consolidação antes do último `Result`                                                  | Hook em `projects` que bloqueia um trabalho após `Process.delete` enquanto outro termina |
-| K3: sobrescrita por tentativa antiga                                                       | Hook `during_write` num worker da execução antiga + cancelamento + nova execução     |
+Medido sobre a versão original com o protocolo de [protocolo-baseline.md](protocolo-baseline.md);
+detalhe em [resultados-baseline.md](resultados-baseline.md) §2.
+
+| Janela | Cenário | Resultado |
+| --- | --- | --- |
+| W1–W3 | R1–R3 | Confirmado. O trabalho alvo perde-se em 10/10 e, com ele, 4–5 trabalhos de outras imagens que o worker tinha em *prefetch* (perda colateral de W1). O lote fica pendurado. |
+| W4 | R4 | Não observado: o trabalho alvo concluiu em 10/10. O lote não consolida, mas pela perda colateral de W1. |
+| W5 | R8a, R8b | Confirmado. Erro notificado em 0/20. Em R8a o worker do border sobrevive e volta a consumir, perdendo as mensagens em *buffer* (5–6 trabalhos válidos); em R8b o worker do brightness termina. |
+| P3 | R5a, R5b | Confirmado com cópias concorrentes: 2 `Result` duplicados por repetição em R5a; cadeias paralelas, reaplicações e um resultado vazio em R5b. Cópias sequenciais (P2) são ignoradas (R5c). |
+| P1, P4, P5, P7, P9 | R6a–e | Confirmado. A resposta em tratamento e as que estavam em *prefetch* perdem-se; em R6e os 10 resultados ficam gravados e o lote nunca consolida. |
+| P8 | R6b, R6d | Confirmado: lotes consolidados com 7–9 resultados (3 repetições em R6b, 1 em R6d). |
+| K3 | R7 | Confirmado: em média 4,4 imagens por lote com o efeito reaplicado, incluindo o `img03` em 10/10. |
+
+## 8. Correspondência com o diagnóstico da Pessoa 2
+
+O relatório da Pessoa 2 (`benchmarks/fault-tolerance/RELATORIO-RNF-FIAB-01.md` §1) numerava as
+fragilidades D1–D8. Não são as decisões de desenho D1–D8 de
+[especificacao-e-decisao.md](especificacao-e-decisao.md) §6. A Pessoa 1 reviu essa lista contra
+este diagnóstico, e o relatório passou a usar a numeração W/X/P/K e M1–M12 daqui.
+
+| Pessoa 2 | Janelas | Notas da revisão |
+| --- | --- | --- |
+| D1 `auto_ack=True` nos workers | W1 | Inclui a perda colateral das mensagens em *prefetch* (R1–R4). |
+| D2 escrita direta e mesmo ficheiro a partir da 2.ª etapa | W2, W3, K3 | Reaplicação medida em R5b e R7. |
+| D3 `messageId`/`correlationId` trocados e argumentos desalinhados | W5, X3 | Confirmado em R8a/R8b (§7). |
+| D4 `projects` confirma antes de tratar | P1, P12 | Uma exceção transitória no *callback* também perde o trabalho (P12). |
+| D5 avanço de etapa não atómico | P4–P7, P8 | P8: apagar o `Process` antes de gravar o resultado permite consolidar sem ele. |
+| D6 sem idempotência nas respostas | P2, P3 | Só cópias concorrentes (P3) duplicam; as sequenciais (P2) são ignoradas. |
+| D7 sem *confirms* nem persistência; uma ligação por mensagem no Node | W4, W6, P6 | A falha do broker não é cenário medido, mas a correção cobre-a. |
+| D8 cancelamento não interrompe os workers e reutiliza caminhos | K3 | K1 e K2 estão corretos. |
+| (em falta) | P9, P10, P11, K4, W7, X1–X3 | Acrescentados na revisão: consolidação nunca feita (P9), resposta de erro que apaga o `Process` (P10), *preview* com o mesmo token (P11), *undo* sem novo token (K4), *heartbeats* com efeitos longos (W7) e watermark externo (X1–X3). |

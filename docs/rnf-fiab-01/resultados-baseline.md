@@ -1,6 +1,6 @@
 # RNF-FIAB-01 — Resultados da baseline (versão original)
 
-Fase 2. Medições da versão original (`df5d0bc` + hooks inertes) com o protocolo de
+Medições da versão original (`df5d0bc` + hooks inertes) com o protocolo de
 [protocolo-baseline.md](protocolo-baseline.md). Métricas e critérios:
 [especificacao-e-decisao.md](especificacao-e-decisao.md) §4. Dados brutos:
 [`evidencias/baseline/`](evidencias/baseline/) (`campaign.json`, `<cenário>/rep-NN.json`,
@@ -131,10 +131,9 @@ Nenhuma repetição registou o ponto de falha por atingir (`fault_not_reached = 
 4. **M9/M10 não são mensuráveis na baseline**: o trabalho interrompido nunca é retomado. Ficam
    registados como "nunca" e servem apenas de comparação qualitativa.
 5. **Sensibilidade de M11.** 5 % da mediana R0 são 34 ms; o IQR da baseline (31 ms) é da mesma ordem.
-   Para que a comparação na Fase 4 não dependa de variação da máquina, propõe-se medir R0 da versão
-   final **e repetir R0 da versão original na mesma sessão**, com 30 repetições cada, e comparar
-   medianas (com o intervalo Q1–Q3). A baseline atual fica como referência histórica. Este ajuste
-   precisa de confirmação antes da Fase 4.
+   Para que a comparação não dependa de variação da máquina, M11 é medido com R0 das duas versões
+   **na mesma sessão**, com 30 repetições cada, comparando medianas (com o intervalo Q1–Q3)
+   ([resultados-finais.md](resultados-finais.md) §5). A baseline fica como referência histórica.
 
 ## 5. Testes automáticos (2026-11-15)
 
@@ -145,14 +144,14 @@ Nenhuma repetição registou o ponto de falha por atingir (`fault_not_reached = 
 | `projects/tests/*.test.js` (suite completa do orquestrador, incl. hooks) | contentor `picturas-fiab-projects-1`, `node --test tests/*.test.js` | 21/21 |
 
 Os testes de caracterização fixam o comportamento defeituoso atual (`auto_ack`, resposta sem
-propriedades, erro posicional, `correlationId` trocado) e serão invertidos na Fase 3.
+propriedades, erro posicional, `correlationId` trocado) e foram invertidos na implementação ([implementacao.md](implementacao.md) §9).
 
 ## 6. Limitações e incidentes
 
 - **Ferramentas não cobradas.** border, brightness e rotate não descontam quota (só ferramentas de
   IA e efeitos de vídeo). M6 = 0 é verdadeiro mas pouco exigente aqui; a não-recobrança na
-  recuperação é verificada na Fase 3 por testes do `projects` (a recuperação nunca chama o
-  endpoint de quota).
+  recuperação foi verificada por testes do `projects` (a recuperação nunca chama o endpoint de
+  quota) e na regressão com efeitos de vídeo cobrados.
 - **`restart: "no"`** no ensaio: a retoma depende do harness reiniciar o contentor (ver protocolo §10).
 - **`ws_gateway` não faz parte do stack de ensaio.** `error_notified` é inferido dos logs do
   `projects` (tratamento de uma resposta de erro, que é o que gera a notificação na `ws_queue`),
@@ -165,6 +164,6 @@ propriedades, erro posicional, `correlationId` trocado) e serão invertidos na F
   utilizador parou deliberadamente o projeto `picturas` para libertar recursos (o harness só atua
   sobre `picturas-fiab`). O *stop* ocorreu durante R1 rep 10; de R2 em diante as repetições
   correram com menos carga na máquina do que R0 e R1. Não afeta as contagens; para tempos, R0 (a única referência
-  temporal usada) foi medido com o stack `picturas` ligado, o que reforça a proposta de repetir R0
-  da versão original na mesma sessão da Fase 4 (§4, ponto 5).
+  temporal usada) foi medido com o stack `picturas` ligado, e por isso M11 usa a comparação na
+  mesma sessão (§4, ponto 5).
 - Resultados válidos para uma única máquina; tempos absolutos não são transferíveis.

@@ -21,7 +21,7 @@ mesmo comportamento: 40/40 lotes corretos (§8).
 No processamento de imagens, o `projects` envia **uma mensagem por (imagem, etapa)** para a fila
 da ferramenta. A ferramenta responde na `project_queue`, e o `projects` regista o resultado ou
 envia a etapa seguinte. O rascunho anterior desta secção numerava as fragilidades D1–D8; foi
-revisto pela Pessoa 1 (`ENTREGA-P1-FIAB-2.md`) e passa a usar a numeração de `diagnostico.md`.
+revisto pela Pessoa 1 (`docs/rnf-fiab-01/diagnostico.md` §8) e passa a usar a numeração de `diagnostico.md`.
 As linhas citadas são de `df5d0bc`.
 
 | ID (antes) | Fragilidade | Evidência no código base | Confirmado na medição |
@@ -355,7 +355,7 @@ rootless; `docs/rnf-fiab-01/resultados-finais.md` §8). Verificações da Pessoa
   - a condução das campanhas e a análise dos resultados;
   - a redação desta secção.
 - **Validação pela equipa:**
-  - a Pessoa 1 reviu o diagnóstico (`ENTREGA-P1-FIAB-2.md`) e confirmou a numeração W/X/P/K e
+  - a Pessoa 1 reviu o diagnóstico (`docs/rnf-fiab-01/diagnostico.md` §8) e confirmou a numeração W/X/P/K e
     M1–M12;
   - os resultados foram confrontados com a campanha independente da Pessoa 1;
   - a Pessoa 1 reviu este relatório e o harness, e pediu as correções feitas a 20 nov 2026:

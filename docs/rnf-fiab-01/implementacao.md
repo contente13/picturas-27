@@ -1,9 +1,10 @@
-# RNF-FIAB-01 — Implementação (Fase 3)
+# RNF-FIAB-01 — Implementação
 
 Implementação da decisão C ([especificacao-e-decisao.md](especificacao-e-decisao.md) §5–§6),
-por incrementos, sobre o ramo `rnf-fiab-01` (base `674709b`). Cada incremento indica as
-janelas do [diagnóstico](diagnostico.md) que fecha, os ficheiros alterados e os testes que o
-verificam. A validação com o protocolo completo é a Fase 4.
+por incrementos. Integrada no `main` num único commit (`5d084ce`); o histórico dos incrementos
+está na tag `rnf-fiab-01-verificacao`. Cada incremento indica as janelas do
+[diagnóstico](diagnostico.md) que fecha, os ficheiros alterados e os testes que o verificam. A
+validação com o protocolo completo está em [resultados-finais.md](resultados-finais.md).
 
 ## Resumo
 
@@ -123,7 +124,7 @@ Novo módulo `projects/utils/runJobs.js`, sem dependências de base de dados ou 
   consolidadas (P9).
 - **Falhas ao tratar uma resposta** (ex.: armazenamento indisponível): a mensagem é reposta na
   fila; à 5.ª falha o trabalho passa a `FAILED` (`handling_failed`) e é reportado.
-- **Observabilidade** (acrescentada na Fase 4): `[JOB-SLOW]` quando um upload, a criação do
+- **Observabilidade** (acrescentada depois da campanha final): `[JOB-SLOW]` quando um upload, a criação do
   resultado, a leitura do projeto, a contagem de pendentes ou a consolidação demoram ≥ 1 s.
 - **Âmbito.** Este modelo aplica-se às imagens das execuções normais. *Previews*, vídeos e
   execuções com `extract_frames` continuam com os documentos antigos (um por passo, apagados no
@@ -142,7 +143,7 @@ Novo módulo `projects/utils/runJobs.js`, sem dependências de base de dados ou 
   única notificação de erro com o código e a mensagem do worker (antes lia-se `error.msg`, que
   não existe). A execução consolida com os trabalhos concluídos (D6).
 - Se **todos** os trabalhos falharem, a execução não é consolidada e mantém-se a anterior (não
-  se publica um conjunto vazio de resultados). Decisão tomada na implementação, a confirmar.
+  se publica um conjunto vazio de resultados). Decisão tomada na implementação.
 
 ## 6. Cancelamento, *undo* e respostas antigas (D7)
 
@@ -152,7 +153,7 @@ Novo módulo `projects/utils/runJobs.js`, sem dependências de base de dados ou 
   resultado criado é apagado (não fica resultado órfão com o token antigo).
 - O *undo* (`DELETE /:user/:project/tool/:tool`) passa a incrementar `activeToken`, como o
   cancelamento: uma execução em curso deixa de poder consolidar. Apaga também os resultados que
-  essa execução já tinha guardado, como o cancelamento (acrescentado na Fase 4, depois de a
+  essa execução já tinha guardado, como o cancelamento (acrescentado depois de a
   regressão o detetar). Quotas não são tocadas.
 
 ## 7. Contratos
@@ -172,10 +173,10 @@ documentos antigos (sem `state`) e é tratada pelo caminho antigo até terminar 
 
 ## 8. Hooks de injeção e harness
 
-Os nomes dos pontos de falha mantêm-se, para a Fase 4 usar exatamente os mesmos cenários. No
+Os nomes dos pontos de falha mantêm-se, para a validação final usar exatamente os mesmos cenários. No
 caminho novo do `projects` correspondem a:
 
-| Ponto | Baseline | Fase 3 (trabalhos de imagem) |
+| Ponto | Baseline | Versão corrigida (trabalhos de imagem) |
 | --- | --- | --- |
 | `after_receive` | Depois de ler a resposta | Igual |
 | `after_process_delete` | Depois de apagar o `Process` | Depois de persistir a transição do trabalho (avanço de passo ou `COMPLETED`) |
@@ -228,7 +229,7 @@ consumidor) e quando o broker cancela o consumidor.
 
 ## 10. Verificação preliminar com o stack de ensaio
 
-Pilotos (1 repetição por variante, `T_obs = 30 s`, não contam para a Fase 4) em
+Pilotos (1 repetição por variante, `T_obs = 30 s`, não contam para a campanha final) em
 [`evidencias/phase3-pilot/`](evidencias/phase3-pilot/), depois de reconstruir `projects` e os três
 workers do pipeline com hooks:
 
@@ -255,7 +256,8 @@ ensaio (dependências). Resultado: um erro de armazenamento no R0, o R6b consoli
 `img_storage` deixaram de estar presos), e os três workers terminados com `socket.gaierror`
 (corrigido, §1). Repetidos com o stack estável, R6b e R6c consolidaram em ~2 s em 6/6 repetições
 ([`evidencias/phase3-debug-pilot/`](evidencias/phase3-debug-pilot/)), e o conjunto completo foi
-repetido com o resultado da tabela. Para a Fase 4, reconstruir serviços com `--no-deps`.
+repetido com o resultado da tabela. Por isso, os serviços do stack de ensaio reconstroem-se com
+`--no-deps`.
 
 ## 11. Limitações e riscos
 

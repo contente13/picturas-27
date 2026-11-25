@@ -1,6 +1,6 @@
 # RNF-FIAB-01 — Protocolo de ensaio e baseline
 
-Fase 2. Este protocolo é executado **igual** na baseline (Fase 2) e na validação final (Fase 4):
+Este protocolo é executado **igual** na baseline e na validação final:
 mesmo corpus, mesmo stack, mesmos cenários, mesmo número de repetições, mesmos critérios.
 Definições e métricas: [especificacao-e-decisao.md](especificacao-e-decisao.md) §1 e §4.
 
@@ -14,7 +14,7 @@ Definições e métricas: [especificacao-e-decisao.md](especificacao-e-decisao.m
 | `projects/utils/rabbit_mq.js`, `projects/routes/projects.js` | Linhas `READY`/`RECEIVED` e 5 pontos em `process_msg`, todos protegidos por `if (faultHooks.ENABLED)` |
 | `projects/tests/fault-hooks.test.js` | Testes unitários dos hooks Node (`node:test`) |
 | `tests/rnf-fiab-01/test_fault_hooks.py` | Testes unitários dos hooks Python |
-| `tests/rnf-fiab-01/test_worker_messaging.py` | Na baseline: caracterização do comportamento original (W1, W4, W5), então `test_baseline_characterization.py`. Na Fase 3 foi renomeado e invertido (ver [implementacao.md](implementacao.md)) |
+| `tests/rnf-fiab-01/test_worker_messaging.py` | Na baseline: caracterização do comportamento original (W1, W4, W5), então `test_baseline_characterization.py`. Na implementação foi renomeado e invertido (ver [implementacao.md](implementacao.md)) |
 | `tests/rnf-fiab-01/corpus.py` | Gerador determinístico do corpus e da referência |
 | `tests/rnf-fiab-01/compose.fiab.yaml` | Override do stack isolado `picturas-fiab` |
 | `tests/rnf-fiab-01/harness.py` | Execução dos cenários R0–R8, recolha de métricas e sumário |
@@ -162,7 +162,7 @@ encadeado in-place).
 .venv/bin/python harness.py summarize --phase baseline
 ```
 
-Na Fase 4 repetem-se os mesmos comandos com `--phase final`.
+Na validação final repetem-se os mesmos comandos com `--phase final`.
 
 ## 8. Registo por execução
 
@@ -203,4 +203,4 @@ corpus e `T_obs` mínimo.
 - Imagens pequenas (~65 KB) tornam o lote curto (~0,7 s): a sobrecarga relativa (M11) é sensível
   a poucos milissegundos. Ver a discussão em `resultados-baseline.md`.
 - Só três workers PIL são exercitados com falhas; os de IA partilham `Tools/utils` mas não são
-  medidos; o watermark externo e o vídeo ficam para a regressão (Fase 4).
+  medidos; o watermark externo e o vídeo ficam para a regressão.

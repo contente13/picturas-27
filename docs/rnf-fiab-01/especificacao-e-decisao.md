@@ -1,8 +1,8 @@
 # RNF-FIAB-01 — Especificação verificável e decisão arquitetural
 
-Fase 1. Base: `main` @ `df5d0bc`. As janelas referidas (W*, X*, P*, K*) estão definidas em
-[diagnostico.md](diagnostico.md). **Nada aqui está implementado**; a implementação só começa na
-Fase 3, depois de aprovada esta decisão.
+Base: `main` @ `df5d0bc`. As janelas referidas (W*, X*, P*, K*) estão definidas em
+[diagnostico.md](diagnostico.md). A implementação destas decisões está em
+[implementacao.md](implementacao.md) e a validação em [resultados-finais.md](resultados-finais.md).
 
 ## 1. Definições formais
 
@@ -66,8 +66,9 @@ confirmação da resposta pelo broker é transitória no worker (sem ACK, reentr
 
 ## 4. Critérios de aceitação e métricas
 
-Os valores são **candidatos**; são confirmados ou ajustados com base na baseline (Fase 2) e a
-justificação fica em `resultados-baseline.md`. Execuções falhadas contam sempre no denominador.
+Valores fixados depois da baseline; os ajustes de medição estão justificados em
+[resultados-baseline.md](resultados-baseline.md) §4. Execuções falhadas contam sempre no
+denominador.
 
 | ID | Métrica | Definição operacional | Meta | Mínimo |
 | --- | --- | --- | --- | --- |
@@ -122,7 +123,7 @@ justificação fica em `resultados-baseline.md`. Execuções falhadas contam sem
 Mantém as filas *classic* e as definições existentes (sem recriar filas no volume
 `rabbitmq_data`), não altera o formato JSON das mensagens e não depende do watermark externo.
 
-## 6. Decisões de desenho (a implementar na Fase 3, por incrementos)
+## 6. Decisões de desenho
 
 | ID | Decisão | Janelas | Contratos afetados (produtores → consumidores) |
 | --- | --- | --- | --- |
@@ -133,7 +134,7 @@ Mantém as filas *classic* e as definições existentes (sem recriar filas no vo
 | D5 | **Saídas estáveis por execução e etapa** (`out/runs/<token>/<img_id>/<k>/<nome>`), entrada ≠ saída. `POST /process` apaga os diretórios `runs/<token>` das execuções anteriores e os seus trabalhos; uma tentativa antiga ainda a correr falha ou escreve no diretório da sua execução, e a sua resposta é descartada (D7). | W2, W3, X1, X2, K3 | Valores de `inputImageURI`/`outputImageURI` mudam; formato igual. Consumidores: todos os workers de imagem, watermark (aceita qualquer caminho em `/images`). |
 | D6 | **Consolidação**: só quando **todos** os `J` estão em estado terminal **e** a execução está ativa, numa transição condicional; notificação de conclusão enviada só por quem efetua a transição. **Proposta para `J FAILED` (erro permanente):** a execução consolida com os resultados dos `J COMPLETED` e reporta explicitamente as medias falhadas (preserva o comportamento visível atual de resultados parciais, mas deixa de ser prematuro). Alternativa: não consolidar e manter o commit anterior. | P8, P10, R8 | `ws_queue`: mesma mensagem de sucesso/erro; nenhuma mensagem nova obrigatória. |
 | D7 | **Cancelamento e respostas antigas**: respostas cujo `token ≠ activeToken` ou cuja etapa não está no estado esperado são descartadas com ACK; tentativas antigas escrevem apenas no seu diretório de execução. O *undo* (`DELETE …/tool/:tool`) passa a invalidar a execução em curso como o cancelamento (K4), **sem** alterar quotas. | K1–K4, R7 | — |
-| D8 | **Hooks de injeção** (Fase 2): desligados por omissão, ativos só com `RNF_FIAB_01_HOOKS=1` no projeto Compose de ensaio; linha de log `RNF-FIAB-01 FAULT-POINT` e bloqueio numa barreira (ficheiro) até o *harness* matar o processo. Linhas `RNF-FIAB-01 READY` e `RECEIVED` para medir M9. | todos | Nenhum. |
+| D8 | **Hooks de injeção**: desligados por omissão, ativos só com `RNF_FIAB_01_HOOKS=1` no projeto Compose de ensaio; linha de log `RNF-FIAB-01 FAULT-POINT` e bloqueio numa barreira (ficheiro) até o *harness* matar o processo. Linhas `RNF-FIAB-01 READY` e `RECEIVED` para medir M9. | todos | Nenhum. |
 
 Princípios transversais: não alterar `users`/quotas (a cobrança continua apenas em
 `POST /process`; a recuperação nunca o reinvoca); não alterar `video_tool`; *previews* continuam a
@@ -149,7 +150,7 @@ desses lotes usa as barreiras do caminho antigo (`holdsRunCommit` em `routes/pro
 | Watermark externo sem confirms nem limite de tentativas | As saídas estáveis (D5) tornam a reexecução inofensiva; ciclo infinito com entrada "assassina" fica como limitação documentada. O worker confirma ao receber e troca os identificadores nas respostas de erro: se morrer ou falhar, a etapa fica `DISPATCHED` sem resposta e o lote não consolida (não há prazo por etapa, alternativa B rejeitada). Por isso um trabalho com watermark **não é recuperável** (§8). |
 | Tentativa "zombie" (worker desligado do broker mas ainda a processar) | Saídas determinísticas e escrita atómica: o conteúdo final é idêntico; a resposta tardia é descartada por D4. |
 | Objetos órfãos em S3 (upload feito, morte antes do `Result`) | Não publicados (sem `Result`); registados como limitação, com contagem nas evidências. |
-| Migração de documentos `Process` existentes | Execuções em curso no momento da atualização são tratadas como legado (caminho antigo) ou canceladas; documentado na Fase 3. |
+| Migração de documentos `Process` existentes | Execuções em curso no momento da atualização são tratadas como legado (caminho antigo) ou canceladas (ver [implementacao.md](implementacao.md)). |
 | Sobrecarga de confirms, persistência e escritas condicionais | Medida por M11; se exceder o mínimo, ajustar `prefetch`/reutilização de canal antes de concluir. |
 | `heartbeat` e `consumer_timeout` (30 min por omissão no RabbitMQ 4) | D1 mantém o *heartbeat* ativo; efeitos de IA abaixo de 30 min. |
 

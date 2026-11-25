@@ -1,4 +1,4 @@
-# RNF-FIAB-01 — Regressão, limitações e riscos (Fase 4)
+# RNF-FIAB-01 — Regressão, limitações e riscos
 
 ## 1. Regressão
 
@@ -75,6 +75,7 @@ alterado e o worker passou nas verificações `mixed`, `video` e `frames`.
    o `video_tool` já confirma no fim; faltaria o documento de trabalho com estado no `projects`.
 3. **Monitorizar** `[JOB-FAILED]`, `[JOB-DUPLICATE]`, `[RECONCILE]` e `[JOB-SLOW]`: medem
    erros permanentes, entregas repetidas, recuperações e lentidão.
-4. **Versionar** as alterações da Fase 3 e repetir a campanha a partir do commit, se for preciso
-   que o SHA registado identifique exatamente o código medido (hoje fica registado `674709b`
-   mais a lista de ficheiros alterados).
+4. **Medir sempre a partir de um commit.** A campanha final registou `674709b` mais a lista de
+   ficheiros alterados, porque correu antes do commit. As verificações seguintes já mediram
+   commits identificados: `6d19557` ([resultados-finais.md](resultados-finais.md) §8) e
+   `35fdd36` (relatório da Pessoa 2).

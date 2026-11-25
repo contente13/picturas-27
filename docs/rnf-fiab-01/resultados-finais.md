@@ -1,10 +1,10 @@
-# RNF-FIAB-01 — Resultados finais (Fase 4)
+# RNF-FIAB-01 — Resultados finais
 
 Mesmo protocolo da baseline ([protocolo-baseline.md](protocolo-baseline.md)): mesmo corpus,
 pipeline, stack isolado, cenários, 10 repetições por variante e critérios
-([especificacao-e-decisao.md](especificacao-e-decisao.md) §4). Versão medida: ramo
-`rnf-fiab-01`, base `674709b` + alterações da Fase 3 ([implementacao.md](implementacao.md)),
-ainda por versionar. Dados brutos: [`evidencias/final/`](evidencias/final/) (campanha),
+([especificacao-e-decisao.md](especificacao-e-decisao.md) §4). Versão medida: o
+código de `cab1b35` ([implementacao.md](implementacao.md)), medido antes do commit, por isso a
+campanha regista `674709b` + a lista de ficheiros alterados. Dados brutos: [`evidencias/final/`](evidencias/final/) (campanha),
 [`evidencias/m11-baseline/`](evidencias/m11-baseline/) e
 [`evidencias/m11-final/`](evidencias/m11-final/) (M11),
 [`evidencias/final-regression/`](evidencias/final-regression/) (regressão).
@@ -15,11 +15,15 @@ e sem consolidações prematuras. A retoma demorou no máximo 3 ms. Os originais
 foram alterados. Os erros permanentes terminam de forma controlada e são notificados uma vez. Sem
 falhas, a versão corrigida é 22 % mais rápida do que a original.
 
+A Pessoa 2 confirmou o resultado de forma independente, com o seu próprio *harness*
+(`benchmarks/fault-tolerance/RELATORIO-RNF-FIAB-01.md`), incluindo uma repetição sobre o `main`
+integrado (`35fdd36`, já com as correções da §9): 40/40 lotes corretos em R0, R1, R6a e R7b.
+
 ## 1. Identificação
 
 | Campo | Valor |
 | --- | --- |
-| Commit / ramo | `674709b` / `rnf-fiab-01` + alterações da Fase 3 por versionar (lista em `evidencias/final/campaign.json`, escrito no início de R1–R8b; R0 correu 4 min antes com as mesmas imagens) |
+| Commit / ramo | `674709b` / `rnf-fiab-01` + alterações da implementação ainda não versionadas (código = `cab1b35`) (lista em `evidencias/final/campaign.json`, escrito no início de R1–R8b; R0 correu 4 min antes com as mesmas imagens) |
 | Runtime | podman 4.9.3 rootless, Docker Compose v5.1.1, kernel 7.0.0-43, 18 CPUs; stack `picturas` do utilizador parado |
 | Imagens | `picturas-fiab-*` construídas da árvore de trabalho (IDs em `campaign.json`); para M11, imagens `localhost/rnf-fiab-01-baseline-*:674709b` construídas de uma *worktree* de `674709b` |
 | Corpus | o mesmo da baseline (manifesto verificado no início de cada execução) |
@@ -146,8 +150,9 @@ anomalia da §4 em R2 e R3 (46 s).
 Verificação feita pela Pessoa 1 com o *harness* independente da Pessoa 2
 (`benchmarks/fault-tolerance/`, shims externos, sem hooks da aplicação), sobre o ramo
 `rnf-fiab-01` já integrado com `main` (inclui o *refactor* de uploads `c7e597a`) e com as
-correções `0a54f73` (resultado por etapa) e `9ca4de6` (reinício do consumidor). Não substitui a
-avaliação independente: a Pessoa 2 deve rever estes dados ou repetir um subconjunto.
+correções `0a54f73` (resultado por etapa) e `9ca4de6` (reinício do consumidor). A Pessoa 2 reviu
+estes dados: confirmou o SHA-256 do arquivo e recalculou os resultados a partir dos `trial.json`,
+com os mesmos valores (relatório da Pessoa 2, secção "Revisão da verificação da Pessoa 1").
 
 | Campo | Valor |
 | --- | --- |
