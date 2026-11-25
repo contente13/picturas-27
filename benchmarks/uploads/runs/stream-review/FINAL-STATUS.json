@@ -1,0 +1,169 @@
+{
+  "application_commit": "b1b37f562d3c6eb80556caea89254e829c22d97e",
+  "campaign": "20261116-005128-final-80de1e",
+  "protocol_version": 4,
+  "completed_trials": 50,
+  "expected_trials": 50,
+  "scenarios": {
+    "small": {
+      "trials": 10,
+      "successful_trials": 10,
+      "accepted_memory_trials": 10,
+      "http": {
+        "204": 10
+      },
+      "memory_mib": {
+        "n": 10,
+        "median": 122.666015625,
+        "min": 98.55859375,
+        "max": 146.9609375,
+        "p25": 115.3857421875,
+        "p75": 128.14453125
+      },
+      "successful_response_seconds": {
+        "n": 10,
+        "median": 0.7307911376953125,
+        "min": 0.650969970703125,
+        "max": 0.86857861328125,
+        "p25": 0.6968372802734375,
+        "p75": 0.7485990600585939
+      },
+      "invalid_sampling_trials": 0,
+      "memory_reduction_percent": 66.79092639593908,
+      "time_change_percent": 6.382951123103142,
+      "errors": []
+    },
+    "large": {
+      "trials": 10,
+      "successful_trials": 10,
+      "accepted_memory_trials": 10,
+      "http": {
+        "204": 10
+      },
+      "memory_mib": {
+        "n": 10,
+        "median": 180.98046875,
+        "min": 162.4453125,
+        "max": 200.30859375,
+        "p25": 175.697265625,
+        "p75": 187.5390625
+      },
+      "successful_response_seconds": {
+        "n": 10,
+        "median": 7.851382934570312,
+        "min": 7.3416689453125,
+        "max": 8.354625,
+        "p25": 7.767624389648438,
+        "p75": 7.949303771972656
+      },
+      "invalid_sampling_trials": 0,
+      "memory_reduction_percent": 97.1423725259204,
+      "time_change_percent": -17.99309180548011,
+      "errors": []
+    },
+    "image": {
+      "trials": 10,
+      "successful_trials": 10,
+      "accepted_memory_trials": 10,
+      "http": {
+        "204": 10
+      },
+      "memory_mib": {
+        "n": 10,
+        "median": 39.5625,
+        "min": 38.875,
+        "max": 40.625,
+        "p25": 39.3369140625,
+        "p75": 39.84375
+      },
+      "successful_response_seconds": {
+        "n": 10,
+        "median": 0.1582518310546875,
+        "min": 0.141396240234375,
+        "max": 0.1947158203125,
+        "p25": 0.14353448486328124,
+        "p75": 0.17522412109375002
+      },
+      "invalid_sampling_trials": 0,
+      "memory_reduction_percent": -2.1534116697765837,
+      "time_change_percent": -1.976278906585538,
+      "errors": []
+    },
+    "concurrent_small": {
+      "trials": 10,
+      "successful_trials": 10,
+      "accepted_memory_trials": 10,
+      "http": {
+        "204": 30
+      },
+      "memory_mib": {
+        "n": 10,
+        "median": 135.939453125,
+        "min": 116.7890625,
+        "max": 204.140625,
+        "p25": 131.2890625,
+        "p75": 153.900390625
+      },
+      "successful_response_seconds": {
+        "n": 10,
+        "median": 1.2844365234375,
+        "min": 1.18859326171875,
+        "max": 1.481175537109375,
+        "p25": 1.2336416015625,
+        "p75": 1.3063226318359376
+      },
+      "invalid_sampling_trials": 0,
+      "memory_reduction_percent": 86.09792830149485,
+      "time_change_percent": -13.035338363326709,
+      "errors": []
+    },
+    "concurrent": {
+      "trials": 10,
+      "successful_trials": 10,
+      "accepted_memory_trials": 8,
+      "http": {
+        "204": 30
+      },
+      "memory_mib": {
+        "n": 8,
+        "median": 221.056640625,
+        "min": 174.16015625,
+        "max": 297.21875,
+        "p25": 215.5380859375,
+        "p75": 235.4072265625
+      },
+      "successful_response_seconds": {
+        "n": 10,
+        "median": 24.512570678710937,
+        "min": 19.344946533203125,
+        "max": 29.82158837890625,
+        "p25": 21.97571179199219,
+        "p75": 25.63375665283203
+      },
+      "invalid_sampling_trials": 2,
+      "memory_reduction_percent": null,
+      "time_change_percent": null,
+      "errors": []
+    }
+  },
+  "in_progress": [],
+  "acceptance_criteria": {
+    "requirement": "RNF-EFIC-01",
+    "comparison_scenario": "concurrent_small",
+    "minimum_memory_reduction_percent": 50,
+    "target_memory_reduction_percent": 70,
+    "maximum_time_increase_percent": 15,
+    "target_time_increase_percent": 0,
+    "decision_basis": "The team accepts up to 15% median response-time overhead in exchange for the memory improvement.",
+    "additional_goal": "All three large concurrent uploads complete with HTTP 204, version and integrity in all ten trials, under unchanged resources and timeouts."
+  },
+  "acceptance_criteria_sha256": "0c79d74ec3244e9ff0a820a67f5fa02d2053ff4efe1d8136025b523ad4978544",
+  "acceptance": {
+    "common_memory_minimum_met": true,
+    "common_memory_target_met": true,
+    "common_time_minimum_met": true,
+    "common_time_target_met": true,
+    "large_concurrent_all_successful": true
+  },
+  "acceptance_note": "null means not yet demonstrated with ten eligible trials; false means the evaluated criterion is not met."
+}

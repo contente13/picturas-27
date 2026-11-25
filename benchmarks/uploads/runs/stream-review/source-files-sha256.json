@@ -1,0 +1,25 @@
+{
+  "source_commit": "b1b37f562d3c6eb80556caea89254e829c22d97e",
+  "baseline_commit": "052310226c51fa57a17101c7bd1ad795674aac95",
+  "files": {
+    "apiGateway/routes/projects.js": "223f601d81dfc2a2d96258ec97267f02905a6c15aa0448596d2497d6be6eae0c",
+    "apiGateway/tests/upload-forwarding.test.js": "8e2add4fd3e14f107052c8d220b960a463c5ba2156f935cf704be8b6491208d6",
+    "apiGateway/utils/forwardUpload.js": "8362444afb8de03a8c675b783da04bed28734be6f347d132a9399945da92347c",
+    "apiGateway/utils/temporaryUpload.js": "24ededb733e1caf7a18513cae05b57039bde9c5580e7d9cd0247899a20e30c72",
+    "docker-compose.yaml": "a9c7920c571758680a69bb861332c94c871335bf1d4f4e0596c631765e5122ef",
+    "imageStorageService/route/upload.js": "c53df57f18d7b75123a7c3f48cb4a7a86b233498566165739b5a57b1dcc94f50",
+    "imageStorageService/services/uploadImage.js": "ed1fb52eac0722f6a9149bd2301ad34188eeee14d350eeb4500c74567eb2e151",
+    "imageStorageService/tests/upload-stream.test.js": "8d8bdf1fdc80507b738d956129fa06f1784bd43eaa6ff121e1d943bc982b0c65",
+    "imageStorageService/utils/temporaryUpload.js": "24ededb733e1caf7a18513cae05b57039bde9c5580e7d9cd0247899a20e30c72",
+    "nginx/nginx.conf": "40e0b2102d5ea343c2838d9580d4549602fc7d8ad552e7a7d46c291da145f734",
+    "projects/routes/projects.js": "8594fb9b6579f0d649b59ffbccd8ad6704c1b89eecd269b95f963746a8c4a520",
+    "projects/tests/media-upload.test.js": "edbafbf42cbaca48a419fcebdca23965f2df33c5289d00a5dafa2da1b03c1304",
+    "projects/utils/fileHash.js": "dffe6427783e84325d8b7388b21df6750dc6bed4b60a262d4dcec563cffb7ff4",
+    "projects/utils/imageStorage.js": "cea53f3f4cd4925875b030996c4d311ec4ec3158644db427151b47929556b2b4",
+    "projects/utils/mediaUpload.js": "3cb9ce0dc03c689f7dd5b615fb6b1071578f153ac530361f317bdef4b8e15ba1",
+    "projects/utils/temporaryUpload.js": "f48b788a6549b752adc9365b90c7617fb94486c8e369532d8275af91df0aa244",
+    "projects/utils/video.js": "cdc9d4b10af7298f4752abb9d68399ec116363027ab17c7d481076b5fd57fea9",
+    "seaweedfs/master.toml": "a322125958813dbddb4aa038bf87d8723ffbe7c4316a7197342c8463cfe2196d",
+    "tests/uploads/temporary-upload.test.js": "25f52083e360721cf16e480c99b6d04b4e0addc3af5064ed583aa127decf616b"
+  }
+}

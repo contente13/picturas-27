@@ -1,0 +1,157 @@
+{
+  "campaign": "20261112-190210-baseline-e3f5e6",
+  "application_commit": "052310226c51fa57a17101c7bd1ad795674aac95",
+  "protocol_version": 4,
+  "updated_at_utc": "2026-11-12T20:42:08.628315+00:00",
+  "expected_trials": 50,
+  "completed_trials": 50,
+  "scenarios": {
+    "small": {
+      "completed_trials": 10,
+      "accepted_memory_trials": 10,
+      "http_outcomes": {
+        "204": 10
+      },
+      "invalid_sampling_trials": 0,
+      "successful_upload_trials": 10,
+      "additional_peak_rss_mib": {
+        "n": 10,
+        "median": 369.375,
+        "min": 367.87109375,
+        "max": 373.72265625,
+        "p25": 368.7119140625,
+        "p75": 371.0009765625
+      },
+      "all_uploads_seconds": {
+        "n": 10,
+        "median": 0.6869438476562499,
+        "min": 0.64426171875,
+        "max": 1.055625244140625,
+        "p25": 0.6566834716796874,
+        "p75": 0.7708557739257812
+      },
+      "errors": []
+    },
+    "large": {
+      "completed_trials": 10,
+      "accepted_memory_trials": 10,
+      "http_outcomes": {
+        "204": 10
+      },
+      "invalid_sampling_trials": 0,
+      "successful_upload_trials": 10,
+      "additional_peak_rss_mib": {
+        "n": 10,
+        "median": 6333.2421875,
+        "min": 5923.6640625,
+        "max": 6336.9140625,
+        "p25": 6331.01953125,
+        "p75": 6336.107421875
+      },
+      "all_uploads_seconds": {
+        "n": 10,
+        "median": 9.574050659179687,
+        "min": 9.219479248046875,
+        "max": 10.21865087890625,
+        "p25": 9.324196289062499,
+        "p75": 9.779615783691405
+      },
+      "errors": []
+    },
+    "image": {
+      "completed_trials": 10,
+      "accepted_memory_trials": 10,
+      "http_outcomes": {
+        "204": 10
+      },
+      "invalid_sampling_trials": 0,
+      "successful_upload_trials": 10,
+      "additional_peak_rss_mib": {
+        "n": 10,
+        "median": 38.728515625,
+        "min": 35.3515625,
+        "max": 41.76953125,
+        "p25": 36.6337890625,
+        "p75": 40.0390625
+      },
+      "all_uploads_seconds": {
+        "n": 10,
+        "median": 0.1614423828125,
+        "min": 0.141521484375,
+        "max": 0.199405517578125,
+        "p25": 0.15228124999999998,
+        "p75": 0.17755029296875
+      },
+      "errors": []
+    },
+    "concurrent_small": {
+      "completed_trials": 10,
+      "accepted_memory_trials": 10,
+      "http_outcomes": {
+        "204": 30
+      },
+      "invalid_sampling_trials": 0,
+      "successful_upload_trials": 10,
+      "additional_peak_rss_mib": {
+        "n": 10,
+        "median": 977.8359375,
+        "min": 731.86328125,
+        "max": 1032.19921875,
+        "p25": 829.4990234375,
+        "p75": 985.8046875
+      },
+      "all_uploads_seconds": {
+        "n": 10,
+        "median": 1.4769637451171875,
+        "min": 1.3872158203125,
+        "max": 1.8009814453125,
+        "p25": 1.4329912109375,
+        "p75": 1.5550872192382812
+      },
+      "errors": []
+    },
+    "concurrent": {
+      "completed_trials": 10,
+      "accepted_memory_trials": 0,
+      "http_outcomes": {
+        "504": 30
+      },
+      "invalid_sampling_trials": 10,
+      "successful_upload_trials": 0,
+      "additional_peak_rss_mib": null,
+      "all_uploads_seconds": null,
+      "errors": []
+    }
+  },
+  "incomplete_trials": [],
+  "requests": 90,
+  "http_outcomes": {
+    "504": 30,
+    "204": 60
+  },
+  "observer_shutdown_warnings": {
+    "stop_TimeoutExpired": 6
+  },
+  "reviews": [
+    "baseline-source/benchmarks/uploads/runs/20261112-190210-baseline-e3f5e6/small-09/review.json"
+  ],
+  "late_storage_objects": 12,
+  "late_storage_trial_numbers": [
+    4,
+    7,
+    9,
+    10
+  ],
+  "storage_cleanup_scope": "12 exact discovered keys mapped to known P4 campaign projects; metadata retained before deletion",
+  "final_cleanup": {
+    "projects": 0,
+    "objects": 0
+  },
+  "limitation": "Immediate per-trial prefix checks missed late persistence/visibility in failed uploads. Final global audit found 12 orphans; do not claim each failed trial left a quiescent empty storage state. Valid numeric comparison scenarios were collected before this failed concurrent block.",
+  "failed_http_504_response_seconds": {
+    "n": 30,
+    "median": 73.10312980350045,
+    "min": 66.387980341,
+    "max": 74.79947365000044
+  }
+}

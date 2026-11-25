@@ -1,0 +1,13 @@
+{
+  "completed_trials": 50,
+  "http_204_verified": 90,
+  "large_concurrent_trios_verified": 10,
+  "all_object_hashes_metadata_and_single_associations_verified": true,
+  "all_test_project_cleanup_checks_passed": true,
+  "all_thirteen_services_stable_and_oom_free": true,
+  "source_protocol_and_instrument_verified": true,
+  "common_memory_reduction_percent": 86.09792830149485,
+  "common_time_change_percent": -13.035338363326709,
+  "acceptance_minimums_met": true,
+  "post_campaign_audit_clean": true
+}

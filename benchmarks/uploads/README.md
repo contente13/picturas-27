@@ -4,10 +4,10 @@ Both official campaigns completed under protocol 4: **50 trials / 90 requests pe
 The final campaign completed all 90 uploads with HTTP 204, version and stored-object integrity
 verified. The main condition achieved a **86.10% memory reduction**
 and a **-13.04% response-time change**. All ten large-concurrent trials
-completed their three uploads. Results and external deliverables are under ignored `runs/`.
+completed their three uploads. See [campaign results](runs/README.md).
 
 Baseline source: `052310226c51fa57a17101c7bd1ad795674aac95`.
-Evaluated final snapshot: `b1b37f562d3c6eb80556caea89254e829c22d97e`.
+Final source for reproduction: `c7e597a2674a74f6fc0f225145e74260ff23a61e`.
 
 ## Acceptance criteria
 
@@ -122,11 +122,12 @@ python3 benchmarks/uploads/check_observer.py --image <recorded-node-image>
 
 ## Evidence and limits
 
-Current report: `runs/stream-review/RELATORIO-RNF-EFIC-01.md`. Full summaries, per-trial and
-per-request CSVs, unit/integration logs, runtime checks and final audit are alongside it.
-`runs/p4-final-evaluation.zip` contains the external evidence with SHA256SUMS and an external
-ZIP checksum. Exact media are provided separately in `runs/p4-upload-corpus.zip`; Docker
-images and credentials are excluded. Never commit generated media, results, secrets or caches.
+The [final report](runs/stream-review/RELATORIO-RNF-EFIC-01.md) is available with the
+campaign summaries, per-trial and per-request CSVs, and verification summaries.
+The local `runs/p4-baseline.zip` and `runs/p4-final-evaluation.zip` hold the full evidence,
+including raw samples and logs. Exact media are provided separately in the local
+`runs/p4-upload-corpus.zip`. Keep generated media, private run files and credentials out
+of source control.
 
 Raw samples retain process RSS and supplementary cgroup memory/cache, CPU, I/O, OOM and
 1 s temporary-file statistics. RSS is not unique physical memory; shared pages can be counted

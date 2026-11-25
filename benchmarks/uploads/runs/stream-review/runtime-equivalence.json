@@ -1,0 +1,50 @@
+{
+  "source_commit": "b1b37f562d3c6eb80556caea89254e829c22d97e",
+  "services": {
+    "api_gateway": {
+      "image_id": "sha256:d641f3fbdab330a33608ee52f43d17b45e41ff0cbfd1e8fad63711338c7d25e2",
+      "base_layers_preserved": true,
+      "memory_limit": 0,
+      "nano_cpus": 0,
+      "node": "v26.13.1",
+      "lock": null,
+      "installed_lock": "c26592cefc4c6319dfcd14eefd2b168bb0621532aa620a57c792eca4580ebf2f",
+      "files": {
+        "routes/projects.js": "223f601d81dfc2a2d96258ec97267f02905a6c15aa0448596d2497d6be6eae0c",
+        "utils/forwardUpload.js": "8362444afb8de03a8c675b783da04bed28734be6f347d132a9399945da92347c"
+      }
+    },
+    "projects": {
+      "image_id": "sha256:001ba4302c5296a9bc22c6aa4cfdfec294d00d3c2c2f6c4c068d875e9841e792",
+      "base_layers_preserved": true,
+      "memory_limit": 0,
+      "nano_cpus": 0,
+      "node": "v26.13.1",
+      "lock": "bd1bfe1a9b4e8d838e66dae2da2c9e9028c5ad1d499cf4411e9afb3cccb44181",
+      "installed_lock": "c973b3ba71b78abb421993d234f4486501fa34a9314b870bd5f83c78c9751957",
+      "files": {
+        "routes/projects.js": "8594fb9b6579f0d649b59ffbccd8ad6704c1b89eecd269b95f963746a8c4a520",
+        "utils/mediaUpload.js": "3cb9ce0dc03c689f7dd5b615fb6b1071578f153ac530361f317bdef4b8e15ba1"
+      }
+    },
+    "img_storage": {
+      "image_id": "sha256:e9c14aae70aa0807e2515a55e553cd4b5121bc577c5fa7ffc5b65554c003cf36",
+      "base_layers_preserved": true,
+      "memory_limit": 0,
+      "nano_cpus": 0,
+      "node": "v26.13.1",
+      "lock": "14413ad6df7e227190b77025d45ae29413d007d07df77a18f284a20781faacd6",
+      "installed_lock": "1be733137dfe743d23ee4166f5800fb24db924ef6701ea524a09fd4cd6509a49",
+      "files": {
+        "services/uploadImage.js": "ed1fb52eac0722f6a9149bd2301ad34188eeee14d350eeb4500c74567eb2e151"
+      }
+    }
+  },
+  "nginx_config_matches_snapshot": true,
+  "nginx_config_sha256": "40e0b2102d5ea343c2838d9580d4549602fc7d8ad552e7a7d46c291da145f734",
+  "compose_limits_and_storage_command_unchanged": true,
+  "master_config_matches_snapshot": true,
+  "master_config_sha256": "a322125958813dbddb4aa038bf87d8723ffbe7c4316a7197342c8463cfe2196d",
+  "timeouts_unchanged": true,
+  "extra_diagnostic_processes_outside_measurement": true
+}

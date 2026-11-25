@@ -1,0 +1,32 @@
+[
+  {
+    "service": "projects",
+    "returncode": 0,
+    "summary": [
+      "\u2139 tests 36",
+      "\u2139 pass 36",
+      "\u2139 fail 0",
+      "\u2139 skipped 0"
+    ]
+  },
+  {
+    "service": "apiGateway",
+    "returncode": 0,
+    "summary": [
+      "\u2139 tests 4",
+      "\u2139 pass 4",
+      "\u2139 fail 0",
+      "\u2139 skipped 0"
+    ]
+  },
+  {
+    "service": "imageStorageService",
+    "returncode": 0,
+    "summary": [
+      "\u2139 tests 8",
+      "\u2139 pass 8",
+      "\u2139 fail 0",
+      "\u2139 skipped 0"
+    ]
+  }
+]
